@@ -70,8 +70,9 @@ marker는 target 숫자가 아닌 **실제 좌표에서 계산한 φ/ψ**를 사
 - **vdW radii:** heavy atom은 Bondi 값 C 1.70, N 1.55, O 1.52 Å. 표시용 vdW sphere는
   H 1.20 Å도 사용합니다. serious-clash 계산은 MolProbity/Probe 계열의 polar-H 처리에 맞춰
   amide H에 1.00 Å를 사용합니다. 이 모델의 명시적 H는 모두 amide H입니다.
-- **detection criterion:** overlap = rᵢ + rⱼ − distance이며 **overlap > 0.40 Å**를
-  `심한 비결합 겹침`으로 표시합니다. 0.40 Å는 MolProbity가 serious clash를 보고하는 기준에서
+- **detection criterion:** overlap = rᵢ + rⱼ − distance이며 **overlap > 0.40 Å** 중 아래의
+  donor/acceptor·거리·각도 검증을 통과한 H-bond를 제외하고 `심한 비결합 겹침`으로 표시합니다.
+  Raw overlap은 audit용으로 보존합니다. 0.40 Å는 MolProbity가 serious clash를 보고하는 기준에서
   가져왔지만, 이 앱은 Probe의 rolling surface나 hydrogen-bond 판정을 복제하지 않습니다.
 - **bond-topology exclusion:** 결합 그래프 최단거리가 1, 2, 3인 1–2, 1–3, 1–4 쌍을 모두
   제외합니다. Probe/Reduce의 기본 `NBonds=3`과 같은 범위입니다. 1–4는 force field에서
@@ -147,12 +148,12 @@ Sources support chemical conventions and representative constants, not the autho
   Ac O···H(Ala4) and Ala9 O···H(NHMe) are geometrically plausible contacts outside that displayed
   network; terminal groups therefore do not all reproduce the interior network. Capping chemistry
   and solvent partners are not simulated.
-- **Unchanged sterics:** the existing detector reports **10** O···H overlaps of 0.437402 Å,
-  corresponding exactly to 8 interior H-bonds and the 2 cap-related contacts above. No other
-  pair exceeds 0.40 Å. The current detector has no favorable donor/acceptor contact classification;
-  these close, directionally plausible H-bond contacts should not be interpreted as ten independent
-  structural failures. No threshold/radius/topology change or count suppression was made.
-  This is an audited limitation, not proof of all-atom energetic validity.
+- **Interaction classification:** 10 raw O···H overlaps of 0.437402 Å are classified as valid
+  H-bonds (8 interior + 2 cap); serious unfavorable clashes are **0**. The shared classifier checks
+  covalent identity (amide N–H donor and C=O acceptor), H···O 1.5–2.6 Å, N···O 2.5–3.5 Å,
+  and N–H···O ≥120°. Caps follow the same rules. Threshold/radii/1–2, 1–3, 1–4 exclusions
+  remain unchanged. Invalid O···H contacts still count when overlap >0.40 Å. This model-specific
+  geometry screen is not proof of all-atom energetic validity.
 - Side/Top cameras use the measured screw axis as a guide. Top view does not reposition atoms.
   Axis is a dashed geometric guide. No interpolation or folding animation is implemented.
 

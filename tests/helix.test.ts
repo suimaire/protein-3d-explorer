@@ -1,7 +1,7 @@
 import { describe,it,expect } from 'vitest';
 import {buildHelix,helixGeometry,hydrogenBonds,HELIX,residueCount} from '../src/geometry/helix';
 import {angles,point,omega,buildPeptide} from '../src/geometry/peptide';
-import {clashes} from '../src/geometry/sterics';
+import {clashes,classifyInteractions} from '../src/geometry/sterics';
 import {sub,dot,cross,unit,distance,wrap,scale,add} from '../src/geometry/vector';
 import {plotPoint} from '../src/components/RamachandranPlot';
 const m=buildHelix(),n=residueCount(m),g=helixGeometry(m);
@@ -33,7 +33,12 @@ describe('geometry-screened backbone H bonds and unchanged sterics',()=>{
   it('rejects a donor H pointed away even with plausible O-N distance',()=>{const bad=buildHelix();bad.atoms.find(a=>a.id==='5:H')!.position=add(point(bad,5,'N'),scale(unit(sub(point(bad,5,'N'),point(bad,1,'O'))),1.01));expect(hydrogenBonds(bad).some(b=>b.acceptor===1)).toBe(false);});
   it('extended backbone does not display artificial index-only H bonds',()=>expect(hydrogenBonds(buildPeptide(12))).toHaveLength(0));
   it('audits all ten detector hits as H-bond O-H contacts including two caps, with no others',()=>{
-    const hits=clashes(m);expect(hits).toHaveLength(n-2);
+    const interactions=classifyInteractions(m),hits=interactions.severeOverlaps;expect(hits).toHaveLength(n-2);
+    expect(interactions.hydrogenBonds).toHaveLength(10);expect(hydrogenBonds(m)).toHaveLength(8);expect(clashes(m)).toEqual([]);
+    expect(interactions.hydrogenBonds.map(b=>`${b.o}|${b.h}`).sort()).toEqual(hits.map(c=>`${c.a}|${c.b}`).sort());
+    const caps=interactions.hydrogenBonds.filter(b=>b.acceptor===0||b.donor===13);
+    expect(caps.map(b=>[b.o,b.h,b.n])).toEqual([['0:O','4:H','4:N'],['9:O','13:H','13:N']]);
+    for(const b of caps){expect(b.ho).toBeCloseTo(2.082598,6);expect(b.on).toBeCloseTo(3.060309,6);expect(b.angle).toBeCloseTo(162.321327,6);}
     expect(hits.map(c=>`${c.a}|${c.b}`).sort()).toEqual(Array.from({length:n-2},(_,r)=>`${r}:O|${r+4}:H`).sort());
     for(const c of hits){expect(c.distance).toBeCloseTo(2.082598,6);expect(c.overlap).toBeCloseTo(0.437402,6);}
   });

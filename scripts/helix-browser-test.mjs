@@ -18,6 +18,11 @@ try{
   assert.equal(await nav.getByRole('button').count(),2);
   await nav.getByRole('button',{name:/α-Helix/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Only two completed modules; alpha helix WebGL loads');
   assert.equal(await page.getByTestId('hbond-count').innerText(),'8 / 8 표시');assert.equal(await viewer().getAttribute('data-hbond-pairs'),'1-5,2-6,3-7,4-8,5-9,6-10,7-11,8-12');check('Displayed count and rendered pair mapping agree');
+  await page.getByText('대표 수치와 모델 검증 보기',{exact:true}).click();
+  assert.match(await page.getByTestId('helix-clashes').innerText(),/심한 불리한 입체 충돌: 0쌍/);
+  assert.ok((await page.getByTestId('helix-clashes').innerText()).includes('유효한 H-bond 10쌍(내부 8, cap 관련 2)'));
+  for(const pair of ['0:O ··· 4:H','9:O ··· 13:H'])assert.ok((await page.getByTestId('cap-hbonds').innerText()).includes(pair));
+  check('Valid backbone and cap H-bonds excluded from serious unfavorable clashes');
   await page.screenshot({path:'artifacts/phase2a-alpha-helix.png',fullPage:true});
   const initial=await shot();
   for(const name of ['Backbone','Side chains','Atoms','Show H-bonds','Show helix axis']){const before=await shot(),box=page.getByRole('checkbox',{name,exact:true});await box.click();changed(before,await shot());if(name==='Show H-bonds'){assert.equal(await page.getByTestId('hbond-count').innerText(),'0 / 8 표시');assert.equal(await viewer().getAttribute('data-hbond-pairs'),'');assert.equal(await viewer().getAttribute('data-focus-atoms'),'');}await box.click();check(`${name}: visible toggle effect`);}

@@ -53,7 +53,7 @@ network. Cap contacts are excluded from display, not from coordinates or steric 
 
 ## Serious-overlap detector audit
 
-Policy is exactly Phase 1.1: exclude 1–2 / 1–3 / 1–4; overlap >0.40 Å;
+Radial/topology policy remains Phase 1.1: exclude 1–2 / 1–3 / 1–4; overlap >0.40 Å;
 C 1.70, N 1.55, O 1.52, polar amide H 1.00 Å; cap nonlocal contacts retained.
 
 **Raw detector count: 10. Other reported contacts: 0.** All hits are O(i)···H(i+4),
@@ -61,7 +61,7 @@ with distance 2.082598 Å and nominal overlap 1.52 + 1.00 − 2.082598 = 0.43740
 
 | Atom pair | Classification |
 |---|---|
-| 0:O – 4:H | Ac acceptor / Ala 4 donor; cap contact |
+| 0:O – 4:H | Ac carbonyl acceptor / Ala 4 amide donor; valid cap H-bond |
 | 1:O – 5:H | displayed backbone H-bond |
 | 2:O – 6:H | displayed backbone H-bond |
 | 3:O – 7:H | displayed backbone H-bond |
@@ -70,20 +70,31 @@ with distance 2.082598 Å and nominal overlap 1.52 + 1.00 − 2.082598 = 0.43740
 | 6:O – 10:H | displayed backbone H-bond |
 | 7:O – 11:H | displayed backbone H-bond |
 | 8:O – 12:H | displayed backbone H-bond |
-| 9:O – 13:H | Ala 9 acceptor / NHMe donor; cap contact |
+| 9:O – 13:H | Ala 9 carbonyl acceptor / NHMe amide donor; valid cap H-bond |
 
-These are directionally plausible hydrogen-bond contacts. The existing radial detector does not
-classify favorable donor/acceptor contacts and reports them as serious overlaps. This is a known
-chemical limitation of that indicator, not evidence of ten independent severe structural defects.
-We investigated the coordinates, retained −60°/−45° and all detection settings, and exposed the raw
-count and explanation in the UI. No non-H-bond hits remain unexplained. No complete all-atom or
-external force-field validation is claimed; carbon-bound H remains absent.
+The shared interaction classifier now separates **10 valid H-bonds from 0 serious unfavorable
+clashes**. Raw radial overlaps remain available as `severeOverlaps` for auditing. The displayed
+Ala-only i→i+4 network remains eight bonds; the two cap H-bonds are reported in the validation
+panel, without adding them to the teaching network.
+
+Identity is verified from elements and covalent bond orders, not atom labels or residue offsets:
+H has one single bond to N; that N is single-bonded to a carbonyl carbon (amide donor).
+O has one double bond to C (carbonyl acceptor). The same coordinate screen is then applied to
+all candidates: **H···O 1.5–2.6 Å, N···O 2.5–3.5 Å, N–H···O ≥120°**, inclusive.
+Missing/incorrect donor or acceptor bonds, short contacts or incorrect direction do not qualify.
+Topology exclusions are applied before classification. Caps receive no special exemption.
+
+Both cap pairs measure **H···O 2.082598 Å, N···O 3.060309 Å, N–H···O 162.321327°**,
+exactly as the eight interior pairs. Each passes the identity and geometry criteria and is excluded
+from serious unfavorable clashes. This is an educational amide/carbonyl screen, not a universal
+H-bond definition or force-field validation; carbon-bound H remains absent.
 
 ## Verification
 
-- 77 existing tests unchanged + 16 new tests = **93 passed**.
+- **107 tests passed**, including the updated ten-pair audit and 14 interaction tests for
+  donor/acceptor identity, reversed atom order, geometry failures, topology and invalid cap contacts.
 - Strict TypeScript typecheck and production build passed.
-- Chromium production preview: **24 existing + 23 new = 47 checks passed**.
+- Chromium production preview: **24 Peptide Geometry + 24 helix = 48 checks passed**.
 - Drag, keyboard/wheel zoom, Side/Top/Reset/Fit, five toggles, H-bond focus and endpoint labels,
   residue/plot sync, readonly plot, display count, repeated navigation/disposal all passed.
 - Desktop 1440×1100; responsive 768/390/320 px, no horizontal overflow.

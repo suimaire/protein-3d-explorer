@@ -26,13 +26,13 @@
 - Side/Top/Reset/Fit, drag/keyboard rotation, wheel/keyboard zoom, backbone/side-chain/atom/
   H-bond/axis options, backbone-only comparison, residue selection with actual-angle Ramachandran
   marker, and return to Peptide Geometry implemented. Axis is a geometric guide, not an atom.
-- **Steric audit:** unchanged detector reports 10 O···H hits (8 internal + 2 cap contacts), each
-  nominal overlap 0.437402 Å. All are directionally plausible H-bonds; the distance-only detector
-  lacks donor/acceptor contact classification. Raw count and limitation are disclosed; no other
-  pair exceeds the existing threshold. No threshold/radius/topology policy change was made.
-- Final `npm run typecheck`, `npm test` (**77 existing + 16 new = 93 passed**) and production
-  `npm run build` passed. Existing tests were not removed or edited.
-- `npm run test:browser` runs both suites: **24 existing + 23 helix = 47 passed**, console errors
+- **Interaction classification:** 10 raw O···H overlaps (8 internal + 2 cap), each 0.437402 Å,
+  pass covalent amide donor/carbonyl acceptor identity and shared distance/angle checks.
+  Serious unfavorable clashes: **0**. Cap pairs 0:O–4:H and 9:O–13:H each measure H···O
+  2.082598 Å, N···O 3.060309 Å, N–H···O 162.321327°. No threshold/radius/topology change.
+- Final `npm run typecheck`, `npm test` (**107 passed**) and production `npm run build` passed.
+  Updated raw-overlap audit and added negative chemistry/geometry/cap regression tests.
+- `npm run test:browser` runs both suites: **24 Peptide Geometry + 24 helix = 48 passed**, console errors
   **0**, uncaught exceptions **0**, production preview on 127.0.0.1:4173.
 - Desktop 1440×1100 and 768/390/320 px layouts checked. Desktop, Top and 390 px mobile captures
   visually reviewed; no horizontal overflow. Resize preserves helix viewing direction.
@@ -113,7 +113,7 @@
 ## Known issues
 
 - No known blocking issue in the tested Chromium environment.
-- α-Helix raw serious-overlap count is 10 H-bond O···H contacts; detector limitation audited above.
+- α-Helix has 10 raw overlaps classified as valid H-bonds and 0 serious unfavorable clashes.
   This is not a complete all-atom energetic validation.
 - Real iOS/Android touch hardware and Safari/Firefox were not tested. Mobile checks use Chromium
   viewport emulation; pinch is supplied by Three.js OrbitControls, not independently device-tested.

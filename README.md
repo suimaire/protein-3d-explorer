@@ -15,7 +15,7 @@ Ac–(L-Ala)₅–NHMe의 Ala 3에서 φ/ψ를 조작하고 peptide plane, schem
 **α-Helix Lab** — idealized Ac–(L-Ala)₁₂–NHMe, 반복 −60°/−45° backbone, 좌표로 검증한
 8개 i→i+4 H-bond, residue inspection과 Ramachandran marker, Side/Top/Reset/Fit camera,
 backbone/side chains/atoms/H-bonds/axis 표시 옵션.
-기존 detector의 10개 O···H hit는 H-bond 접촉이며 별도 audit에 원인과 한계를 기록했습니다.
+Donor/acceptor 결합 관계·거리·각도를 검증한 H-bond 10쌍(내부 8 + cap 2)은 serious unfavorable clash에서 제외하여 정상 α-helix는 0쌍입니다. 상세 기준과 cap 측정값은 `ALPHA_HELIX_VALIDATION.md`에 기록했습니다.
 β-Sheet는 아직 제공하지 않습니다.
 
 ## Local development

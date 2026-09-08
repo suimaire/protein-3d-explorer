@@ -1,5 +1,6 @@
 import type { Peptide } from './peptide';
 import { distance } from './vector';
+import {validHydrogenBond,type HydrogenBond} from './hydrogenBond';
 import { CLASH_EXCLUDED_BONDS,CLASH_OVERLAP_TOLERANCE,CLASH_VDW } from '../data/science';
 export type Clash={a:string;b:string;distance:number;overlap:number};
 export function bondSeparation(m:Peptide,start:string,end:string) {
@@ -31,13 +32,20 @@ export function excludedPairs(m:Peptide) {
   }
   return excluded;
 }
-export function clashes(m:Peptide):Clash[] {
-  const excluded=excludedPairs(m), result:Clash[]=[];
+export function classifyInteractions(m:Peptide) {
+  const excluded=excludedPairs(m), seriousClashes:Clash[]=[], hydrogenBonds:HydrogenBond[]=[], severeOverlaps:Clash[]=[];
   for(let i=0;i<m.atoms.length;i++) for(let j=i+1;j<m.atoms.length;j++) {
     const a=m.atoms[i],b=m.atoms[j];
     if(excluded.has([a.id,b.id].sort().join('|'))) continue;
     const d=distance(a.position,b.position),overlap=CLASH_VDW[a.element]+CLASH_VDW[b.element]-d;
-    if(overlap>CLASH_OVERLAP_TOLERANCE) result.push({a:a.id,b:b.id,distance:d,overlap});
+    const hbond=validHydrogenBond(m,a,b);
+    if(hbond)hydrogenBonds.push(hbond);
+    if(overlap>CLASH_OVERLAP_TOLERANCE){
+      const contact={a:a.id,b:b.id,distance:d,overlap};
+      severeOverlaps.push(contact);
+      if(!hbond)seriousClashes.push(contact);
+    }
   }
-  return result.sort((a,b)=>b.overlap-a.overlap);
+  return {hydrogenBonds,seriousClashes:seriousClashes.sort((a,b)=>b.overlap-a.overlap),severeOverlaps:severeOverlaps.sort((a,b)=>b.overlap-a.overlap)};
 }
+export const clashes=(m:Peptide):Clash[]=>classifyInteractions(m).seriousClashes;

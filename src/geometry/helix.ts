@@ -1,20 +1,15 @@
 import { buildPeptide, point } from './peptide';
 import type { Peptide } from './peptide';
-import { add, sub, scale, unit, cross, dot, distance } from './vector';
+import { add, sub, scale, unit, cross, dot } from './vector';
+import {classifyInteractions} from './sterics';
+import type {HydrogenBond} from './hydrogenBond';
+export type {HydrogenBond} from './hydrogenBond';
 export const HELIX = {count:12,phi:-60,psi:-45} as const;
 export const buildHelix=(count:number=HELIX.count)=>buildPeptide(count,HELIX.phi,HELIX.psi);
 export const residueCount=(m:Peptide)=>m.atoms.filter(a=>a.name==='CB').length;
-export type HydrogenBond={acceptor:number;donor:number;o:string;h:string;n:string;on:number;ho:number;angle:number};
 /** Educational distance/direction screen, not an energy or universal H-bond definition. Caps excluded. */
 export function hydrogenBonds(m:Peptide):HydrogenBond[]{
-  const result:HydrogenBond[]=[];
-  for(let i=1;i<=residueCount(m)-4;i++){
-    const o=point(m,i,'O'),h=point(m,i+4,'H'),n=point(m,i+4,'N');
-    const on=distance(o,n),ho=distance(h,o);
-    const angle=Math.acos(Math.max(-1,Math.min(1,dot(unit(sub(n,h)),unit(sub(o,h))))))*180/Math.PI;
-    if(on>=2.5&&on<=3.5&&ho>=1.5&&ho<=2.6&&angle>=120)result.push({acceptor:i,donor:i+4,o:`${i}:O`,h:`${i+4}:H`,n:`${i+4}:N`,on,ho,angle});
-  }
-  return result;
+  return classifyInteractions(m).hydrogenBonds.filter(b=>b.acceptor>=1&&b.donor<=residueCount(m)&&b.donor===b.acceptor+4);
 }
 /** Screw axis from repeated Cα displacements; no atom transforms or mirrored coordinates. */
 export function helixGeometry(m:Peptide){
