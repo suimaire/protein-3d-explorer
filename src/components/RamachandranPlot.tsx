@@ -1,7 +1,7 @@
 export const plotPoint=(phi:number,psi:number)=>({x:50+(phi+180)*300/360,y:20+(180-psi)*300/360});
-export function RamachandranPlot({phi,psi,onSelect}:{phi:number;psi:number;onSelect:(phi:number,psi:number)=>void}){
+export function RamachandranPlot({phi,psi,onSelect}:{phi:number;psi:number;onSelect?:(phi:number,psi:number)=>void}){
   const p=plotPoint(phi,psi);
-  return <figure className="rama"><svg viewBox="0 0 385 366" role="img" aria-label={`Ramachandran 개념도, 현재 φ ${phi.toFixed(0)}도, ψ ${psi.toFixed(0)}도`} onClick={e=>{const svg=e.currentTarget,pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM()!.inverse());if(q.x<50||q.x>350||q.y<20||q.y>320)return;onSelect(Math.round((q.x-50)*360/300-180),Math.round(180-(q.y-20)*360/300));}}>
+  return <figure className="rama"><svg viewBox="0 0 385 366" role="img" aria-label={`Ramachandran 개념도, 현재 φ ${phi.toFixed(0)}도, ψ ${psi.toFixed(0)}도`} style={{cursor:onSelect?'crosshair':'default'}} onClick={e=>{if(!onSelect)return;const svg=e.currentTarget,pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM()!.inverse());if(q.x<50||q.x>350||q.y<20||q.y>320)return;onSelect(Math.round((q.x-50)*360/300-180),Math.round(180-(q.y-20)*360/300));}}>
     <rect x="50" y="20" width="300" height="300" fill="#fff" stroke="#bfcbd2"/>
     {/* Deliberately simple, discrete patches: no empirical density or probability contours. */}
     <rect x="67" y="37" width="87" height="75" rx="18" fill="#e4eef6" stroke="#5983a0" strokeDasharray="4 3"/>

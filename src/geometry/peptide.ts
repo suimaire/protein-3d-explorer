@@ -7,33 +7,33 @@ export type Peptide = {atoms:Atom[];bonds:Bond[]};
 export const id = (r:number,n:string) => `${r}:${n}`;
 export const atom = (m:Peptide,r:number,n:string) => m.atoms.find(a=>a.id===id(r,n))!;
 export const point = (m:Peptide,r:number,n:string) => atom(m,r,n).position;
-/** Ac–(L-Ala)5–NHMe. Carbon-bound H omitted; amide H explicit. Å units. */
-export function buildPeptide():Peptide {
+/** Ac–(L-Ala)n–NHMe; defaults preserve Phase 1. Carbon-bound H omitted, amide H explicit. Å. */
+export function buildPeptide(count=5,phi=-135,psi=135):Peptide {
   const m:Peptide={atoms:[],bonds:[]};
   const push=(r:number,n:string,e:Atom['element'],p:Vec) => m.atoms.push({id:id(r,n),residue:r,name:n,element:e,position:p,sidechain:n==='CB'});
   const bond=(r:number,n:string,s:number,k:string,order:1|2=1)=>m.bonds.push({a:id(r,n),b:id(s,k),order});
   let n:Vec=[0,0,0],ca:Vec=[G.nCa,0,0],c:Vec=add(ca,[G.caC*Math.cos((180-G.nCaC)*Math.PI/180),G.caC*Math.sin((180-G.nCaC)*Math.PI/180),0]);
-  for(let r=0;r<=6;r++) {
+  for(let r=0;r<=count+1;r++) {
     if(r>0) push(r,'N','N',n);
     push(r,'CA','C',ca);
-    if(r<6) {push(r,'C','C',c);push(r,'O','O',place(n,ca,c,G.cO,G.caCO,-45));bond(r,'CA',r,'C');bond(r,'C',r,'O',2);}
+    if(r<count+1) {push(r,'C','C',c);push(r,'O','O',place(n,ca,c,G.cO,G.caCO,psi-180));bond(r,'CA',r,'C');bond(r,'C',r,'O',2);}
     if(r>0) {
       bond(r-1,'C',r,'N');bond(r,'N',r,'CA');
       const previousC=point(m,r-1,'C');
       const h=add(n,scale(unit(scale(add(unit(sub(previousC,n)),unit(sub(ca,n))),-1)),G.nH));
       push(r,'H','H',h);bond(r,'N',r,'H');
     }
-    if(r>0&&r<6) {
+    if(r>0&&r<count+1) {
       const u=unit(sub(n,ca)),v=unit(sub(c,ca));
       const bisector=scale(add(u,v),-1/(3*(1+dot(u,v))));
       const cb=add(ca,scale(add(bisector,scale(unit(cross(u,v)),Math.sqrt(1-dot(bisector,bisector)))),G.caCb));
       push(r,'CB','C',cb);bond(r,'CA',r,'CB');
     }
-    if(r<6) {
-      // ψ=135°, ω=180°, φ=-135°. O is opposite the following N (ψ−180).
-      const nextN=place(n,ca,c,G.cN,G.caCN,135);
+    if(r<count+1) {
+      // Trans peptide; O is opposite the following N (ψ−180).
+      const nextN=place(n,ca,c,G.cN,G.caCN,psi);
       const nextCa=place(ca,c,nextN,G.nCa,G.cNCa,180);
-      const nextC=place(c,nextN,nextCa,G.caC,G.nCaC,-135);
+      const nextC=place(c,nextN,nextCa,G.caC,G.nCaC,phi);
       n=nextN;ca=nextCa;c=nextC;
     }
   }

@@ -2,17 +2,47 @@
 
 ## Completed
 
-- Phase 1 implementation: Vite + React + strict TypeScript + Three.js; Peptide Geometry Lab only.
+- Phase 1 implementation: Vite + React + strict TypeScript + Three.js; Peptide Geometry Lab.
 - Pure geometry and sterics code, renderer, UI, schematic plot, teaching text separated.
 - Ac–L-Ala₅–NHMe with central Ala 3 φ/ψ manipulation, measured-angle plot synchronization,
   trans peptide planes, representation toggles, clash pairs, presets, camera/reset controls.
 - Korean teaching UI, mobile stacking, native keyboard sliders, keyboard camera, explicit schematic caveats.
-- README and scientific documentation; no next module, worksheet, login, deployment, or remote.
+- README and scientific documentation; no worksheet, login, deployment, or remote.
 - Phase 1.1 steric-clash validation completed. The former α-like count of 6 was traced to six
   fixed O(i)–Cα(i+1) 1–4 pairs and corrected with a three-bond topology exclusion.
 - UI now reports `심한 비결합 겹침`; detailed pair audit is in `STERIC_CLASH_VALIDATION.md`.
 
-## Scientific validation
+## Phase 2A — completed and verified
+
+- **α-Helix Lab completed** on 2026-09-09. Student navigation exposes only Chapter 1 Peptide
+  Geometry and Chapter 2 α-Helix. No β-Sheet or other future module implemented.
+- Model: idealized Ac–(L-Ala)12–NHMe, 78 atoms / 77 bonds, repeated measured φ −60° / ψ −45°,
+  trans ω, planar peptide groups and preserved bond lengths/angles/L chirality.
+- Right-handed screw rotation +98.869342° per residue; measured 3.641169 residues/turn,
+  1.540360 Å rise/residue, 5.608710 Å pitch. Approximate textbook dimensions separately labeled.
+- Coordinate-screened Ala-only i→i+4 H-bonds: 8 (12−4). O···N 3.060309 Å, H···O 2.082598 Å,
+  N–H···O 162.321327°. Selection highlights the carbonyl C/O and donor H/N; displayed count
+  derives from the rendered network. Cap/end limitations explained.
+- Side/Top/Reset/Fit, drag/keyboard rotation, wheel/keyboard zoom, backbone/side-chain/atom/
+  H-bond/axis options, backbone-only comparison, residue selection with actual-angle Ramachandran
+  marker, and return to Peptide Geometry implemented. Axis is a geometric guide, not an atom.
+- **Steric audit:** unchanged detector reports 10 O···H hits (8 internal + 2 cap contacts), each
+  nominal overlap 0.437402 Å. All are directionally plausible H-bonds; the distance-only detector
+  lacks donor/acceptor contact classification. Raw count and limitation are disclosed; no other
+  pair exceeds the existing threshold. No threshold/radius/topology policy change was made.
+- Final `npm run typecheck`, `npm test` (**77 existing + 16 new = 93 passed**) and production
+  `npm run build` passed. Existing tests were not removed or edited.
+- `npm run test:browser` runs both suites: **24 existing + 23 helix = 47 passed**, console errors
+  **0**, uncaught exceptions **0**, production preview on 127.0.0.1:4173.
+- Desktop 1440×1100 and 768/390/320 px layouts checked. Desktop, Top and 390 px mobile captures
+  visually reviewed; no horizontal overflow. Resize preserves helix viewing direction.
+- Captures/results in ignored `artifacts/`: `phase2a-alpha-helix.png`, `phase2a-alpha-helix-top.png`,
+  `phase2a-mobile-{768,390,320}.png`, `phase2a-browser-results.json`.
+- Detailed scientific audit: `ALPHA_HELIX_VALIDATION.md`; assumptions and references:
+  `SCIENTIFIC_NOTES.md`. Existing carbohydrate/lipid explorers were not modified or accessed.
+- Local-only session; no push, new GitHub repository, deployment or portal integration.
+
+## Phase 1.1 scientific validation (historical)
 
 - Existing α-like 6: all six were 1–4 O–Cα pairs at 2.773 Å with 0.447 Å nominal overlap;
   four internal and two at cap boundaries. Meaningful nonbonded clashes: 0; topology artifacts: 6.
@@ -23,7 +53,7 @@
 - This remains a partial-atom educational geometric indicator, not MolProbity, a force field,
   molecular dynamics, or a Ramachandran allowed/forbidden classifier.
 
-## Verified
+## Phase 1.1 verification (historical)
 
 - 2026-09-09 (Asia/Seoul): `npm run typecheck` and final `npm run build` passed.
 - `npm test`: **77/77 passed** — the original **67/67 geometry tests** plus **10/10 Phase 1.1
@@ -51,7 +81,8 @@
 
 ## Scientific assumptions / simplifications
 
-- Ideal bond geometry; all ω=180°. Only Ala 3 φ/ψ varies; other residues −135°/+135°.
+- Phase 1: ideal bond geometry, all ω=180°. Only Ala 3 φ/ψ varies; other residues −135°/+135°.
+- Phase 2A: all Ala φ/ψ = −60°/−45°, ω trans; idealized educational helix, not experimental data.
 - Explicit amide H; carbon-bound H omitted. Neutral Ac/NHMe caps.
 - Ramachandran map is authored schematic, not empirical data or an allowed/forbidden classifier.
 - Serious nonbonded overlap = vdW overlap >0.40 Å, excluding 1–2/1–3/1–4. Heavy-atom Bondi
@@ -82,6 +113,8 @@
 ## Known issues
 
 - No known blocking issue in the tested Chromium environment.
+- α-Helix raw serious-overlap count is 10 H-bond O···H contacts; detector limitation audited above.
+  This is not a complete all-atom energetic validation.
 - Real iOS/Android touch hardware and Safari/Firefox were not tested. Mobile checks use Chromium
   viewport emulation; pinch is supplied by Three.js OrbitControls, not independently device-tested.
 - WebGL is required; unsupported contexts show a readable fallback. Extremely zoomed/overlapping
@@ -90,8 +123,7 @@
 
 ## Next recommended module
 
-- Phase 2A — α-Helix Lab, only after Phase 1.1 acceptance.
-- β-Sheet after α-Helix.
+- **Phase 2B — β-Sheet Lab**, in a separate future session. Stop after Phase 2A.
 
 ## Project rule
 

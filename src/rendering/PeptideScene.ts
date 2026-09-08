@@ -3,6 +3,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { COLORS, VDW } from '../data/science';
 import type { Peptide, Atom } from '../geometry/peptide';
 import { point } from '../geometry/peptide';
+import { helixGeometry } from '../geometry/helix';
+import type { HydrogenBond } from '../geometry/helix';
+export type HelixView={selected:number;focus:number;hbonds:HydrogenBond[];showBonds:boolean;showAxis:boolean};
 import type { Clash } from '../geometry/sterics';
 export type ViewOptions={backbone:boolean;sidechains:boolean;atoms:boolean;vdw:boolean;planes:boolean;clashes:boolean;labels:boolean;axes:boolean};
 export const DEFAULT_VIEW:ViewOptions={backbone:true,sidechains:true,atoms:true,vdw:false,planes:true,clashes:false,labels:true,axes:true};
@@ -22,6 +25,7 @@ export class PeptideScene {
   private sphere=new T.SphereGeometry(1,24,16);
   private cylinder=new T.CylinderGeometry(1,1,1,12);
   private initialized=false;
+  private helixFrame:ReturnType<typeof helixGeometry>|null=null;
   constructor(private host:HTMLDivElement) {
     this.renderer=new T.WebGLRenderer({antialias:true,alpha:false});
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
@@ -34,7 +38,7 @@ export class PeptideScene {
     this.scene.add(this.group);
     this.controls=new OrbitControls(this.camera,canvas);this.controls.enablePan=false;this.controls.minDistance=7;this.controls.maxDistance=65;this.controls.addEventListener('change',this.render);
     canvas.addEventListener('keydown',this.keyboard);
-    this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.initialized&&Math.abs(old-this.camera.aspect)>0.01)this.resetCamera();this.render();});
+    this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.initialized&&Math.abs(old-this.camera.aspect)>0.01){if(this.helixFrame)this.cameraView('fit');else this.resetCamera();}this.render();});
     this.resize.observe(host);
   }
   private keyboard=(e:KeyboardEvent)=>{
@@ -49,12 +53,12 @@ export class PeptideScene {
   private stick(a:T.Vector3,b:T.Vector3,r:number,color:number){const mesh=new T.Mesh(this.cylinder,this.material(color));mesh.position.copy(a).add(b).multiplyScalar(0.5);mesh.scale.set(r,a.distanceTo(b),r);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),b.clone().sub(a).normalize());this.group.add(mesh);}
   private label(text:string,position:T.Vector3,central=false){const element=document.createElement('span'),leader=document.createElement('span');element.className=`atom-label${central?' central':''}`;element.textContent=text;leader.className='label-leader';leader.setAttribute('aria-hidden','true');this.host.append(leader,element);this.labels.push({element,leader,position});}
   private clear(){this.group.traverse(obj=>{if(obj instanceof T.Mesh){const mats=Array.isArray(obj.material)?obj.material:[obj.material];mats.forEach(m=>m.dispose());if(obj.geometry!==this.sphere&&obj.geometry!==this.cylinder)obj.geometry.dispose();}});this.group.clear();this.labels.forEach(x=>{x.element.remove();x.leader.remove();});this.labels=[];}
-  update(model:Peptide,options:ViewOptions,clashes:Clash[]) {
+  update(model:Peptide,options:ViewOptions,clashes:Clash[],helix?:HelixView) {
     this.clear();
     const byId=new Map(model.atoms.map(a=>[a.id,a]));
     const visible=(a:Atom)=>a.sidechain?options.sidechains:options.backbone;
-    for(const a of model.atoms){if(!visible(a))continue;const p=vector(a.position);if(options.atoms)this.ball(p,a.element==='H'?0.17:0.3,COLORS[a.element]);if(options.vdw)this.ball(p,VDW[a.element],COLORS[a.element],0.22);if(a.residue===3&&options.atoms)this.ball(p,a.element==='H'?0.22:0.37,0xd39b20,0.32);}
-    for(const b of model.bonds){const a=byId.get(b.a)!,c=byId.get(b.b)!;if(!visible(a)||!visible(c))continue;const av=vector(a.position),cv=vector(c.position),mid=av.clone().lerp(cv,0.5);this.stick(av,mid,0.09,COLORS[a.element]);this.stick(mid,cv,0.09,COLORS[c.element]);if(b.order===2){const offset=vector(point(model,a.residue,'CA')).sub(av).cross(cv.clone().sub(av)).normalize().multiplyScalar(0.16);this.stick(av.clone().add(offset),cv.clone().add(offset),0.035,0x64717a);}}
+    for(const a of model.atoms){if(!visible(a))continue;const p=vector(a.position);if(options.atoms)this.ball(p,a.element==='H'?0.17:0.3,COLORS[a.element]);if(options.vdw)this.ball(p,VDW[a.element],COLORS[a.element],0.22);if(a.residue===(helix?.selected??3)&&options.atoms)this.ball(p,a.element==='H'?0.22:0.37,0xd39b20,0.32);}
+    for(const b of model.bonds){const a=byId.get(b.a)!,c=byId.get(b.b)!;if(!helix){if(!visible(a)||!visible(c))continue;}else if(a.sidechain||c.sidechain){if(!options.sidechains)continue;}else if(!options.backbone)continue;const av=vector(a.position),cv=vector(c.position),mid=av.clone().lerp(cv,0.5);this.stick(av,mid,0.09,COLORS[a.element]);this.stick(mid,cv,0.09,COLORS[c.element]);if(b.order===2){const offset=vector(point(model,a.residue,'CA')).sub(av).cross(cv.clone().sub(av)).normalize().multiplyScalar(0.16);this.stick(av.clone().add(offset),cv.clone().add(offset),0.035,0x64717a);}}
     if(options.planes) for(let r=0;r<6;r++){
       const points=[point(model,r,'CA'),point(model,r,'C'),point(model,r,'O'),point(model,r+1,'N'),point(model,r+1,'CA'),point(model,r+1,'H')].map(vector);
       const origin=points[1],u=points[3].clone().sub(origin).normalize(),normal=u.clone().cross(points[0].clone().sub(origin)).normalize(),v=normal.clone().cross(u);
@@ -67,20 +71,52 @@ export class PeptideScene {
     if(options.axes&&options.backbone){this.stick(vector(point(model,3,'N')),vector(point(model,3,'CA')),0.14,0x087f83);this.stick(vector(point(model,3,'CA')),vector(point(model,3,'C')),0.14,0x9b4c9a);}
     if(options.labels&&options.backbone){for(let r=1;r<=5;r++)this.label(r===3?'Ala 3 · Cα':`Ala ${r}`,vector(point(model,r,'CA')),r===3);for(const name of ['N','C','O'])this.label(name==='C'?'C=O':name,vector(point(model,3,name)),true);this.label('Ac',vector(point(model,0,'CA')));this.label('NHMe',vector(point(model,6,'CA')));}
     if(options.clashes){for(const clash of clashes){const a=byId.get(clash.a)!,b=byId.get(clash.b)!;this.stick(vector(a.position),vector(b.position),0.045,0xc12d50);this.ball(vector(a.position),0.39,0xc12d50,0.48);this.ball(vector(b.position),0.39,0xc12d50,0.48);}}
+    this.helixFrame=helix?helixGeometry(model):null;
+    if(helix){
+      const frame=this.helixFrame!,renderedPairs:string[]=[],focusedAtoms:string[]=[];
+      if(helix.showAxis){this.dashed(vector(frame.start).addScaledVector(vector(frame.axis),-2),vector(frame.end).addScaledVector(vector(frame.axis),2),0.025,0x8395a1);this.label('Helix axis · guide',vector(frame.end).addScaledVector(vector(frame.axis),2));}
+      if(helix.showBonds)for(const b of helix.hbonds){
+        const focused=b.acceptor===helix.focus;renderedPairs.push(`${b.acceptor}-${b.donor}`);
+        this.dashed(vector(point(model,b.acceptor,'O')),vector(point(model,b.donor,'H')),focused?0.075:0.035,focused?0xb87913:0x087f83);
+        if(focused){if(options.atoms&&options.backbone)for(const [r,name] of [[b.acceptor,'C'],[b.acceptor,'O'],[b.donor,'H'],[b.donor,'N']] as const){this.ball(vector(point(model,r,name)),name==='H'?0.27:0.43,0xd39b20,0.34);focusedAtoms.push(`${r}:${name}`);}
+          this.label(`Ala ${b.acceptor} C=O · acceptor`,vector(point(model,b.acceptor,'O')),true);
+          this.label(`Ala ${b.donor} H–N · donor`,vector(point(model,b.donor,'N')),true);
+        }
+      }
+      if(options.backbone){this.label('Ac · N end',vector(point(model,0,'CA')));this.label('NHMe · C end',vector(point(model,model.atoms.filter(a=>a.name==='CB').length+1,'CA')));}
+      this.host.dataset.hbondPairs=renderedPairs.join(',');
+      this.host.dataset.focusAtoms=focusedAtoms.join(',');
+      this.host.dataset.selectedResidue=String(helix.selected);
+    }
     this.positions=model.atoms.map(a=>vector(a.position));
     const ca=vector(point(model,3,'CA')),start=vector(point(model,0,'CA')),end=vector(point(model,6,'CA'));
     this.homeDirection.copy(start.clone().sub(ca).cross(end.clone().sub(ca)).normalize());
     if(this.homeDirection.lengthSq()<0.01)this.homeDirection.set(0,0,1);
     this.homeUp.copy(this.homeDirection).cross(end.clone().sub(start).normalize()).normalize();
     this.center.copy(new T.Box3().setFromPoints(this.positions).getCenter(new T.Vector3()));
+    if(this.helixFrame){
+      const axis=vector(this.helixFrame.axis),radial=vector(point(model,1,'CA')).sub(vector(this.helixFrame.start)).normalize();
+      this.homeDirection.copy(radial).applyAxisAngle(axis,0.35);this.homeUp.copy(axis);
+      this.center.copy(vector(this.helixFrame.center));
+    }
     if(!this.initialized){this.resetCamera();this.initialized=true;}this.render();
   }
-  resetCamera(){
-    const right=this.homeUp.clone().cross(this.homeDirection),tan=Math.tan(T.MathUtils.degToRad(this.camera.fov/2));let distance=10;
-    for(const p of this.positions){const v=p.clone().sub(this.center),z=v.dot(this.homeDirection);distance=Math.max(distance,(Math.abs(v.dot(right))+2)/(tan*this.camera.aspect)+z,(Math.abs(v.dot(this.homeUp))+2)/tan+z);}
-    this.controls.target.copy(this.center);this.camera.position.copy(this.center).addScaledVector(this.homeDirection,distance);this.camera.up.copy(this.homeUp);this.controls.update();this.render();
+  private dashed(a:T.Vector3,b:T.Vector3,r:number,color:number){const count=Math.ceil(a.distanceTo(b)/0.30);for(let i=0;i<count;i++)this.stick(a.clone().lerp(b,i/count),a.clone().lerp(b,(i+0.55)/count),r,color);}
+  cameraView(view:'side'|'top'|'reset'|'fit'){
+    if(!this.helixFrame){this.resetCamera();return;}
+    if(view==='fit'){this.fitCamera(this.camera.position.clone().sub(this.controls.target).normalize(),this.camera.up.clone());return;}
+    if(view==='top'){this.fitCamera(vector(this.helixFrame.axis),this.homeDirection.clone());return;}
+    this.resetCamera();
+  }
+  resetCamera(){this.fitCamera(this.homeDirection,this.homeUp);}
+  private fitCamera(direction:T.Vector3,up:T.Vector3){
+    const right=up.clone().cross(direction).normalize(),screenUp=direction.clone().cross(right).normalize(),tan=Math.tan(T.MathUtils.degToRad(this.camera.fov/2));let distance=10;
+    for(const p of this.positions){const v=p.clone().sub(this.center),z=v.dot(direction);distance=Math.max(distance,(Math.abs(v.dot(right))+2)/(tan*this.camera.aspect)+z,(Math.abs(v.dot(screenUp))+2)/tan+z);}
+    this.controls.target.copy(this.center);this.camera.position.copy(this.center).addScaledVector(direction,distance);this.camera.up.copy(up);this.controls.update();this.render();
   }
   private render=()=>{
+    this.host.dataset.cameraDirection=this.camera.position.clone().sub(this.controls.target).normalize().toArray().join(',');
+    this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(this.controls.target));
     this.renderer.render(this.scene,this.camera);
     const occupied:{x:number;y:number;w:number;h:number}[]=[];
     for(const label of [...this.labels].sort((a,b)=>Number(b.element.classList.contains('central'))-Number(a.element.classList.contains('central')))){

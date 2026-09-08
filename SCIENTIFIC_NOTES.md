@@ -97,7 +97,7 @@ Phase 1.1의 기존 6쌍 추적과 정책 비교는 [STERIC_CLASH_VALIDATION.md]
 - 자유로운 peptide C–N rotation, φ/ψ의 뒤바뀜, 임의 분자 전체 회전으로 slider 흉내내기.
 - fake empirical density, 분포를 모든 residue에 일반화, 단순 clash를 forbidden 판정으로 표시하기.
 - 에너지 simulation / molecular dynamics / folding prediction이라는 표현.
-- cis/trans 실험 기능, 다음 단계의 나선·시트·기능 모듈 구현.
+- cis/trans 실험 기능, β-sheet와 기능 모듈 구현.
 
 ## Sources
 
@@ -111,3 +111,59 @@ Phase 1.1의 기존 6쌍 추적과 정책 비교는 [STERIC_CLASH_VALIDATION.md]
 - [Richardson Lab Reduce documentation](https://github.com/rlabduke/reduce/blob/master/README.usingReduce.txt)
 
 Sources support chemical conventions and representative constants, not the authored schematic boundaries.
+
+## Phase 2A — α-Helix Lab
+
+- Model: **Ac–(L-Ala)₁₂–NHMe**, 12 alanines, Ac residue 0 / NHMe residue 13.
+  78 represented atoms, 77 covalent bonds. Neutral caps reuse Phase 1 cap geometry.
+  Explicit amide H, omitted carbon-bound H. An idealized educational model, not an experimental
+  structure, optimized molecular mechanics model, or folding trajectory.
+- Reuse: `buildPeptide(count, phi, psi)` preserves the original five-residue defaults, bond lengths,
+  bond angles, chirality construction, and internal-coordinate placement. No mesh-based helix,
+  moved side chains, reflection, or independently positioned H-bond endpoints.
+- All 12 evaluable Ala residues: φ = **−60°**, ψ = **−45°**, chosen to connect directly to Phase 1
+  α-like preset. Cap neighbors make the endpoint torsions evaluable too. All 13 ω = trans 180°;
+  all six-atom peptide groups are planar. φ/ψ shown by the selector/plot come from `angles(model,r)`.
+- This is a representative repeated conformation. Real helices have residue-specific torsions;
+  sequence, environment and other interactions matter. Hydrogen bonding contributes to stabilization
+  in this geometry and is not presented as the sole cause of a helix.
+- Right-handedness: derive a screw axis from successive Cα displacement differences, orient it
+  in the N→C direction, verify positive signed radial rotation for every residue step.
+  The renderer uses these unreflected atom coordinates. Cα→Cβ has positive outward radial projection
+  for all 12 residues; side-chain positions arise from L-Ala tetrahedral geometry.
+- Ideal α-helix reference values are approximately 3.6 residues/turn, 1.5 Å rise/residue and 5.4 Å
+  pitch. This model measures **3.641169 / 1.540360 Å / 5.608710 Å**, respectively, from its actual
+  screw geometry (98.869342° rotation/residue). Fixed bond geometry plus −60°/−45° yields a small
+  difference from the rounded reference values. Both are explicitly distinguished in the UI.
+- Hydrogen bonds: acceptor **C=O(i)** to donor **N–H(i+4)**, using O, H and N coordinates.
+  Screen each candidate: 2.5 ≤ O···N ≤ 3.5 Å, 1.5 ≤ H···O ≤ 2.6 Å, N–H···O ≥120°.
+  These are broad educational distance/direction criteria, not a universal H-bond definition,
+  DSSP assignment or energy calculation. Invalid geometry suppresses the displayed pair.
+- Display count derives from data: 12−4 = **8** eligible Ala–Ala pairs, all pass. O···N = 3.060309 Å,
+  H···O = 2.082598 Å, N–H···O = 162.321327°. Dashed segments connect actual O and H coordinates.
+  Gold highlighting retains element colors and identifies both the carbonyl C/O and donor H/N.
+- Caps remain in molecular geometry and nonlocal clash checks but are excluded from the teaching
+  H-bond network and its count. Ala 1–4 N–H and Ala 9–12 C=O lack an Ala-only i→i+4 partner.
+  Ac O···H(Ala4) and Ala9 O···H(NHMe) are geometrically plausible contacts outside that displayed
+  network; terminal groups therefore do not all reproduce the interior network. Capping chemistry
+  and solvent partners are not simulated.
+- **Unchanged sterics:** the existing detector reports **10** O···H overlaps of 0.437402 Å,
+  corresponding exactly to 8 interior H-bonds and the 2 cap-related contacts above. No other
+  pair exceeds 0.40 Å. The current detector has no favorable donor/acceptor contact classification;
+  these close, directionally plausible H-bond contacts should not be interpreted as ten independent
+  structural failures. No threshold/radius/topology change or count suppression was made.
+  This is an audited limitation, not proof of all-atom energetic validity.
+- Side/Top cameras use the measured screw axis as a guide. Top view does not reposition atoms.
+  Axis is a dashed geometric guide. No interpolation or folding animation is implemented.
+
+Full pair audit and deterministic validation are in [ALPHA_HELIX_VALIDATION.md](ALPHA_HELIX_VALIDATION.md).
+
+### Structural biology cross-check
+
+- [EMBL-EBI: α-helix](https://www.ebi.ac.uk/training/online/courses/foundations-protein-structure/principles-of-protein-folding-and-architecture/secondary-structure-%CE%B1-helices-and-%CE%B2-sheets/%CE%B1-helix/)
+  — reference helical dimensions and outward side-chain arrangement.
+- [EMBL-EBI: Levels of protein structure — secondary](https://www.ebi.ac.uk/training/online/courses/biomacromolecular-structures/proteins/levels-of-protein-structure-primary/levels-of-protein-structure-secondary/)
+  — right-handed geometry and backbone donor/acceptor sequence offset.
+
+Accessed 2026-09-09. These sources support structural conventions and representative dimensions;
+model-specific measurements and the educational display criteria are documented separately above.
