@@ -1,0 +1,7 @@
+{
+  "name": "protein-3d-explorer", "version": "0.1.0", "private": true, "type": "module",
+  "scripts": {"dev":"vite --host 127.0.0.1", "typecheck":"tsc --noEmit", "test":"vitest run", "build":"tsc --noEmit && vite build", "preview":"vite preview --host 127.0.0.1", "test:browser":"node scripts/browser-test.mjs"},
+  "dependencies": {"react":"^19.2.8","react-dom":"^19.2.8","three":"0.170.0"},
+  "devDependencies": {"@types/react":"^19.2.18","@types/react-dom":"^19.2.7","@types/three":"^0.170.0","@vitejs/plugin-react":"^6.1.1","typescript":"^7.0.2","vite":"^8.2.2","vitest":"^5.0.0","@playwright/test":"^1.58.2"},
+  "engines": {"node":">=22.12.0"}
+}
