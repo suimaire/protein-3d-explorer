@@ -63,20 +63,34 @@ Gly/Pro의 분포는 별개이고 residue identity, local environment, energetic
 marker는 target 숫자가 아닌 **실제 좌표에서 계산한 φ/ψ**를 사용합니다. seam에서는 사용자가
 선택한 ±180° 쪽을 보존합니다. 클릭은 1° 단위로 값을 선택하며 slider와 단일 state를 공유합니다.
 
-### Geometric steric indicator
+### Steric clash model
 
-- element-specific Bondi vdW radii: H 1.20, C 1.70, N 1.55, O 1.52 Å.
-- 모든 표현 원자의 무순서 쌍을 검사합니다. 직접 bonded (1–2), 공통 결합 원자를 가진 (1–3)
-  쌍은 결합 그래프 최단거리 2 이하로 제외합니다. **1–4 쌍은 유지**하여 torsion의 가까운 접촉을
-  관찰합니다. 따라서 force-field 1–4 energy scaling과 같지 않습니다.
-- overlap = rᵢ + rⱼ − distance. **overlap > 0.4 Å**를 표시합니다. 이 cutoff는 작은 정상 접촉을
-  덜 강조하기 위한 교육용 선택이며 universal physical threshold가 아닙니다.
-- vdW spheres는 전체 반지름을 사용하고 약한 overlap도 보입니다. 모든 보이는 overlap이
-  clash cutoff를 넘지는 않습니다. 기본 ball-and-stick 원자 구는 축소 표현입니다.
-- counts는 cap 포함 전체 사슬 기준입니다. visibility toggle은 계산에 영향을 주지 않습니다.
-  clash를 켜면 숨겨진 clash 원자도 강조 구와 연결선으로 드러납니다.
-- α-like나 β-like여도 주변 고정 구조/말단 또는 retained 1–4 접촉 때문에 clash가 가능하며,
-  clash가 0이어도 실제 구조가 energetically favorable이라고 보장하지 않습니다.
+- **검사 범위:** cap을 포함한 모든 표현 원자의 무순서 쌍. visibility toggle은 계산에 영향을
+  주지 않습니다. carbon-bound H는 모델 자체에 없고, 생성된 amide H는 포함합니다.
+- **vdW radii:** heavy atom은 Bondi 값 C 1.70, N 1.55, O 1.52 Å. 표시용 vdW sphere는
+  H 1.20 Å도 사용합니다. serious-clash 계산은 MolProbity/Probe 계열의 polar-H 처리에 맞춰
+  amide H에 1.00 Å를 사용합니다. 이 모델의 명시적 H는 모두 amide H입니다.
+- **detection criterion:** overlap = rᵢ + rⱼ − distance이며 **overlap > 0.40 Å**를
+  `심한 비결합 겹침`으로 표시합니다. 0.40 Å는 MolProbity가 serious clash를 보고하는 기준에서
+  가져왔지만, 이 앱은 Probe의 rolling surface나 hydrogen-bond 판정을 복제하지 않습니다.
+- **bond-topology exclusion:** 결합 그래프 최단거리가 1, 2, 3인 1–2, 1–3, 1–4 쌍을 모두
+  제외합니다. Probe/Reduce의 기본 `NBonds=3`과 같은 범위입니다. 1–4는 force field에서
+  별도로 다룰 수 있지만, 이 단순 거리 표시에서 일반 비결합 clash로 세면 고정 peptide geometry가
+  false positive를 만들기 때문에 제외합니다. 네 결합 이상 떨어진 쌍은 검사합니다.
+- **terminal caps:** Ac와 NHMe를 일괄 제외하지 않습니다. cap의 local 1–2/1–3/1–4 쌍만 같은
+  topology 규칙으로 제외하고, 다른 residue와의 비국소 접촉은 peptide 원자와 똑같이 검사합니다.
+- **hydrogen geometry:** amide H는 N의 두 heavy-atom 이웃에 대해 peptide plane 안의 반대
+  이등분선에 놓이고 rigid backbone rotation을 따릅니다. 별도 에너지 최적화는 하지 않습니다.
+  따라서 all-atom optimized clashscore가 아니며, 생략한 carbon-bound H의 충돌은 검출하지 못합니다.
+- **visualization:** clash를 켜면 해당 쌍을 분홍 구와 연결선으로 표시합니다. vdW spheres는 전체
+  반지름으로 모든 원자를 그리므로, 1–4처럼 평가에서 제외한 covalent-neighbor sphere도 겹쳐
+  보일 수 있습니다. 기본 ball-and-stick 원자 구는 가독성을 위해 축소했습니다.
+- **interpretation:** 이 clash detector는 protein force field 또는 molecular dynamics simulation이
+  아니라 교육용 geometric proximity indicator입니다. clash 0은 energetically favorable하다는
+  보장이 아니고, schematic Ramachandran 영역과도 독립된 관찰입니다.
+
+Phase 1.1의 기존 6쌍 추적과 정책 비교는 [STERIC_CLASH_VALIDATION.md](STERIC_CLASH_VALIDATION.md)에
+기록했습니다.
 
 ## 오개념 방지를 위해 피한 것
 
@@ -92,5 +106,8 @@ marker는 target 숫자가 아닌 **실제 좌표에서 계산한 φ/ψ**를 사
 - [Engh & Huber (1991), Accurate bond and angle parameters for X-ray protein structure refinement](https://doi.org/10.1107/S0108767391001071)
 - [Bondi (1964), van der Waals Volumes and Radii](https://doi.org/10.1021/j100785a001)
 - [Leibniz-FLI Jena: vdW radii table](https://jenalib.leibniz-fli.de/ImgLibDoc/glossary/IMAGE_VDWR.html)
+- [Word et al. (1999), small-probe contacts with explicit H](https://doi.org/10.1006/jmbi.1998.2400)
+- [Chen et al. (2010), MolProbity all-atom validation](https://doi.org/10.1107/S0907444909042073)
+- [Richardson Lab Reduce documentation](https://github.com/rlabduke/reduce/blob/master/README.usingReduce.txt)
 
 Sources support chemical conventions and representative constants, not the authored schematic boundaries.

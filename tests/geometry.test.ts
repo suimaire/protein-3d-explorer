@@ -46,7 +46,7 @@ describe('covalent geometry',()=>{
   it('has neutral caps, five alanines, six complete peptide groups',()=>{expect(base.atoms).toHaveLength(36);expect(base.bonds).toHaveLength(35);expect(base.atoms.filter(a=>a.name==='CB')).toHaveLength(5);});
 });
 describe('sterics and synchronized plot',()=>{
-  it('excludes bonded and angle neighbors, retains 1–4',()=>{const m=buildPeptide(),ex=excludedPairs(m);expect(ex.has(['3:N','3:CA'].sort().join('|'))).toBe(true);expect(ex.has(['3:N','3:C'].sort().join('|'))).toBe(true);expect(ex.has(['3:N','4:N'].sort().join('|'))).toBe(false);for(const c of clashes(m))expect(ex.has([c.a,c.b].sort().join('|'))).toBe(false);});
+  it('excludes covalent neighbors from every reported clash',()=>{const m=buildPeptide(),ex=excludedPairs(m);for(const c of clashes(m))expect(ex.has([c.a,c.b].sort().join('|'))).toBe(false);});
   it('detects deliberately overlapping nonbonded atoms and changes across conformations',()=>{const m=buildPeptide();m.atoms.find(a=>a.id==='5:O')!.position=[...point(m,1,'O')];expect(clashes(m).some(c=>[c.a,c.b].includes('1:O')&&[c.a,c.b].includes('5:O'))).toBe(true);expect(clashes(conformation(0,0)).length).toBeGreaterThan(clashes(conformation(-135,135)).length);});
   it('maps actual geometry to plot coordinates, including seam endpoints',()=>{const a=angles(conformation(80,-120)),p=plotPoint(a.phi,a.psi);close((p.x-50)*360/300-180,80);close(180-(p.y-20)*360/300,-120);expect(plotPoint(-180,180)).toEqual({x:50,y:20});expect(plotPoint(180,-180)).toEqual({x:350,y:320});});
 });

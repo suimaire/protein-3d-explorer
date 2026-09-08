@@ -17,6 +17,10 @@ const changed=(a,b)=>assert.notDeepEqual(a,b,'Rendered model should change');
 try{
   await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
   await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Production base path loads; WebGL ready');
+  assert.equal(await page.getByTestId('clash-count').innerText(),'0');
+  await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).check();
+  await page.screenshot({path:'artifacts/phase1-1-alpha-like.png',fullPage:true});
+  await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).uncheck();check('Alpha-like preset has 0 severe nonbonded overlaps with clash display enabled');
   await page.screenshot({path:'artifacts/desktop.png',fullPage:true});
   const initial=await shot();
   await page.getByRole('slider',{name:'φ (phi)',exact:true}).focus();await page.keyboard.press('ArrowRight');
@@ -27,12 +31,15 @@ try{
   for(const label of ['Backbone','Side chains','Atoms','van der Waals spheres','Show peptide plane','Atom labels','φ / ψ axes']){
     const before=await shot(),box=page.getByRole('checkbox',{name:label,exact:true});const previous=await box.isChecked();await box.click();assert.equal(await box.isChecked(),!previous);changed(before,await shot());await box.click();check(`${label} toggles visible geometry`);
   }
-  await page.getByRole('button',{name:'β-like',exact:true}).click();assert.equal(await page.locator('#phi').inputValue(),'-135');assert.equal(await page.locator('#psi').inputValue(),'135');check('Representative preset');
+  await page.getByRole('button',{name:'β-like',exact:true}).click();assert.equal(await page.locator('#phi').inputValue(),'-135');assert.equal(await page.locator('#psi').inputValue(),'135');assert.equal(await page.getByTestId('clash-count').innerText(),'0');
+  await page.getByRole('button',{name:'Extended',exact:true}).click();assert.equal(await page.getByTestId('clash-count').innerText(),'0');check('Beta-like and Extended presets each have 0 severe nonbonded overlaps');
   // Click the center of the plot (0,0), using SVG geometry rather than screenshot coordinates.
   const center=await page.locator('.rama svg').evaluate(svg=>{const p=svg.createSVGPoint();p.x=200;p.y=170;const q=p.matrixTransform(svg.getScreenCTM());return {x:q.x,y:q.y};});
   await page.mouse.click(center.x,center.y);assert.ok(Math.abs(Number(await page.locator('#phi').inputValue()))<=1);assert.ok(Math.abs(Number(await page.locator('#psi').inputValue()))<=1);assert.ok(Number(await page.getByTestId('clash-count').innerText())>0);check('Plot click updates both sliders and clash computation (1° pixel tolerance)');
-  const beforeClash=await shot();await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).check();changed(beforeClash,await shot());await page.screenshot({path:'artifacts/clashes.png',fullPage:true});check('Clashes displayed for unfavorable geometry');
-  await page.getByRole('checkbox',{name:'van der Waals spheres',exact:true}).check();await page.screenshot({path:'artifacts/vdw.png',fullPage:true});
+  for(const id of ['phi','psi'])await page.locator(`#${id}`).evaluate(el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'0');el.dispatchEvent(new Event('input',{bubbles:true}));});
+  assert.equal(await page.locator('#phi').inputValue(),'0');assert.equal(await page.locator('#psi').inputValue(),'0');assert.equal(await page.getByTestId('clash-count').innerText(),'8');check('Deliberately unfavorable 0°/0° geometry has 8 audited severe overlaps');
+  const beforeClash=await shot();await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).check();changed(beforeClash,await shot());await page.screenshot({path:'artifacts/phase1-1-clash-validation.png',fullPage:true});check('Clashes displayed for unfavorable geometry');
+  await page.getByRole('checkbox',{name:'van der Waals spheres',exact:true}).check();await page.screenshot({path:'artifacts/phase1-1-vdw.png',fullPage:true});
   await page.getByRole('button',{name:'전체 초기화',exact:true}).click();assert.equal(await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).isChecked(),false);check('Full reset restores geometry and options');
   const beforeCamera=await shot(),box=await canvas().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+90,box.y+box.height/2+45,{steps:10});await page.mouse.up();changed(beforeCamera,await shot());
   await page.getByRole('button',{name:'시점 초기화',exact:true}).click();assert.deepEqual(await shot(),beforeCamera);check('Mouse orbit and camera reset');

@@ -2,7 +2,7 @@
 
 고등학교 심화 생화학 수업용 3D 탐색기. Phase 1은 **Peptide Geometry Lab** 하나만 제공합니다.
 Ac–(L-Ala)₅–NHMe의 Ala 3에서 φ/ψ를 조작하고 peptide plane, schematic Ramachandran map,
-단순 기하학적 clash를 함께 관찰합니다. 실제 에너지 계산이나 protein folding simulation은 아닙니다.
+0.40 Å를 넘는 심한 비결합 원자 겹침을 함께 관찰합니다. 실제 에너지 계산이나 protein folding simulation은 아닙니다.
 
 ## Local development
 
@@ -48,6 +48,7 @@ Vite base는 `/protein-3d-explorer/`로 설정했습니다. `dist/`가 정적 �
 - `tests/`: signed torsion, geometry invariants, clash exclusion, plot mapping
 - `scripts/browser-test.mjs`: 실제 Chromium UI·WebGL 검증
 - `SCIENTIFIC_NOTES.md`: 모델의 정확성·가정·근거
+- `STERIC_CLASH_VALIDATION.md`: Phase 1.1 pair별 clash audit와 최종 정책
 - `CURRENT_STATUS.md`: 최신 완료 상태와 후속 작업
 
 React/Vite/TypeScript/Vitest는 기존 carbohydrate explorer 패턴을 따릅니다. Three.js r170과
