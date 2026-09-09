@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
+import {resolve} from 'node:path';
+if(existsSync('.browser-cache'))process.env.PLAYWRIGHT_BROWSERS_PATH=resolve('.browser-cache');
+await import('./beta-audit.mjs');
+const audit=JSON.parse(await readFile('artifacts/beta-audit.json','utf8'));
+const {chromium}=await import('@playwright/test');
+await mkdir('artifacts',{recursive:true});
+const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
+const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+const check=n=>checks.push(n),button=name=>page.getByRole('button',{name,exact:true}),viewer=()=>page.getByTestId('sheet-viewer'),canvas=()=>page.locator('canvas'),shot=()=>canvas().screenshot();
+try{
+ await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),3);
+ await nav.getByRole('button',{name:/β-Sheet/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('main').getAttribute('data-sheet-type'),'antiparallel');check('Three completed modules; antiparallel initial state and WebGL');
+ const initial=await shot();
+ for(const type of ['antiparallel','parallel']){
+  await button(type==='parallel'?'Parallel':'Antiparallel').click();const data=audit[type],bonds=data.displayed;
+  assert.equal(await viewer().getAttribute('data-hbond-pairs'),bonds.map(b=>b.o+'~'+b.h).join(','));assert.equal(await page.getByTestId('sheet-hbond-count').innerText(),`${bonds.length} / ${bonds.length} 표시`);check(`${type}: network count and atom pairs match coordinate audit`);
+  await page.screenshot({path:`artifacts/phase2b-beta-${type}.png`,fullPage:true});
+  for(const name of ['Backbone','Side chains','Atoms','Show H-bonds','Strand direction']){const before=await shot(),box=page.getByRole('checkbox',{name,exact:true});await box.click();assert.notDeepEqual(before,await shot());if(name==='Show H-bonds'){assert.equal(await viewer().getAttribute('data-hbond-pairs'),'');assert.equal(await viewer().getAttribute('data-focus-atoms'),'');assert.equal(await page.getByTestId('sheet-hbond-count').innerText(),`0 / ${bonds.length} 표시`);}if(name==='Strand direction')assert.equal(await viewer().getAttribute('data-direction-guides'),'0');await box.click();check(`${type}: ${name} changes rendering`);}
+  for(const i of [0,bonds.length-1]){const b=bonds[i];await page.getByRole('combobox',{name:'Focus H-bond'}).selectOption(String(i));assert.equal(await viewer().getAttribute('data-focus-atoms'),[b.acceptor+':C',b.o,b.h,b.n].join(','));const detail=await page.getByTestId('sheet-hbond-detail').innerText();for(const value of [b.ho.toFixed(3),b.on.toFixed(3),b.angle.toFixed(1)])assert.ok(detail.includes(value));}check(`${type}: focus endpoints and displayed measured distances/angle`);
+  for(const s of [0,1,2])for(const r of [2,6]){await page.getByRole('combobox',{name:'Inspect strand'}).selectOption(String(s));await page.getByRole('combobox',{name:'Inspect residue'}).selectOption(String(r));assert.equal(await viewer().getAttribute('data-selected-residue'),String(s*9+r));const a=data.torsions.find(a=>a.strand===s&&a.residue===r),marker=page.getByTestId('rama-marker');assert.ok(Math.abs(Number(await marker.getAttribute('data-phi'))-a.phi)<1e-9);assert.ok(Math.abs(Number(await marker.getAttribute('data-psi'))-a.psi)<1e-9);assert.ok(Math.abs(Number(await marker.getAttribute('cx'))-(50+(a.phi+180)*300/360))<1e-9);}check(`${type}: strand/residue selection and Ramachandran marker use actual coordinates`);
+ }
+ await button('Antiparallel').click();assert.equal(await page.getByRole('combobox',{name:'Focus H-bond'}).inputValue(),'0');check('Switch safely resets focus from longer/shorter network');
+ await page.getByRole('checkbox',{name:'Show H-bonds',exact:true}).uncheck();await page.getByRole('combobox',{name:'Focus H-bond'}).selectOption('2');assert.equal(await page.getByRole('checkbox',{name:'Show H-bonds',exact:true}).isChecked(),true);check('Selecting a bond restores visible focus');
+ await button('전체 초기화').click();assert.deepEqual(await shot(),initial);check('Full reset restores all state and exact initial rendering');
+ await button('Top view').click();assert.ok(Number((await viewer().getAttribute('data-camera-direction')).split(',')[2])>.999999);assert.notDeepEqual(initial,await shot());check('Top view follows sheet normal');
+ await button('Edge view').click();assert.ok(Number((await viewer().getAttribute('data-camera-direction')).split(',')[1])<-.999999);await page.screenshot({path:'artifacts/phase2b-beta-edge-view.png',fullPage:true});check('Edge view follows sheet plane for side-chain alternation');
+ await canvas().focus();const edge=await shot();await page.keyboard.press('ArrowRight');assert.notDeepEqual(edge,await shot());await page.keyboard.press('+');const zoom=await viewer().getAttribute('data-camera-distance'),dir=await viewer().getAttribute('data-camera-direction');await button('Fit structure').click();assert.notEqual(await viewer().getAttribute('data-camera-distance'),zoom);const fitted=(await viewer().getAttribute('data-camera-direction')).split(',').map(Number);assert.ok(dir.split(',').every((v,i)=>Math.abs(Number(v)-fitted[i])<1e-8));check('Keyboard rotation/zoom and Fit preserve viewing direction');
+ await button('Reset camera').click();assert.deepEqual(await shot(),initial);await button('Sheet view').click();assert.deepEqual(await shot(),initial);check('Reset camera and Sheet view restore home');
+ const box=await canvas().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+70,box.y+box.height/2+40,{steps:8});await page.mouse.up();assert.notDeepEqual(initial,await shot());const beforeWheel=await viewer().getAttribute('data-camera-distance');await canvas().hover();await page.mouse.wheel(0,-200);await page.waitForTimeout(100);assert.notEqual(await viewer().getAttribute('data-camera-distance'),beforeWheel);check('Mouse orbit and wheel zoom work');
+ await page.getByText('모델 검증과 단순화 보기',{exact:true}).click();assert.match(await page.getByTestId('sheet-clashes').innerText(),/심한 불리한 입체 충돌: 0쌍/);check('Clash panel agrees with cap-inclusive audit');
+ for(const width of [768,390,320]){await page.setViewportSize({width,height:844});await page.waitForTimeout(150);for(const label of ['Parallel','Antiparallel']){await button(label).click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}await button('Top view').click();await page.getByRole('combobox',{name:'Inspect strand'}).selectOption('1');await page.screenshot({path:`artifacts/phase2b-mobile-${width}.png`,fullPage:true});check(`${width}px both arrangements, no horizontal overflow and usable selectors`);}
+ for(let i=0;i<3;i++){await nav.getByRole('button',{name:/Peptide Geometry/}).click();await page.locator('#phi').focus();await page.keyboard.press('ArrowRight');assert.equal(await page.locator('#phi').inputValue(),'-59');await nav.getByRole('button',{name:/α-Helix/}).click();assert.equal(await page.getByTestId('hbond-count').innerText(),'8 / 8 표시');await nav.getByRole('button',{name:/β-Sheet/}).click();await canvas().waitFor();}assert.equal(await canvas().count(),1);check('Repeated navigation retains peptide/helix functionality and disposes viewers');
+ assert.deepEqual(errors,[]);check('Zero console errors and uncaught exceptions');
+ await writeFile('artifacts/phase2b-browser-results.json',JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors},null,2));
+}finally{await browser.close();}

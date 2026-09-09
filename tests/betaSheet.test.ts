@@ -1,0 +1,28 @@
+import {describe,it,expect} from 'vitest';
+import {BETA,buildBetaSheet,buildBetaStrand,betaAngles,sheetHydrogenBonds,strandDirection,strandIndex,localResidue} from '../src/geometry/betaSheet';
+import {point,omega,buildPeptide} from '../src/geometry/peptide';
+import {classifyInteractions} from '../src/geometry/sterics';
+import {validHydrogenBond} from '../src/geometry/hydrogenBond';
+import {sub,dot,cross,unit,distance,wrap} from '../src/geometry/vector';
+import {plotPoint} from '../src/components/RamachandranPlot';
+const close=(a:number,b:number)=>expect(Math.abs(wrap(a-b))).toBeLessThan(1e-8);
+for(const type of ['antiparallel','parallel'] as const)describe(type,()=>{
+ const m=buildBetaSheet(type),network=sheetHydrogenBonds(m),audit=classifyInteractions(m);
+ it('three independent capped seven-alanine strands',()=>{expect(m.atoms).toHaveLength(144);expect(m.bonds).toHaveLength(141);expect(new Set(m.atoms.map(a=>a.id)).size).toBe(144);expect(m.bonds.every(b=>strandIndex(Number(b.a.split(':')[0]))===strandIndex(Number(b.b.split(':')[0])))).toBe(true);});
+ it('phi from every residue matches representative beta region',()=>{for(let s=0;s<3;s++)for(let r=1;r<=7;r++)close(betaAngles(m,s,r).phi,BETA.phi);});
+ it('psi from every residue matches representative beta region',()=>{for(let s=0;s<3;s++)for(let r=1;r<=7;r++)close(betaAngles(m,s,r).psi,BETA.psi);});
+ it('all omega remain trans including caps',()=>{for(let s=0;s<3;s++)for(let r=0;r<=7;r++)close(omega(m,s*9+r),180);});
+ it('all six-atom peptide planes remain planar',()=>{for(let s=0;s<3;s++)for(let i=0;i<=7;i++){const r=s*9+i,c=point(m,r,'C'),normal=unit(cross(sub(point(m,r,'CA'),c),sub(point(m,r+1,'N'),c)));for(const name of ['O'])expect(Math.abs(dot(sub(point(m,r,name),c),normal))).toBeLessThan(1e-10);for(const name of ['H','CA'])expect(Math.abs(dot(sub(point(m,r+1,name),c),normal))).toBeLessThan(1e-10);}});
+ it('preserves all bond lengths and bond angles',()=>{const ref=buildPeptide(7),pos=(id:string)=>m.atoms.find(a=>a.id===id)!.position,refPos=(id:string)=>{const [r,n]=id.split(':');return point(ref,Number(r)%9,n);};for(const b of m.bonds)expect(distance(pos(b.a),pos(b.b))).toBeCloseTo(distance(refPos(b.a),refPos(b.b)),10);for(const a of m.atoms){const adj=m.bonds.filter(b=>b.a===a.id||b.b===a.id).map(b=>b.a===a.id?b.b:b.a);for(let i=0;i<adj.length;i++)for(let j=i+1;j<adj.length;j++)expect(dot(unit(sub(pos(adj[i]),a.position)),unit(sub(pos(adj[j]),a.position)))).toBeCloseTo(dot(unit(sub(refPos(adj[i]),refPos(a.id))),unit(sub(refPos(adj[j]),refPos(a.id)))),10);}});
+ it('preserves L stereochemistry under proper rigid rotations',()=>{for(let s=0;s<3;s++)for(let i=1;i<=7;i++){const r=s*9+i,ca=point(m,r,'CA');expect(dot(cross(sub(point(m,r,'N'),ca),sub(point(m,r,'C'),ca)),sub(point(m,r,'CB'),ca))).toBeGreaterThan(0);}});
+ it('side chains alternate across the sheet normal in actual coordinates',()=>{for(let s=0;s<3;s++)for(let r=1;r<7;r++){const offset=(i:number)=>sub(point(m,s*9+i,'CB'),point(m,s*9+i,'CA'))[2];expect(offset(r)*offset(r+1)).toBeLessThan(-0.5);}});
+ it('N to C direction agrees with arrangement',()=>{for(let s=0;s<2;s++)expect(dot(strandDirection(m,s),strandDirection(m,s+1))).toBeCloseTo(type==='parallel'?1:-1,10);});
+ it('network connects BOTH adjacent interfaces using backbone atoms only',()=>{for(let s=0;s<2;s++)expect(network.filter(b=>Math.min(strandIndex(b.acceptor),strandIndex(b.donor))===s).length).toBeGreaterThanOrEqual(6);expect(network.every(b=>Math.abs(strandIndex(b.acceptor)-strandIndex(b.donor))===1&&localResidue(b.acceptor)>0&&localResidue(b.donor)>0)).toBe(true);});
+ it('every displayed bond passes shared chemical identity and measured geometry',()=>{for(const b of network){const o=m.atoms.find(a=>a.id===b.o)!,h=m.atoms.find(a=>a.id===b.h)!;expect(validHydrogenBond(m,o,h)).toEqual(b);expect(b.ho).toBeCloseTo(distance(o.position,h.position),12);expect(b.angle).toBeGreaterThanOrEqual(120);}});
+ it('valid H-bonds never double count as serious unfavorable clashes',()=>{for(const b of audit.hydrogenBonds)expect(audit.seriousClashes.some(c=>[c.a,c.b].includes(b.h)&&[c.a,c.b].includes(b.o))).toBe(false);});
+ it('no severe unfavorable overlap including caps',()=>expect(audit.seriousClashes).toEqual([]));
+ it('Ramachandran marker maps actual selected coordinates',()=>{for(let s=0;s<3;s++)for(let r=2;r<=6;r++){const a=betaAngles(m,s,r),p=plotPoint(a.phi,a.psi);close((p.x-50)*360/300-180,a.phi);close(180-(p.y-20)*360/300,a.psi);}});
+ it('moving strands apart removes bonds instead of keeping index links',()=>{const separated={...m,atoms:m.atoms.map(a=>({...a,position:[a.position[0],a.position[1]+strandIndex(a.residue)*30,a.position[2]] as [number,number,number]}))};expect(sheetHydrogenBonds(separated)).toEqual([]);});
+});
+it('single beta strand is not assigned a sheet network',()=>expect(sheetHydrogenBonds(buildBetaStrand())).toEqual([]));
+it('switch changes coordinates and network while preserving topology',()=>{const a=buildBetaSheet('antiparallel'),p=buildBetaSheet('parallel');expect(a.bonds).toEqual(p.bonds);expect(a.atoms).not.toEqual(p.atoms);expect(sheetHydrogenBonds(a).map(b=>[b.o,b.h])).not.toEqual(sheetHydrogenBonds(p).map(b=>[b.o,b.h]));expect(buildBetaSheet('antiparallel')).toEqual(a);});

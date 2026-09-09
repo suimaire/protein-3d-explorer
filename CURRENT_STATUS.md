@@ -1,6 +1,32 @@
 # Protein 3D Explorer — Current Status
 
-## Completed
+## Phase 2B — completed and verified (2026-09-09)
+
+- Available modules: Chapter 1 **Peptide Geometry**; Chapter 2 **α-Helix** and **β-Sheet**.
+- β-Sheet: idealized 3 × Ac–(L-Ala)₇–NHMe; 21 Ala, 144 atoms / 141 bonds.
+- Antiparallel / Parallel; actual backbone H-bond networks 14 / 12; cap-inclusive counts 16 / 16.
+- N→C direction guides, side-chain alternation, strand/residue inspection, actual φ/ψ and
+  Ramachandran marker, H-bond focus and measured H···O/N···O/angle, all five display toggles,
+  Sheet/Top/Edge/Reset/Fit and full reset.
+- Representative/measured φ −135°, ψ +132.272099°, trans ω, planar peptide groups,
+  unchanged bond lengths/angles and L stereochemistry. Untwisted pleated idealization is explicit.
+- Both models: 16 raw overlaps, all valid H-bonds; **0 serious unfavorable clashes**, including
+  caps. Existing topology/radii/0.40 Å threshold and shared chemical classifier unchanged.
+- **139 tests passed = 107 preserved + 32 β-Sheet**. Typecheck and production build passed.
+- Chromium production QA: **79 passed = 24 Peptide + 24 helix + 31 β-Sheet**; console errors
+  and uncaught exceptions **0**. Desktop 1440×1100; 768/390/320 px, no horizontal overflow.
+  Antiparallel/parallel/edge and 390 px screenshots visually reviewed.
+- Artifacts: `phase2b-beta-{antiparallel,parallel}.png`, `phase2b-beta-edge-view.png`,
+  `phase2b-mobile-{768,390,320}.png`, `phase2b-browser-results.json`, `beta-audit.json`.
+- Reproducible pair/coordinate audit: `node scripts/beta-audit.mjs`.
+- Initial main / HEAD / origin/main: `ccf54d1509b13d77878d55a0b1a4d2d08f99c744`, clean.
+  Live remote main also confirmed at that commit using a command-local OpenSSL TLS backend
+  after Windows Schannel credentials failed; no Git configuration changed.
+- Only this repository modified. Existing Pages workflow/configuration unchanged. Local commit
+  only; no push. No hydrophobic core, hairpin, turn, portal or other explorer work.
+- Scientific method and limitations: `SCIENTIFIC_NOTES.md`, full `BETA_SHEET_VALIDATION.md`.
+
+## Completed (prior phases; historical record)
 
 - Phase 1 implementation: Vite + React + strict TypeScript + Three.js; Peptide Geometry Lab.
 - Pure geometry and sterics code, renderer, UI, schematic plot, teaching text separated.
@@ -123,7 +149,7 @@
 
 ## Next recommended module
 
-- **Phase 2B — β-Sheet Lab**, in a separate future session. Stop after Phase 2A.
+- **Phase 3A — Hydrophobic Core Explorer**, in a separate future session. Stop after Phase 2B.
 
 ## Project rule
 

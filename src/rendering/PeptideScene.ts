@@ -5,6 +5,7 @@ import type { Peptide, Atom } from '../geometry/peptide';
 import { point } from '../geometry/peptide';
 import { helixGeometry } from '../geometry/helix';
 import type { HydrogenBond } from '../geometry/helix';
+export type SheetView={selected:number;focus:number;hbonds:HydrogenBond[];showBonds:boolean;showDirection:boolean};
 export type HelixView={selected:number;focus:number;hbonds:HydrogenBond[];showBonds:boolean;showAxis:boolean};
 import type { Clash } from '../geometry/sterics';
 export type ViewOptions={backbone:boolean;sidechains:boolean;atoms:boolean;vdw:boolean;planes:boolean;clashes:boolean;labels:boolean;axes:boolean};
@@ -25,6 +26,7 @@ export class PeptideScene {
   private sphere=new T.SphereGeometry(1,24,16);
   private cylinder=new T.CylinderGeometry(1,1,1,12);
   private initialized=false;
+  private sheetMode=false;
   private helixFrame:ReturnType<typeof helixGeometry>|null=null;
   constructor(private host:HTMLDivElement) {
     this.renderer=new T.WebGLRenderer({antialias:true,alpha:false});
@@ -38,7 +40,7 @@ export class PeptideScene {
     this.scene.add(this.group);
     this.controls=new OrbitControls(this.camera,canvas);this.controls.enablePan=false;this.controls.minDistance=7;this.controls.maxDistance=65;this.controls.addEventListener('change',this.render);
     canvas.addEventListener('keydown',this.keyboard);
-    this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.initialized&&Math.abs(old-this.camera.aspect)>0.01){if(this.helixFrame)this.cameraView('fit');else this.resetCamera();}this.render();});
+    this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.initialized&&Math.abs(old-this.camera.aspect)>0.01){if(this.helixFrame||this.sheetMode)this.cameraView('fit');else this.resetCamera();}this.render();});
     this.resize.observe(host);
   }
   private keyboard=(e:KeyboardEvent)=>{
@@ -53,12 +55,13 @@ export class PeptideScene {
   private stick(a:T.Vector3,b:T.Vector3,r:number,color:number){const mesh=new T.Mesh(this.cylinder,this.material(color));mesh.position.copy(a).add(b).multiplyScalar(0.5);mesh.scale.set(r,a.distanceTo(b),r);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),b.clone().sub(a).normalize());this.group.add(mesh);}
   private label(text:string,position:T.Vector3,central=false){const element=document.createElement('span'),leader=document.createElement('span');element.className=`atom-label${central?' central':''}`;element.textContent=text;leader.className='label-leader';leader.setAttribute('aria-hidden','true');this.host.append(leader,element);this.labels.push({element,leader,position});}
   private clear(){this.group.traverse(obj=>{if(obj instanceof T.Mesh){const mats=Array.isArray(obj.material)?obj.material:[obj.material];mats.forEach(m=>m.dispose());if(obj.geometry!==this.sphere&&obj.geometry!==this.cylinder)obj.geometry.dispose();}});this.group.clear();this.labels.forEach(x=>{x.element.remove();x.leader.remove();});this.labels=[];}
-  update(model:Peptide,options:ViewOptions,clashes:Clash[],helix?:HelixView) {
+  update(model:Peptide,options:ViewOptions,clashes:Clash[],helix?:HelixView,sheet?:SheetView) {
     this.clear();
+    this.sheetMode=!!sheet;
     const byId=new Map(model.atoms.map(a=>[a.id,a]));
     const visible=(a:Atom)=>a.sidechain?options.sidechains:options.backbone;
-    for(const a of model.atoms){if(!visible(a))continue;const p=vector(a.position);if(options.atoms)this.ball(p,a.element==='H'?0.17:0.3,COLORS[a.element]);if(options.vdw)this.ball(p,VDW[a.element],COLORS[a.element],0.22);if(a.residue===(helix?.selected??3)&&options.atoms)this.ball(p,a.element==='H'?0.22:0.37,0xd39b20,0.32);}
-    for(const b of model.bonds){const a=byId.get(b.a)!,c=byId.get(b.b)!;if(!helix){if(!visible(a)||!visible(c))continue;}else if(a.sidechain||c.sidechain){if(!options.sidechains)continue;}else if(!options.backbone)continue;const av=vector(a.position),cv=vector(c.position),mid=av.clone().lerp(cv,0.5);this.stick(av,mid,0.09,COLORS[a.element]);this.stick(mid,cv,0.09,COLORS[c.element]);if(b.order===2){const offset=vector(point(model,a.residue,'CA')).sub(av).cross(cv.clone().sub(av)).normalize().multiplyScalar(0.16);this.stick(av.clone().add(offset),cv.clone().add(offset),0.035,0x64717a);}}
+    for(const a of model.atoms){if(!visible(a))continue;const p=vector(a.position);if(options.atoms)this.ball(p,a.element==='H'?0.17:0.3,COLORS[a.element]);if(options.vdw)this.ball(p,VDW[a.element],COLORS[a.element],0.22);if(a.residue===(sheet?.selected??helix?.selected??3)&&options.atoms)this.ball(p,a.element==='H'?0.22:0.37,0xd39b20,0.32);}
+    for(const b of model.bonds){const a=byId.get(b.a)!,c=byId.get(b.b)!;if(!helix&&!sheet){if(!visible(a)||!visible(c))continue;}else if(a.sidechain||c.sidechain){if(!options.sidechains)continue;}else if(!options.backbone)continue;const av=vector(a.position),cv=vector(c.position),mid=av.clone().lerp(cv,0.5);this.stick(av,mid,0.09,COLORS[a.element]);this.stick(mid,cv,0.09,COLORS[c.element]);if(b.order===2){const offset=vector(point(model,a.residue,'CA')).sub(av).cross(cv.clone().sub(av)).normalize().multiplyScalar(0.16);this.stick(av.clone().add(offset),cv.clone().add(offset),0.035,0x64717a);}}
     if(options.planes) for(let r=0;r<6;r++){
       const points=[point(model,r,'CA'),point(model,r,'C'),point(model,r,'O'),point(model,r+1,'N'),point(model,r+1,'CA'),point(model,r+1,'H')].map(vector);
       const origin=points[1],u=points[3].clone().sub(origin).normalize(),normal=u.clone().cross(points[0].clone().sub(origin)).normalize(),v=normal.clone().cross(u);
@@ -88,6 +91,26 @@ export class PeptideScene {
       this.host.dataset.focusAtoms=focusedAtoms.join(',');
       this.host.dataset.selectedResidue=String(helix.selected);
     }
+    if(sheet){
+      const pairs:string[]=[],focusedAtoms:string[]=[];
+      if(sheet.showDirection)for(let s=0;s<3;s++){
+        const start=vector(point(model,s*9+1,'CA')).add(new T.Vector3(0,0,3)),end=vector(point(model,s*9+7,'CA')).add(new T.Vector3(0,0,3));
+        const direction=end.clone().sub(start).normalize(),wing=new T.Vector3(0,0.45,0),base=end.clone().addScaledVector(direction,-0.9);
+        this.dashed(start,end,0.028,0x708392);this.stick(end,base.clone().add(wing),0.045,0x708392);this.stick(end,base.clone().sub(wing),0.045,0x708392);
+        this.label('Strand '+'ABC'[s]+' · N',start,s===Math.floor(sheet.selected/9));this.label('C · direction guide',end);
+      }
+      if(sheet.showBonds)sheet.hbonds.forEach((b,i)=>{
+        const focused=i===sheet.focus;pairs.push(b.o+'~'+b.h);
+        this.dashed(vector(byId.get(b.o)!.position),vector(byId.get(b.h)!.position),focused?0.075:0.035,focused?0xb87913:0x087f83);
+        if(focused){
+          if(options.atoms&&options.backbone)for(const a of model.atoms.filter(a=>a.residue===b.acceptor||a.residue===b.donor)){if(visible(a))this.ball(vector(a.position),a.element==='H'?0.23:0.38,0xd39b20,0.16);}
+          if(options.atoms&&options.backbone)for(const id of [b.acceptor+':C',b.o,b.h,b.n]){const a=byId.get(id)!;this.ball(vector(a.position),a.element==='H'?0.27:0.43,0xd39b20,0.34);focusedAtoms.push(id);}
+          this.label('ABC'[Math.floor(b.acceptor/9)]+' · Ala '+b.acceptor%9+' C=O · acceptor',vector(byId.get(b.o)!.position),true);
+          this.label('ABC'[Math.floor(b.donor/9)]+' · Ala '+b.donor%9+' N–H · donor',vector(byId.get(b.n)!.position),true);
+        }
+      });
+      this.host.dataset.hbondPairs=pairs.join(',');this.host.dataset.focusAtoms=focusedAtoms.join(',');this.host.dataset.selectedResidue=String(sheet.selected);this.host.dataset.directionGuides=sheet.showDirection?'3':'0';
+    }
     this.positions=model.atoms.map(a=>vector(a.position));
     const ca=vector(point(model,3,'CA')),start=vector(point(model,0,'CA')),end=vector(point(model,6,'CA'));
     this.homeDirection.copy(start.clone().sub(ca).cross(end.clone().sub(ca)).normalize());
@@ -99,10 +122,12 @@ export class PeptideScene {
       this.homeDirection.copy(radial).applyAxisAngle(axis,0.35);this.homeUp.copy(axis);
       this.center.copy(vector(this.helixFrame.center));
     }
+    if(sheet){this.homeDirection.set(0,-0.5,1).normalize();this.homeUp.set(0,1,0);}
     if(!this.initialized){this.resetCamera();this.initialized=true;}this.render();
   }
   private dashed(a:T.Vector3,b:T.Vector3,r:number,color:number){const count=Math.ceil(a.distanceTo(b)/0.30);for(let i=0;i<count;i++)this.stick(a.clone().lerp(b,i/count),a.clone().lerp(b,(i+0.55)/count),r,color);}
-  cameraView(view:'side'|'top'|'reset'|'fit'){
+  cameraView(view:'side'|'top'|'edge'|'reset'|'fit'){
+    if(this.sheetMode){if(view==='fit')this.fitCamera(this.camera.position.clone().sub(this.controls.target).normalize(),this.camera.up.clone());else if(view==='top')this.fitCamera(new T.Vector3(0,0,1),new T.Vector3(0,1,0));else if(view==='edge')this.fitCamera(new T.Vector3(0,-1,0),new T.Vector3(0,0,1));else this.resetCamera();return;}
     if(!this.helixFrame){this.resetCamera();return;}
     if(view==='fit'){this.fitCamera(this.camera.position.clone().sub(this.controls.target).normalize(),this.camera.up.clone());return;}
     if(view==='top'){this.fitCamera(vector(this.helixFrame.axis),this.homeDirection.clone());return;}

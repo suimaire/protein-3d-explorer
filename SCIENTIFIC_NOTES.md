@@ -168,3 +168,54 @@ Full pair audit and deterministic validation are in [ALPHA_HELIX_VALIDATION.md](
 
 Accessed 2026-09-09. These sources support structural conventions and representative dimensions;
 model-specific measurements and the educational display criteria are documented separately above.
+
+## Phase 2B — β-Sheet Lab
+
+- Model: **Idealized poly-L-alanine β-sheet**; three independent Ac–(L-Ala)₇–NHMe strands,
+  21 Ala, 144 represented atoms, 141 covalent bonds. Each strand has Ac residue 0 and NHMe
+  residue 8 locally. Global residue ids use stride 9; no covalent bonds between strands.
+  Explicit amide H, omitted carbon-bound H; neutral caps retain the original builder geometry.
+- Build and validate strand geometry before arrangement/rendering. Reuse `buildPeptide` with
+  φ **−135°**, ψ **+132.27209925651545°**, all ω **180°**. For the unchanged covalent constants,
+  ψ was found by bisection near +135° so the repeated screw rotation is 180°: an untwisted
+  two-residue repeat. This is a representative β-region construction, not an empirical average,
+  a universal β-sheet torsion, or a fitted experimental protein. Every displayed φ/ψ and ω is
+  measured from coordinates; tests cover all Ala and cap-boundary peptide planes.
+- Orient the local strand using its measured screw axis as x, the transverse C₄→O₄ component
+  as y, and x×y as z, with Cα₄ as origin. This right-handed change of frame preserves chirality,
+  bond lengths, angles and planarity. L-Ala Cα→Cβ projections onto sheet normal z alternate
+  signs without moving side-chain atoms independently.
+- **Parallel**: all strands point N→C along +x; translations are (0,0,0), (0,4.8,0),
+  (0,9.6,0) Å. **Antiparallel**: A/C point +x, B points −x, using a proper 180° rotation about
+  z for B, with translations (0,0,0), (−0.4,5.5,0), (−0.2,10,0) Å. These are Cα₄-frame
+  registrations, not a claim that every β-sheet has these inter-axis spacings. The CA pleat
+  phase and reversed strand mean successive reference-point offsets need not be identical.
+- Registrations were screened using actual donor/acceptor contacts and cap-inclusive sterics;
+  the two antiparallel interfaces were checked separately. A rigid reversal alone does not
+  establish a sheet: the selected registrations must pass the full atomic-coordinate audit.
+  No index-based bonds, atom-specific repositioning, energy optimization, dynamics or folding.
+- Shared amide/carbonyl classifier unchanged: carbonyl O double-bonded to C; H singly bonded
+  to amide N; **H···O 1.5–2.6 Å, N···O 2.5–3.5 Å, N–H···O ≥120°**. Display only valid
+  inter-strand Ala–Ala pairs, deriving count from coordinates. Antiparallel **14** (6 A/B + 8 B/C),
+  parallel **12** (6 + 6). Cap-inclusive networks have 16 each; cap pairs are excluded only
+  from teaching-network display, not from steric checks. Distances/angles and pair tables below
+  are documented in `BETA_SHEET_VALIDATION.md`. No H-bond energy is estimated.
+- Sterics unchanged: 1–2/1–3/1–4 exclusions; serious overlap >0.40 Å; same atomic radii.
+  In each model all 16 raw severe overlaps are valid O···H H-bonds, leaving **0 serious
+  unfavorable clashes**. This partial-atom screen does not certify all-atom energetic validity.
+- This is an **untwisted pleated sheet**, not a claim that backbone atoms lie on one plane.
+  Real β-sheets generally need not be perfectly flat and can twist. Real sequence and surrounding
+  structure affect geometry. The UI includes the explicit Korean twist caveat.
+- β-strand is one extended segment; β-sheet is an arrangement of multiple H-bonded strands.
+  Different segments of the **same polypeptide** can form a sheet; the three capped molecules
+  here are an educational convenience. Parallel/antiparallel describe N→C directions, not a
+  universal stability ranking. Main stabilizing H-bonds shown here are backbone, not side chain.
+- Sheet/Top/Edge are camera changes only. Dashed arrows at a normal offset are geometric guides,
+  not atomic bonds. Focus highlights donor N/H, acceptor C/O and both residues while preserving
+  element colors. No turns, hairpins, tertiary structure or future navigation placeholders added.
+
+Structural conventions cross-checked 2026-09-09:
+[EMBL-EBI β-sheet](https://www.ebi.ac.uk/training/online/courses/foundations-protein-structure/principles-of-protein-folding-and-architecture/secondary-structure-%CE%B1-helices-and-%CE%B2-sheets/%CE%B2-sheet/)
+and [The Supramolecular Chemistry of β-Sheets](https://pmc.ncbi.nlm.nih.gov/articles/PMC3642101/).
+These sources support direction, backbone hydrogen bonding, alternating side-chain faces and
+sheet twist; the specific coordinates/registrations and display criteria are authored model choices.
