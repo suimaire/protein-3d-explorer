@@ -219,3 +219,117 @@ Structural conventions cross-checked 2026-09-09:
 and [The Supramolecular Chemistry of β-Sheets](https://pmc.ncbi.nlm.nih.gov/articles/PMC3642101/).
 These sources support direction, backbone hydrogen bonding, alternating side-chain faces and
 sheet twist; the specific coordinates/registrations and display criteria are authored model choices.
+
+## Hydrophobic Core Explorer
+
+Phase 3A. Full audit, numbers and manual residue checks: [HYDROPHOBIC_CORE_VALIDATION.md](HYDROPHOBIC_CORE_VALIDATION.md).
+
+### Structure
+
+- **Protein:** human ubiquitin. **PDB ID:** 1UBQ (Vijay-Kumar, Bugg & Cook 1987, *J. Mol. Biol.* 194:531,
+  doi:10.1016/0022-2836(87)90679-6). **Experimental method:** X-ray diffraction, **1.8 Å** (RCSB Data API
+  `refine.ls_d_res_high`, checked 2026-09-15). **Chain:** A, 76 residues, 602 heavy atoms.
+- Why 1UBQ: small soluble globular monomer containing an α-helix, a 3₁₀ helix and a mixed β-sheet;
+  no ligand, no alternate locations, no missing residues or atoms. It was chosen before any exposure
+  result was computed; no other protein was tried.
+- **Structure preprocessing:** the RCSB PDB file is bundled byte-for-byte (SHA-256 in the validation
+  document). The parser keeps model 1, chain A `ATOM` records; coordinates are used exactly as deposited.
+  Alternate-location policy (none present in 1UBQ): keep the highest-occupancy conformer per atom.
+  Partial occupancy (Leu73/Arg74 0.45, Gly75/Gly76 0.25) is kept and flagged in the residue panel.
+- **Omitted waters/ligands:** 58 crystallographic waters are hidden from the view and excluded from SASA;
+  the UI states that they exist in the structure. No ligands or other HETATM records exist. No hydrogens
+  were deposited or added.
+- Secondary-structure labels and ribbon widths come from the deposited HELIX/SHEET records
+  (author annotation), not recomputed with DSSP.
+
+### Residue classification
+
+Educational four-group side-chain scheme (the common introductory-textbook grouping; no course-specific
+table was available in the workspace):
+
+| UI label | Residues |
+|---|---|
+| Nonpolar (■) | Gly, Ala, Val, Leu, Ile, Met, Pro, Phe, Trp |
+| Polar, uncharged (●) | Ser, Thr, Cys, Asn, Gln, Tyr |
+| Acidic (▲) | Asp, Glu |
+| Basic (◆) | Lys, Arg, His |
+
+- "Nonpolar" and "uncharged" are different properties: Ser/Thr/Asn/Gln are uncharged but polar.
+- Caveats shown in the UI: Gly (side chain is one H), Pro (cyclic, bonded to backbone N),
+  Tyr (aromatic ring + polar OH), Cys (weakly polar SH, disulfides), Met (contains S, usually nonpolar),
+  **His** (protonation state depends on environment; never described as always +1).
+  "Acidic/Basic" do not assign formal charges; no pKa or protonation calculation is performed.
+- Chemistry coloring paints side-chain atoms (Gly: Cα) by class and backbone atoms neutral gray,
+  because the class describes the side chain. Legend = label + color + symbol.
+
+### Solvent exposure
+
+- **SASA algorithm:** Shrake & Rupley (1973), *J. Mol. Biol.* 79:351, doi:10.1016/0022-2836(73)90011-9;
+  960 golden-spiral points per atom; the neighbor grid is an optimization only.
+- **Probe radius:** 1.40 Å.
+- **vdW radii:** Bondi (1964): C 1.70, N 1.55, O 1.52, S 1.80 Å; heavy atoms only.
+- Residue SASA = sum of its atom SASA. Side-chain SASA (atoms other than N, CA, C, O, OXT) is kept
+  separately in the data model and shown in the panel; the exposure metric and ranking use whole-residue values.
+- **Normalization method:** relative SASA = residue SASA / maximum accessible area.
+- **Reference maximum ASA table:** Tien, Meyer, Sydykova, Spielman & Wilke (2013), "Maximum allowed
+  solvent accessibilities of residues in proteins", *PLoS ONE* 8:e80635, doi:10.1371/journal.pone.0080635,
+  Table 1 **theoretical** values (Å²), read from PMC3836772 and cross-checked against Biopython
+  `residue_max_acc["Wilke"]`:
+
+  | Ala | Arg | Asn | Asp | Cys | Gln | Glu | Gly | His | Ile | Leu | Lys | Met | Phe | Pro | Ser | Thr | Trp | Tyr | Val |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | 129 | 274 | 195 | 193 | 167 | 225 | 223 | 104 | 224 | 197 | 201 | 236 | 224 | 240 | 159 | 155 | 172 | 285 | 263 | 174 |
+
+  These maxima were computed with DSSP on Gly-X-Gly tripeptides, so dividing Bondi-radius SR areas by
+  them is an approximate normalization. The C-terminal Gly76 (extra OXT) reaches 139%; the UI shows
+  "≥100%" with an explanation. Data values are never clamped.
+- **Implementation check:** matches Biopython `ShrakeRupley` with identical parameters to 0.00005 Å² per
+  residue. A FreeSASA/DSSP comparison was not possible in this environment.
+
+### Buried / exposed visualization policy
+
+- Students first see continuous values: "Relative solvent exposure: n%", an exposure bar
+  (more buried ← → more exposed), rank n/76, and optional exposure coloring (indigo → teal → gold).
+- **Percentile policy:** "More buried 25%" / "More exposed 25%" = the 19 lowest / highest rSASA ranks
+  *in this protein* (ties broken by residue number). No universal rSASA threshold is used or implied;
+  the control is labelled "이 단백질 안에서 상대적으로".
+- A filter shows the selected group's atoms (side chains in ribbon mode) and dims or ghosts the rest.
+  The selected residue always stays visible with a halo.
+- Composition counts sit in a collapsed "관찰 후 확인하기" panel labelled "이 구조에서 관찰된 분포",
+  with a whole-chain baseline row and a note that it is not a universal ratio.
+- Exceptions are chosen by code from the results (Leu8 exposed nonpolar; Gln41 buried polar) and are
+  shown, not hidden. Buried polar contacts are listed only as N/O distances ≤3.5 Å, not as H-bonds.
+- **Interior view:** a visual clipping plane perpendicular to the current view, with a depth slider and
+  reset. Atom coordinates never move; the UI label is "단면 보기 (visual clipping)". Cut atoms are shaded
+  as solid sections.
+- The core is defined as the solvent-inaccessible interior. Exposure comes from SASA, not distance to the
+  centroid; the validation document shows the two top-19 lists differ for 8 residues.
+- Representations: Ribbon, Atoms / sticks, Space filling (vdW spheres). No molecular surface is claimed.
+
+### Teaching language rules applied
+
+- Hydrophobic effect: reducing nonpolar surface exposed to water is one important thermodynamic
+  contribution to folding; explicitly *not* a strong nonpolar–nonpolar attraction.
+- "Statistical tendency with exceptions": hydrophobic ≠ always inside, polar ≠ always outside.
+- Analysis of an already-folded experimental structure: no folding pathway, animation, energy, MD or funnel.
+- One crystal conformer of a dynamic protein.
+- One sentence links to the Chapter 2 α-helix and β-sheet; the focus stays on interior chemistry.
+
+### Scientific limitations
+
+- Single crystal conformer; waters, binding partners, crystal contacts and dynamics are not in the SASA.
+- Heavy-atom Bondi radii; other radius sets/algorithms (Lee–Richards, ProtOr, DSSP) give different
+  absolute values, and the normalization maxima come from a different method.
+- The four-class chemistry scheme is a teaching simplification; Gly is counted as nonpolar.
+- One small protein; the composition is illustrative, not a statistical survey.
+- Display bonds are inferred from distances; secondary structure comes from author records.
+
+### Sources
+
+- [RCSB PDB 1UBQ](https://www.rcsb.org/structure/1UBQ); file `https://files.rcsb.org/download/1UBQ.pdb`;
+  metadata `https://data.rcsb.org/rest/v1/core/entry/1UBQ` (accessed 2026-09-15).
+- Vijay-Kumar S, Bugg CE, Cook WJ (1987) [J. Mol. Biol. 194:531–544](https://doi.org/10.1016/0022-2836(87)90679-6).
+- Shrake A, Rupley JA (1973) [J. Mol. Biol. 79:351–371](https://doi.org/10.1016/0022-2836(73)90011-9).
+- Bondi A (1964) [J. Phys. Chem. 68:441–451](https://doi.org/10.1021/j100785a001).
+- Tien MZ et al. (2013) [PLoS ONE 8:e80635](https://doi.org/10.1371/journal.pone.0080635) ([PMC3836772](https://pmc.ncbi.nlm.nih.gov/articles/PMC3836772/)).
+- Biopython `Bio.PDB.SASA.ShrakeRupley` (reference implementation, used for validation only).

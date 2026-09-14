@@ -1,0 +1,393 @@
+{
+ "tool": "Biopython 1.85 ShrakeRupley",
+ "probe": 1.4,
+ "points": 960,
+ "radii": {
+  "C": 1.7,
+  "N": 1.55,
+  "O": 1.52,
+  "S": 1.8
+ },
+ "residues": [
+  {
+   "resSeq": 1,
+   "resName": "MET",
+   "sasa": 56.6892
+  },
+  {
+   "resSeq": 2,
+   "resName": "GLN",
+   "sasa": 79.0635
+  },
+  {
+   "resSeq": 3,
+   "resName": "ILE",
+   "sasa": 0.0
+  },
+  {
+   "resSeq": 4,
+   "resName": "PHE",
+   "sasa": 55.3496
+  },
+  {
+   "resSeq": 5,
+   "resName": "VAL",
+   "sasa": 0.7548
+  },
+  {
+   "resSeq": 6,
+   "resName": "LYS",
+   "sasa": 100.3251
+  },
+  {
+   "resSeq": 7,
+   "resName": "THR",
+   "sasa": 25.0182
+  },
+  {
+   "resSeq": 8,
+   "resName": "LEU",
+   "sasa": 140.8319
+  },
+  {
+   "resSeq": 9,
+   "resName": "THR",
+   "sasa": 122.3531
+  },
+  {
+   "resSeq": 10,
+   "resName": "GLY",
+   "sasa": 68.5185
+  },
+  {
+   "resSeq": 11,
+   "resName": "LYS",
+   "sasa": 92.9926
+  },
+  {
+   "resSeq": 12,
+   "resName": "THR",
+   "sasa": 67.6361
+  },
+  {
+   "resSeq": 13,
+   "resName": "ILE",
+   "sasa": 6.5413
+  },
+  {
+   "resSeq": 14,
+   "resName": "THR",
+   "sasa": 62.3321
+  },
+  {
+   "resSeq": 15,
+   "resName": "LEU",
+   "sasa": 7.7425
+  },
+  {
+   "resSeq": 16,
+   "resName": "GLU",
+   "sasa": 146.9736
+  },
+  {
+   "resSeq": 17,
+   "resName": "VAL",
+   "sasa": 5.0322
+  },
+  {
+   "resSeq": 18,
+   "resName": "GLU",
+   "sasa": 101.1342
+  },
+  {
+   "resSeq": 19,
+   "resName": "PRO",
+   "sasa": 46.0408
+  },
+  {
+   "resSeq": 20,
+   "resName": "SER",
+   "sasa": 84.8395
+  },
+  {
+   "resSeq": 21,
+   "resName": "ASP",
+   "sasa": 35.3133
+  },
+  {
+   "resSeq": 22,
+   "resName": "THR",
+   "sasa": 46.6788
+  },
+  {
+   "resSeq": 23,
+   "resName": "ILE",
+   "sasa": 0.5032
+  },
+  {
+   "resSeq": 24,
+   "resName": "GLU",
+   "sasa": 121.1901
+  },
+  {
+   "resSeq": 25,
+   "resName": "ASN",
+   "sasa": 53.0767
+  },
+  {
+   "resSeq": 26,
+   "resName": "VAL",
+   "sasa": 0.1258
+  },
+  {
+   "resSeq": 27,
+   "resName": "LYS",
+   "sasa": 15.8559
+  },
+  {
+   "resSeq": 28,
+   "resName": "ALA",
+   "sasa": 46.1413
+  },
+  {
+   "resSeq": 29,
+   "resName": "LYS",
+   "sasa": 66.5507
+  },
+  {
+   "resSeq": 30,
+   "resName": "ILE",
+   "sasa": 1.7611
+  },
+  {
+   "resSeq": 31,
+   "resName": "GLN",
+   "sasa": 79.0615
+  },
+  {
+   "resSeq": 32,
+   "resName": "ASP",
+   "sasa": 135.9662
+  },
+  {
+   "resSeq": 33,
+   "resName": "LYS",
+   "sasa": 110.9364
+  },
+  {
+   "resSeq": 34,
+   "resName": "GLU",
+   "sasa": 72.5918
+  },
+  {
+   "resSeq": 35,
+   "resName": "GLY",
+   "sasa": 48.2176
+  },
+  {
+   "resSeq": 36,
+   "resName": "ILE",
+   "sasa": 31.3229
+  },
+  {
+   "resSeq": 37,
+   "resName": "PRO",
+   "sasa": 47.4246
+  },
+  {
+   "resSeq": 38,
+   "resName": "PRO",
+   "sasa": 47.5429
+  },
+  {
+   "resSeq": 39,
+   "resName": "ASP",
+   "sasa": 84.6427
+  },
+  {
+   "resSeq": 40,
+   "resName": "GLN",
+   "sasa": 45.8737
+  },
+  {
+   "resSeq": 41,
+   "resName": "GLN",
+   "sasa": 0.4464
+  },
+  {
+   "resSeq": 42,
+   "resName": "ARG",
+   "sasa": 91.4053
+  },
+  {
+   "resSeq": 43,
+   "resName": "LEU",
+   "sasa": 0.9351
+  },
+  {
+   "resSeq": 44,
+   "resName": "ILE",
+   "sasa": 29.6875
+  },
+  {
+   "resSeq": 45,
+   "resName": "PHE",
+   "sasa": 37.6126
+  },
+  {
+   "resSeq": 46,
+   "resName": "ALA",
+   "sasa": 73.5708
+  },
+  {
+   "resSeq": 47,
+   "resName": "GLY",
+   "sasa": 76.5531
+  },
+  {
+   "resSeq": 48,
+   "resName": "LYS",
+   "sasa": 91.6104
+  },
+  {
+   "resSeq": 49,
+   "resName": "GLN",
+   "sasa": 103.8294
+  },
+  {
+   "resSeq": 50,
+   "resName": "LEU",
+   "sasa": 8.0643
+  },
+  {
+   "resSeq": 51,
+   "resName": "GLU",
+   "sasa": 120.7436
+  },
+  {
+   "resSeq": 52,
+   "resName": "ASP",
+   "sasa": 65.4345
+  },
+  {
+   "resSeq": 53,
+   "resName": "GLY",
+   "sasa": 48.1611
+  },
+  {
+   "resSeq": 54,
+   "resName": "ARG",
+   "sasa": 118.6129
+  },
+  {
+   "resSeq": 55,
+   "resName": "THR",
+   "sasa": 29.3064
+  },
+  {
+   "resSeq": 56,
+   "resName": "LEU",
+   "sasa": 0.0
+  },
+  {
+   "resSeq": 57,
+   "resName": "SER",
+   "sasa": 66.4585
+  },
+  {
+   "resSeq": 58,
+   "resName": "ASP",
+   "sasa": 91.0717
+  },
+  {
+   "resSeq": 59,
+   "resName": "TYR",
+   "sasa": 41.0871
+  },
+  {
+   "resSeq": 60,
+   "resName": "ASN",
+   "sasa": 113.629
+  },
+  {
+   "resSeq": 61,
+   "resName": "ILE",
+   "sasa": 6.4734
+  },
+  {
+   "resSeq": 62,
+   "resName": "GLN",
+   "sasa": 118.3697
+  },
+  {
+   "resSeq": 63,
+   "resName": "LYS",
+   "sasa": 132.6903
+  },
+  {
+   "resSeq": 64,
+   "resName": "GLU",
+   "sasa": 103.8565
+  },
+  {
+   "resSeq": 65,
+   "resName": "SER",
+   "sasa": 19.017
+  },
+  {
+   "resSeq": 66,
+   "resName": "THR",
+   "sasa": 56.9081
+  },
+  {
+   "resSeq": 67,
+   "resName": "LEU",
+   "sasa": 0.2516
+  },
+  {
+   "resSeq": 68,
+   "resName": "HIS",
+   "sasa": 83.9061
+  },
+  {
+   "resSeq": 69,
+   "resName": "LEU",
+   "sasa": 6.6332
+  },
+  {
+   "resSeq": 70,
+   "resName": "VAL",
+   "sasa": 36.9836
+  },
+  {
+   "resSeq": 71,
+   "resName": "LEU",
+   "sasa": 81.5895
+  },
+  {
+   "resSeq": 72,
+   "resName": "ARG",
+   "sasa": 114.226
+  },
+  {
+   "resSeq": 73,
+   "resName": "LEU",
+   "sasa": 117.2268
+  },
+  {
+   "resSeq": 74,
+   "resName": "ARG",
+   "sasa": 206.4174
+  },
+  {
+   "resSeq": 75,
+   "resName": "GLY",
+   "sasa": 73.9106
+  },
+  {
+   "resSeq": 76,
+   "resName": "GLY",
+   "sasa": 144.8359
+  }
+ ]
+}

@@ -1,5 +1,63 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 3A — Hydrophobic Core, completed and verified (2026-09-15)
+
+## Completed
+
+- Chapter 1: **Peptide Geometry**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**
+
+Hydrophobic Core Explorer:
+
+- Real experimental structure: **PDB 1UBQ**, human ubiquitin, X-ray 1.8 Å, chain A, 76 residues,
+  602 heavy atoms. Unmodified RCSB file bundled (SHA-256 tested); 58 waters hidden and labelled as such;
+  no ligands, altlocs or missing atoms; partial-occupancy C-terminal tail flagged.
+- Representations Ribbon / Atoms-sticks / Space filling; color Default / Chemistry / Exposure;
+  exposure All / More buried 25% / More exposed 25% (within-protein rank); visual clipping with depth
+  slider and reset; Reset camera / Fit; 3D click and dropdown residue selection.
+- Residue panel: name, 3-letter code, number, class, relative exposure %, rank, 25% group membership,
+  secondary structure, SASA, class caveats (His not always +1), distance-only polar contacts.
+- Shrake–Rupley SASA (probe 1.4 Å, 960 points, Bondi radii), Tien 2013 theoretical maxima.
+- Collapsed "이 구조에서 관찰된 분포": buried 15 nonpolar / 3 polar / 0 acidic / 1 basic;
+  exposed 7 nonpolar (4 Gly) / 4 / 5 / 3. Data-derived exceptions: Leu8 (exposed nonpolar),
+  Gln41 (buried polar).
+- Module lazy-loaded; SASA computed once when first opened (~80 ms).
+
+## Verified
+
+- Initial main / HEAD / origin/main `8b81c88`, clean, 0/0. Only this repository modified.
+- `npm run typecheck` passed. `npm test`: **172 passed = 139 preserved + 33 new**.
+- `npm run build` passed. Note: Vite's advisory >500 kB warning now appears for the shared three.js
+  chunk (497.8 → 507.1 kB); the new module is a separate lazy chunk.
+- SASA equals Biopython ShrakeRupley (same parameters) within 0.00005 Å² per residue. FreeSASA/DSSP
+  cross-check not possible here (documented).
+- `npm run test:browser`: **97 passed = 24 Peptide + 24 α-Helix + 31 β-Sheet + 18 Hydrophobic Core**,
+  console errors and uncaught exceptions **0**. Existing scripts only had the nav count updated 3 → 4.
+  Desktop 1440×1100 and 768/390/320 px; no horizontal overflow; screenshots reviewed:
+  `phase3a-hydrophobic-core.png`, `phase3a-buried.png`, `phase3a-exposed.png`,
+  `phase3a-cross-section.png`, `phase3a-mobile-{768,390,320}.png`, `phase3a-browser-results.json`.
+- Reproducible audit: `node scripts/core-audit.mjs` → `artifacts/core-audit.json`.
+  Reference fixture: `python scripts/sasa-reference.py` (needs Biopython; not a project dependency).
+- Details: `HYDROPHOBIC_CORE_VALIDATION.md`, `SCIENTIFIC_NOTES.md`.
+- Local commit only; **no push** (Pages not updated before review).
+
+## Scientific simplifications
+
+- One crystal conformer; SASA of the isolated chain without waters, partners or crystal contacts.
+- Heavy atoms only, element Bondi radii; normalization maxima come from DSSP-based Tien 2013 values
+  (approximate; C-terminal Gly76 shows ≥100%).
+- 25% groups are within-protein ranks, not a buried/exposed law; continuous % is shown first.
+- Educational four-class chemistry (Gly nonpolar, Tyr/Cys polar uncharged, His basic without a fixed charge).
+- Space filling = vdW spheres, not a molecular surface. Clipping is visual only.
+- Secondary structure from deposited HELIX/SHEET records; display bonds inferred from distances.
+- No folding simulation, energy, MD, membrane protein, binding pocket or other Phase 3B+ content.
+
+## Next recommended module
+
+- **Phase 3B — Soluble vs Membrane Protein**, in a separate session. Not started.
+
+---
+
 ## Phase 2B — completed and verified (2026-09-09)
 
 - Available modules: Chapter 1 **Peptide Geometry**; Chapter 2 **α-Helix** and **β-Sheet**.
@@ -149,7 +207,8 @@
 
 ## Next recommended module
 
-- **Phase 3A — Hydrophobic Core Explorer**, in a separate future session. Stop after Phase 2B.
+- (Historical, Phase 2B) Phase 3A — Hydrophobic Core Explorer. Completed 2026-09-15; see top.
+  Current next: **Phase 3B — Soluble vs Membrane Protein**.
 
 ## Project rule
 

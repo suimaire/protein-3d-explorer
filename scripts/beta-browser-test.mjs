@@ -13,8 +13,8 @@ const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));page.on
 const check=n=>checks.push(n),button=name=>page.getByRole('button',{name,exact:true}),viewer=()=>page.getByTestId('sheet-viewer'),canvas=()=>page.locator('canvas'),shot=()=>canvas().screenshot();
 try{
  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
- const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),3);
- await nav.getByRole('button',{name:/β-Sheet/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('main').getAttribute('data-sheet-type'),'antiparallel');check('Three completed modules; antiparallel initial state and WebGL');
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),4);
+ await nav.getByRole('button',{name:/β-Sheet/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('main').getAttribute('data-sheet-type'),'antiparallel');check('Four completed modules; antiparallel initial state and WebGL');
  const initial=await shot();
  for(const type of ['antiparallel','parallel']){
   await button(type==='parallel'?'Parallel':'Antiparallel').click();const data=audit[type],bonds=data.displayed;
