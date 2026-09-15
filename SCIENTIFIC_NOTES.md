@@ -333,3 +333,48 @@ table was available in the workspace):
 - Bondi A (1964) [J. Phys. Chem. 68:441–451](https://doi.org/10.1021/j100785a001).
 - Tien MZ et al. (2013) [PLoS ONE 8:e80635](https://doi.org/10.1371/journal.pone.0080635) ([PMC3836772](https://pmc.ncbi.nlm.nih.gov/articles/PMC3836772/)).
 - Biopython `Bio.PDB.SASA.ShrakeRupley` (reference implementation, used for validation only).
+
+## Soluble vs Membrane Protein
+
+Full audit: `SOLUBLE_MEMBRANE_VALIDATION.md`. Code: `src/protein/ompx.ts`, `membrane.ts`, `rigid.ts`.
+
+- **Selected membrane protein:** Outer membrane protein X (OmpX), *Escherichia coli*, 8-strand β-barrel.
+- **PDB ID:** 1QJ8 (Vogt & Schulz 1999). **Method:** X-ray diffraction, 1.90 Å. Chain A, 148 residues
+  (mature 1–148, all modeled), 1158 heavy atoms. Engineered His100→Asn. Unmodified RCSB file bundled (SHA-256 tested).
+- **Biological assembly:** monomer (REMARK 350 PISA; OPM uses 1 subunit). The whole asymmetric unit is used;
+  no chain was split off, so no oligomer interface is mislabelled as lipid-facing.
+- **Soluble comparison:** 1UBQ exactly as in Phase 3A (same file, parser, SASA, chemistry, colors).
+- **Orientation source:** OPM entry 1qj8 (Lomize et al.), hydrophobic thickness 23.6 ± 2.8 Å, tilt 12 ± 5°.
+- **Membrane normal:** +z of the OPM frame; bilayer centre z = 0 (= deposited-frame direction (0.666, −0.067, 0.743)).
+- **Boundaries:** z = ±11.8 Å, equal to OPM's dummy boundary atoms. The drawn slab and the classification use one
+  object (`OMPX_SLAB`).
+- **Coordinate transform:** rigid rotation + translation recovered by least-squares fit of the deposited atoms to
+  OPM's oriented file (1154 atoms, RMSD 0.0022 Å; OPM's Lys20 side chain differs and was excluded). Deposited
+  coordinates kept; oriented copy generated in code; distances preserved (tests). Display additionally maps
+  (x, y, z) → (x, z, −y) so the normal is screen-up — rendering only.
+- **Ligand / water handling:** waters (72), C8E4 detergent and PtCl₄ heavy-atom sites are skipped at parse time and
+  not used in SASA or display. Altlocs: highest occupancy (12 residues). No explicit lipids exist in the entry.
+- **Surface exposure metric:** Phase 3A Shrake–Rupley SASA (probe 1.4 Å, 960 points, Bondi radii), relative to
+  Tien 2013 maxima, of the protein alone. Called *surface accessibility* in this module, not water exposure, because
+  a membrane protein's accessible surface may face lipid. Surface = rSASA ≥ 25 % (both proteins).
+- **Lipid-facing classification:** side-chain heavy-atom centroid (Gly: Cα) with |z| ≤ 11.8 Å AND surface →
+  *lipid-facing candidate*; outside the slab AND surface → *aqueous-facing*; otherwise buried. Transmembrane residues
+  that are buried (barrel interior, e.g. Lys27, Asp124) are not lipid-facing.
+- **Chemistry classification:** unchanged educational four classes and palette (`chemistry.ts`, `colors.ts`).
+- **Observed (not a population statistic):** OmpX lipid-facing 25 nonpolar / 7 polar (all Tyr) / 0 acidic / 0 basic;
+  aqueous-facing 11 / 22 / 10 / 7; ubiquitin surface 15 (Gly 6) / 13 / 10 / 11.
+- **Teaching wording:** nonpolar surface is unfavourable in water; the hydrocarbon interior of the bilayer can
+  accommodate it. Avoided: "hydrophobic residues seek/are attracted to lipids", "binds lipid", "membrane region is
+  all hydrophobic", "hydrophobic residues are always inside/outside".
+- **Limitations:** static structures, flat fixed-thickness slab (no interface gradient, no deformation, no lipid
+  atoms, not MD); protein-alone SASA ignores detergent/crystal contacts; single side-chain reference point; fixed
+  25 % cut-off (15–30 % checked); SASA sampling noise between frames ≤2 Å² per residue (Val135 sits at the cut-off);
+  OmpX is an outer-membrane β-barrel, not representative of all membrane proteins; Side A/B named neutrally.
+
+### Sources
+
+- Vogt J, Schulz GE (1999) [Structure 7:1301–1309](https://doi.org/10.1016/S0969-2126(00)80063-5). RCSB PDB 1QJ8.
+- Lomize MA et al. OPM database ([opm.phar.umich.edu](https://opm.phar.umich.edu)); oriented coordinates 1qj8.
+- Fernández C et al. (2002) NMR of OmpX in detergent micelles — cited by OPM as boundary verification.
+- Horn BKP (1987) J. Opt. Soc. Am. A 4:629–642 — quaternion rigid fit.
+- Levy ED (2010) [J. Mol. Biol. 403:660–670](https://doi.org/10.1016/j.jmb.2010.09.028) — rASA 25 % surface convention.

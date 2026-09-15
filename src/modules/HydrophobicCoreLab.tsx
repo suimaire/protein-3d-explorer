@@ -1,5 +1,6 @@
 import {useMemo,useState} from 'react';
 import {ProteinViewer,type ProteinCamera} from '../components/ProteinViewer';
+import {Segmented} from '../components/Segmented';
 import type {Representation} from '../rendering/ProteinScene';
 import {ubiquitin,ubiquitinBonds,ubiquitinExposure,UBIQUITIN_SOURCE} from '../protein/ubiquitin';
 import {composition,findExceptions,formatExposure,groupIndices,polarContacts,GROUP_FRACTION,type ExposureGroup} from '../protein/exposure';
@@ -17,10 +18,6 @@ function analyze(){
 const titleCase=(name:string)=>name[0]+name.slice(1).toLowerCase();
 const SECONDARY={helix:'α-helix',helix310:'3₁₀-helix',strand:'β-strand',other:'loop / 기타'} as const;
 const defaults={representation:'ribbon' as Representation,color:'default' as ColorScheme,group:'all' as ExposureGroup,selected:null as number|null,clip:null as number|null};
-
-function Segmented<V extends string>({label,value,options,onChange}:{label:string;value:V;options:readonly (readonly [V,string])[];onChange:(v:V)=>void}){
- return <fieldset className="segmented"><legend>{label}</legend><div role="group" aria-label={label}>{options.map(([v,text])=><button key={v} aria-pressed={value===v} onClick={()=>onChange(v)}>{text}</button>)}</div></fieldset>;
-}
 
 export function HydrophobicCoreLab(){
  const {residues,groups,exceptions,compositions}=cached??=analyze(),total=residues.length,groupSize=Math.round(total*GROUP_FRACTION);

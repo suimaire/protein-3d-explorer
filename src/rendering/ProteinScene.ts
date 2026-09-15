@@ -4,11 +4,19 @@ import type {ProteinStructure} from '../protein/pdb';
 import type {ResidueExposure} from '../protein/exposure';
 import {SASA_RADII} from '../protein/sasa';
 import {atomColor,DIMMED,hex,type ColorScheme} from '../protein/colors';
+import type {MembraneSlab} from '../protein/membrane';
 
 export type Representation='ribbon'|'atoms'|'spacefill';
-export type ProteinView={representation:Representation;color:ColorScheme;highlighted:Set<number>;filtered:boolean;selected:number|null;clip:number|null};
+export type ProteinView={representation:Representation;color:ColorScheme;highlighted:Set<number>;filtered:boolean;selected:number|null;clip:number|null;membrane?:boolean};
+export type CameraPreset='reset'|'fit'|'side'|'top';
+export type SceneOptions={
+ /** Membrane frame (normal +z). When given, the scene shows z vertically and can draw the slab. */ membrane?:MembraneSlab|null;
+ ariaLabel?:string;
+};
 const vector=(p:number[])=>new T.Vector3(p[0],p[1],p[2]);
-const SAMPLES=8,SELECT=0xb0327c;
+/** Display-only proper rotation (x, y, z) → (x, z, −y): the membrane normal becomes screen-up (three.js +y). */
+const membraneDisplay=(p:number[])=>new T.Vector3(p[0],p[2],-p[1]);
+const SAMPLES=8,SELECT=0xb0327c,SLAB_FILL=0x8fb3c9,SLAB_EDGE=0x4f7890;
 
 /** Three.js view of an experimental protein chain. Coordinates are never modified; clipping is visual only. */
 export class ProteinScene{
@@ -29,21 +37,26 @@ export class ProteinScene{
  private labelAt:T.Vector3|null=null;
  private view:ProteinView|null=null;
  private pointer:{x:number;y:number}|null=null;
- constructor(private host:HTMLDivElement,private structure:ProteinStructure,private bonds:[number,number][],private exposure:ResidueExposure[],private onPick:(residue:number)=>void){
+ private membrane:MembraneSlab|null;
+ private slab=new T.Group();
+ private sideLabels:{element:HTMLSpanElement;at:T.Vector3}[]=[];
+ constructor(private host:HTMLDivElement,private structure:ProteinStructure,private bonds:[number,number][],private exposure:ResidueExposure[],private onPick:(residue:number)=>void,options:SceneOptions={}){
+  this.membrane=options.membrane??null;
   this.renderer=new T.WebGLRenderer({antialias:true,alpha:false});
   this.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   this.renderer.setClearColor(0xf7f9fb);
   this.renderer.localClippingEnabled=true;
   const canvas=this.renderer.domElement;canvas.tabIndex=0;
-  canvas.setAttribute('aria-label','유비퀴틴 단백질 3D 구조. 드래그로 회전, 휠로 확대, 클릭으로 residue 선택. 방향키로 회전, 더하기와 빼기로 확대 축소.');
+  canvas.setAttribute('aria-label',options.ariaLabel??'유비퀴틴 단백질 3D 구조. 드래그로 회전, 휠로 확대, 클릭으로 residue 선택. 방향키로 회전, 더하기와 빼기로 확대 축소.');
   host.append(canvas);
   this.label=document.createElement('span');this.label.className='atom-label central';this.label.hidden=true;host.append(this.label);
   this.scene.add(new T.AmbientLight(0xffffff,1.9));
   const light=new T.DirectionalLight(0xffffff,2.6);light.position.set(5,10,12);this.camera.add(light);this.scene.add(this.camera);
   this.scene.add(this.group);
-  this.positions=structure.atoms.map(a=>vector(a.position));
+  this.positions=structure.atoms.map(a=>this.membrane?membraneDisplay(a.position):vector(a.position));
   const box=new T.Box3().setFromPoints(this.positions);box.getCenter(this.center);
   this.radius=Math.max(...this.positions.map(p=>p.distanceTo(this.center)))+2;
+  if(this.membrane)this.buildSlab(this.membrane);
   this.controls=new OrbitControls(this.camera,canvas);this.controls.enablePan=false;this.controls.minDistance=12;this.controls.maxDistance=220;
   this.controls.addEventListener('change',this.render);
   canvas.addEventListener('keydown',this.keyboard);
@@ -53,6 +66,29 @@ export class ProteinScene{
   this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(Math.abs(old-this.camera.aspect)>0.01)this.cameraView('fit');this.render();});
   this.resize.observe(host);
   this.cameraView('reset');
+ }
+ /**
+  * Geometric guide for the membrane hydrophobic region: a faint box between the two boundary planes
+  * z = centre ± halfThickness (the same slab object used by the residue classification). Not lipid atoms.
+  */
+ private buildSlab(slab:MembraneSlab){
+  // Lateral size only (drawing choice): frame the atoms that lie inside the slab, plus a 6 Å margin.
+  const inside=this.positions.filter(p=>Math.abs(p.y-slab.center)<=slab.halfThickness),mid=new T.Vector3();
+  new T.Box3().setFromPoints(inside.length?inside:this.positions).getCenter(mid);
+  const extent=Math.max(...(inside.length?inside:this.positions).map(p=>Math.hypot(p.x-mid.x,p.z-mid.z)))+6,height=2*slab.halfThickness;
+  const fill=new T.Mesh(new T.BoxGeometry(2*extent,height,2*extent),new T.MeshBasicMaterial({color:SLAB_FILL,transparent:true,opacity:0.12,depthWrite:false,side:T.DoubleSide}));
+  fill.position.set(mid.x,slab.center,mid.z);fill.renderOrder=1;this.slab.add(fill);
+  for(const y of [slab.center+slab.halfThickness,slab.center-slab.halfThickness]){
+   const plane=new T.Mesh(new T.PlaneGeometry(2*extent,2*extent),new T.MeshBasicMaterial({color:SLAB_EDGE,transparent:true,opacity:0.1,depthWrite:false,side:T.DoubleSide}));
+   plane.rotation.x=-Math.PI/2;plane.position.set(mid.x,y,mid.z);plane.renderOrder=1;this.slab.add(plane);
+   const corners=[[-1,-1],[1,-1],[1,1],[-1,1],[-1,-1]].map(([a,b])=>new T.Vector3(mid.x+a*extent,y,mid.z+b*extent));
+   this.slab.add(new T.Line(new T.BufferGeometry().setFromPoints(corners),new T.LineBasicMaterial({color:SLAB_EDGE,transparent:true,opacity:0.7})));
+  }
+  this.slab.visible=false;this.scene.add(this.slab);
+  const addLabel=(text:string,y:number)=>{const element=document.createElement('span');element.className='atom-label slab-label';element.textContent=text;element.hidden=true;this.host.append(element);this.sideLabels.push({element,at:new T.Vector3(mid.x-extent,y,mid.z+extent)});};
+  addLabel('Side A (+z) · aqueous',slab.center+slab.halfThickness+4);
+  addLabel(`Hydrophobic region ${height.toFixed(1)} Å`,slab.center);
+  addLabel('Side B (−z) · aqueous',slab.center-slab.halfThickness-4);
  }
  private keyboard=(e:KeyboardEvent)=>{
   const offset=this.camera.position.clone().sub(this.controls.target),s=new T.Spherical().setFromVector3(offset);
@@ -147,6 +183,7 @@ export class ProteinScene{
   d.selectedResidue=view.selected===null?'':String(structure.residues[view.selected].resSeq);
   d.selectedColor=sampleColors[0]??'';
   d.clip=view.clip===null?'off':view.clip.toFixed(2);
+  if(this.membrane){this.slab.visible=!!view.membrane;d.membrane=view.membrane?'on':'off';d.slabHalfThickness=this.membrane.halfThickness.toFixed(2);}
   this.render();
  }
  private sticks(atoms:number[],bonds:[number,number][],ball:number,stick:number,view:ProteinView,residueOfAtom:Int32Array,selected=false){
@@ -203,9 +240,12 @@ export class ProteinScene{
   const mesh=new T.Mesh(geometry,material);this.group.add(mesh);
   if(!ghost)this.pickables.push({object:mesh,residueOf:hit=>vertexResidue[hit.face!.a]});
  }
- cameraView(view:'reset'|'fit'){
-  const direction=view==='fit'?this.camera.position.clone().sub(this.controls.target).normalize():new T.Vector3(0.35,0.2,1).normalize();
-  const up=view==='fit'?this.camera.up.clone():new T.Vector3(0,1,0);
+ cameraView(view:CameraPreset){
+  // Membrane scenes: Reset = Side view (normal vertical on screen); Top looks down the normal from side A.
+  const preset=view==='reset'&&this.membrane?'side':view;
+  const direction=preset==='fit'?this.camera.position.clone().sub(this.controls.target).normalize():preset==='side'?new T.Vector3(0.35,0,1).normalize():preset==='top'?new T.Vector3(0,1,0.001).normalize():new T.Vector3(0.35,0.2,1).normalize();
+  const up=preset==='fit'?this.camera.up.clone():new T.Vector3(0,1,0);
+  if(preset!=='fit')this.host.dataset.cameraPreset=view;
   const right=up.clone().cross(direction).normalize(),screenUp=direction.clone().cross(right).normalize(),tan=Math.tan(T.MathUtils.degToRad(this.camera.fov/2));
   let distance=this.controls.minDistance;
   for(const p of this.positions){const v=p.clone().sub(this.center),z=v.dot(direction);distance=Math.max(distance,(Math.abs(v.dot(right))+2.5)/(tan*this.camera.aspect)+z,(Math.abs(v.dot(screenUp))+2.5)/tan+z);}
@@ -226,6 +266,14 @@ export class ProteinScene{
    this.label.style.left=`${T.MathUtils.clamp((p.x+1)*this.host.clientWidth/2+12,4,this.host.clientWidth-w-4)}px`;
    this.label.style.top=`${T.MathUtils.clamp((1-p.y)*this.host.clientHeight/2-28,4,this.host.clientHeight-h-4)}px`;
   }else this.label.hidden=true;
+  for(const {element,at} of this.sideLabels){
+   const p=at.clone().project(this.camera);
+   // Side labels describe heights along the normal; hide them when viewing nearly down the normal.
+   element.hidden=!this.slab.visible||Math.abs(direction.y)>0.8||Math.abs(p.z)>1||p.x<-1||p.x>1||p.y<-1||p.y>1;
+   element.style.transform='none';
+   element.style.left=`${T.MathUtils.clamp((p.x+1)*this.host.clientWidth/2+6,4,Math.max(4,this.host.clientWidth-element.offsetWidth-4))}px`;
+   element.style.top=`${T.MathUtils.clamp((1-p.y)*this.host.clientHeight/2-10,4,Math.max(4,this.host.clientHeight-element.offsetHeight-4))}px`;
+  }
  };
  /** Screen position of a residue's Cα, for automated picking checks. */
  screenPoint(residue:number){
@@ -235,6 +283,8 @@ export class ProteinScene{
  dispose(){
   this.resize.disconnect();this.controls.dispose();const c=this.renderer.domElement;
   c.removeEventListener('keydown',this.keyboard);c.removeEventListener('pointerdown',this.down);c.removeEventListener('pointerup',this.up);
-  this.clear();this.sphere.dispose();this.cylinder.dispose();this.renderer.dispose();c.remove();this.label.remove();
+  this.clear();this.sphere.dispose();this.cylinder.dispose();
+  this.slab.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){o.geometry.dispose();(o.material as T.Material).dispose();}});this.sideLabels.forEach(l=>l.element.remove());
+  this.renderer.dispose();c.remove();this.label.remove();
  }
 }

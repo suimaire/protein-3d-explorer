@@ -1,5 +1,55 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 3B — Soluble vs Membrane Protein, completed and verified (2026-09-15)
+
+## Completed
+
+- Chapter 1: **Peptide Geometry**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Soluble vs Membrane Protein**
+
+Soluble vs Membrane Protein:
+
+- Candidates reviewed: OmpX 1QJ8, OmpA 1BXW/1QJP, GlpG 2IC8, bacteriorhodopsin 1C3W (table in
+  `SOLUBLE_MEMBRANE_VALIDATION.md`). Selected **OmpX, PDB 1QJ8** (E. coli, X-ray 1.9 Å, 8-strand β-barrel,
+  monomer, 148/148 residues modeled, 1158 heavy atoms). Unmodified RCSB file bundled (SHA-256 tested).
+- Orientation from **OPM 1qj8**: normal +z, centre 0, boundaries ±11.8 Å (23.6 ± 2.8 Å). Rigid transform fitted to
+  OPM's oriented file (1154 atoms, RMSD 0.0022 Å); deposited coordinates preserved; slab and classification share one object.
+- Side-by-side ubiquitin (existing 1UBQ/SASA/chemistry reused) and OmpX viewers on desktop; stacked on ≤850 px.
+  Shared Representation (Ribbon / Atoms / Space filling), Color (Default / Chemistry), Highlight
+  (All / Surface / Buried / Lipid-facing / Aqueous-facing), Show membrane; OmpX Side / Top / Fit; ubiquitin Reset / Fit.
+- Residue panel: class, surface accessibility, membrane depth (side-chain centroid and Cα), inside/outside region,
+  lipid-facing candidate criterion; altloc, His100N and Tyr notes. Conclusions and composition collapsed until opened.
+- Observed: OmpX lipid-facing 25 nonpolar / 7 polar (all Tyr) / 0 / 0; aqueous-facing 11 / 22 / 10 / 7;
+  ubiquitin surface (rSASA ≥25 %) 15 (Gly 6) / 13 / 10 / 11. Exceptions kept: Tyr girdle, buried Lys27/Asp124 inside
+  the barrel at bilayer depth, exposed nonpolar loop residues.
+- Module lazy-loaded; both SASA computed on first open (~90 ms for OmpX in Node).
+
+## Verified
+
+- Initial main / HEAD / origin/main `b8b5975` (also `git ls-remote`), clean, 0/0. Only this repository modified.
+- `npm run typecheck` passed. `npm test`: **198 passed = 172 preserved + 26 new**.
+- `npm run build` passed. Vite >500 kB advisory warning remains for the shared three.js chunk (507.1 → 509.8 kB);
+  new lazy chunk `SolubleMembraneLab` 166.8 kB; initial `index` 241.9 kB; membrane chunk not requested at start.
+- `npm run test:browser`: **113 passed = 24 + 24 + 31 + 18 + 16**, console errors / uncaught exceptions **0**.
+  Existing scripts: only nav count 4 → 5 and expected nav labels. 1440 px and 768/390/320 px checked.
+- Screenshots reviewed: `phase3b-soluble-vs-membrane.png`, `phase3b-membrane-chemistry.png`, `phase3b-lipid-facing.png`,
+  `phase3b-aqueous-facing.png`, `phase3b-top-view.png`, `phase3b-mobile.png`; `phase3b-browser-results.json`.
+- Audit: `node scripts/membrane-audit.mjs [--fit <opm 1qj8.pdb>]` → `artifacts/membrane-audit.json`.
+- Local commit only; **no push**.
+
+## Scientific simplifications
+
+- Static structures; slab = flat OPM hydrophobic region guide, not lipid atoms, not MD.
+- Protein-alone SASA ("surface accessibility"), fixed 25 % cut-off (15–30 % checked); single side-chain depth point.
+- SASA sampling differs ≤2 Å²/residue between coordinate frames (Val135 at the cut-off; documented).
+- Side A / Side B named neutrally; OmpX is an outer-membrane β-barrel.
+
+## Next recommended module
+
+- **Phase 4A — Hemoglobin Quaternary Structure**, in a separate session. Not started.
+
+---
+
 ## Phase 3A — Hydrophobic Core, completed and verified (2026-09-15)
 
 ## Completed
@@ -54,7 +104,7 @@ Hydrophobic Core Explorer:
 
 ## Next recommended module
 
-- **Phase 3B — Soluble vs Membrane Protein**, in a separate session. Not started.
+- (Historical) Phase 3B — Soluble vs Membrane Protein. Completed 2026-09-15; see top.
 
 ---
 
