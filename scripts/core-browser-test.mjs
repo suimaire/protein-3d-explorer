@@ -17,12 +17,12 @@ const pct=r=>r.relative>=1?'≥100%':`${Math.round(r.relative*100)}%`;
 const numbers=g=>audit.groups[g].residues.map(s=>Number(s.replace(/^[A-Z]+/,''))).sort((a,b)=>a-b).join(',');
 try{
  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
- const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),5);
- assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['Chapter 1 · Amino Acid & Peptide\nPeptide Geometry','Chapter 2 · From Sequence to Structure\nα-Helix','Chapter 2 · From Sequence to Structure\nβ-Sheet','Chapter 2 · From Sequence to Structure\nHydrophobic Core','Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein']);
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),6);
+ assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['Chapter 1 · Amino Acid & Peptide\nPeptide Geometry','Chapter 2 · From Sequence to Structure\nα-Helix','Chapter 2 · From Sequence to Structure\nβ-Sheet','Chapter 2 · From Sequence to Structure\nHydrophobic Core','Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure']);
  await nav.getByRole('button',{name:/Hydrophobic Core/}).click();await canvas().waitFor();await settle();assert.equal(await page.getByRole('alert').count(),0);
  assert.equal(await data('representation'),'ribbon');assert.equal(await data('color'),'default');assert.equal(await data('clip'),'off');assert.equal((await data('highlighted')).split(',').length,76);
  assert.match(await page.getByTestId('structure-source').textContent(),/1UBQ, X-ray diffraction, 1\.8 Å, chain A, 602 heavy atoms/);
- check('Five completed modules; Hydrophobic Core loads 1UBQ chain A in WebGL (ribbon, default, all 76)');
+ check('Six completed modules; Hydrophobic Core loads 1UBQ chain A in WebGL (ribbon, default, all 76)');
  const initial=await shot();
  await page.getByText('관찰 후 확인하기 · 이 구조에서 관찰된 분포').waitFor();assert.equal(await page.getByTestId('composition').evaluate(e=>e.open),false);check('Observed composition is collapsed until the student opens it');
 

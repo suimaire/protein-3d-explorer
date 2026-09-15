@@ -1,6 +1,6 @@
 # Protein 3D Explorer
 
-고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein을 제공합니다.
+고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure를 제공합니다.
 Ac–(L-Ala)₅–NHMe의 Ala 3에서 φ/ψ를 조작하고 peptide plane, schematic Ramachandran map,
 0.40 Å를 넘는 심한 비결합 원자 겹침을 함께 관찰합니다. 실제 에너지 계산이나 protein folding simulation은 아닙니다.
 
@@ -34,6 +34,14 @@ relative SASA입니다. 통계적 경향과 실제 예외(Leu8, Gln41)를 함께
 같은 chemistry 색으로 나란히 비교합니다. OPM 1qj8 방향(막 법선 z, hydrophobic 경계 ±11.8 Å)을 rigid transform으로 적용하고
 반투명 slab로 막 hydrophobic region을 표시합니다. Surface / Buried / Lipid-facing / Aqueous-facing 강조, Side/Top view,
 residue별 surface accessibility·membrane depth·lipid-facing candidate 판정. 상세: `SOLUBLE_MEMBRANE_VALIDATION.md`.
+
+### Chapter 3 — From Structure to Function
+
+**Hemoglobin Quaternary Structure** — 실험 구조 PDB 2DN2 (human deoxyhemoglobin A, X-ray 1.25 Å)의 α2β2 tetramer.
+Biological assembly(deposited chain A–D, identity operator)와 α/β chain(UniProt DBREF·entity sequence)을 검증했습니다.
+Ribbon / Atoms / Space filling, Color by subunit(α1–Chain A 등 legend)·by chain type, subunit 선택(나머지 반투명),
+Heme 1–4 확인과 Focus heme(측정한 Fe–proximal His), 좌표로 계산한 subunit interface(≤ 4.0 Å)와
+설명용 Separate subunits(실험 구조 상태 아님). 한 가지 구조 상태(deoxy)만 보여줍니다. 상세: `HEMOGLOBIN_QUATERNARY_VALIDATION.md`.
 
 ## Local development
 

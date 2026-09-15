@@ -1,5 +1,52 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 4A — Hemoglobin Quaternary Structure, completed and verified (2026-09-15)
+
+## Completed
+
+- Chapter 1: **Peptide Geometry**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Soluble vs Membrane Protein**
+
+## Chapter 3 — From Structure to Function
+
+Completed:
+- **Hemoglobin Quaternary Structure**
+
+Hemoglobin Quaternary Structure:
+
+- Candidates reviewed: 2HHB, 4HHB, 1A3N, 2DN2 (table in `HEMOGLOBIN_QUATERNARY_VALIDATION.md`). Selected **PDB 2DN2**
+  (human deoxy HbA, X-ray 1.25 Å, 574/574 residues, no altlocs, only HEM + water). Unmodified RCSB file (SHA-256 tested),
+  fetched from the same origin only when the module opens.
+- Biological assembly 1 = deposited chains A–D, identity operator (RCSB `2DN2.pdb1` coordinates identical). α/β from
+  DBREF UniProt + RCSB entities: α1 A, β1 B, α2 C, β2 D (β1 = larger α1 contact). 4 hemes, 4 Fe, one per chain by
+  coordinates; Fe–His NE2 2.16–2.21 Å = LINK records.
+- General chain-aware `parseMultiChainPdb` / `parsePdbHeader` (residue key chain + resSeq + iCode + resName); chain-aware
+  peptide bonds; shared per-chain ribbon builder (`src/rendering/ribbon.ts`, also used by ProteinScene); new
+  `AssemblyScene`; generic `src/protein/quaternary.ts` (interfaces, hetero association, exploded offsets).
+- UI: Ribbon / Atoms / Space filling; Color Default / By subunit / By chain type (legend with PDB chains); View Whole
+  tetramer / α1 / β1 / α2 / β2 (others translucent); Show Heme / Interfaces (≤4.0 Å, per-pair buttons) / Separate subunits
+  (8 Å translation with disclaimer); Heme 1–4 buttons and Focus heme (proximal His shown); residue/heme/subunit inspector;
+  question first, "관찰 후 확인하기" collapsed.
+
+## Verified
+
+- Initial main / HEAD `31e8949`, clean, 2 local commits ahead of origin/main (preserved). Only this repository modified.
+- `npm run typecheck` passed. `npm test`: **225 passed = 204 preserved + 21 Phase 4A**.
+- `npm run build` passed. Vite >500 kB advisory remains for the shared three.js chunk (509.84 kB, unchanged); new lazy chunk
+  `HemoglobinQuaternaryLab` ~38 kB; 2DN2 asset 825 kB separate, not requested at start.
+- `npm run test:browser`: all six scripts pass (24 + 24 + 31 + 18 + 16 + 17), console errors 0. Existing scripts changed
+  only for the six-module navigation and, in the β-Sheet script, a fixed scroll position before pixel captures.
+  1440 px and 768/390/320 px checked.
+- Screenshots: `phase4a-hb-tetramer.png`, `phase4a-hb-subunits.png`, `phase4a-hb-hemes.png`, `phase4a-hb-exploded.png`,
+  `phase4a-hb-mobile.png`; `phase4a-browser-results.json`; audit `node scripts/hemoglobin-audit.mjs`.
+- Local commit only; **no push**.
+
+## Next recommended
+
+- **Phase 4B — Hemoglobin T ↔ R Structural Transition**, in a separate session. Not started.
+
+---
+
 ## Phase 3B — Soluble vs Membrane Protein, completed and verified (2026-09-15)
 
 ## Completed
@@ -47,7 +94,7 @@ Soluble vs Membrane Protein:
 
 ## Next recommended module
 
-- **Phase 4A — Hemoglobin Quaternary Structure**, in a separate session. Not started.
+- (Historical, Phase 3B) Phase 4A — Hemoglobin Quaternary Structure. Completed 2026-09-15; see top.
 
 ---
 

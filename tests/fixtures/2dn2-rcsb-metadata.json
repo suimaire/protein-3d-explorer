@@ -1,0 +1,59 @@
+{
+ "source": "RCSB Data API (data.rcsb.org/rest/v1/core) and files.rcsb.org/download/2DN2.pdb1, retrieved 2026-09-15",
+ "assembly": {
+  "id": "1",
+  "details": "author_and_software_defined_assembly",
+  "method": "PISA",
+  "oligomericCount": 4,
+  "oligomericDetails": "tetrameric",
+  "operators": [
+   {
+    "id": "1",
+    "type": "identity operation",
+    "symmetry": "x,y,z"
+   }
+  ],
+  "polymerInstances": 4,
+  "nonpolymerInstances": 4,
+  "modeledPolymerMonomers": 574
+ },
+ "assemblyFile": {
+  "name": "2DN2.pdb1",
+  "sha256": "661e7885389217846ac5dcf99172dfd09db40a56b88ae623e8da21fdcebabc52",
+  "coordinateRecords": 4777,
+  "coordinateDigest": {
+   "method": "sha256 of ATOM/HETATM lines, columns 1-66, joined by \n",
+   "value": "05672ce94685fac1760ce1464018c2a8c7ba9ebca69bc2d241a37290196f627e"
+  }
+ },
+ "entities": [
+  {
+   "entity": 1,
+   "description": "Hemoglobin alpha subunit",
+   "chains": [
+    "A",
+    "C"
+   ],
+   "uniprot": [
+    "P69905"
+   ],
+   "sequence": "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+   "sourceType": "natural",
+   "organism": "Homo sapiens"
+  },
+  {
+   "entity": 2,
+   "description": "Hemoglobin beta subunit",
+   "chains": [
+    "B",
+    "D"
+   ],
+   "uniprot": [
+    "P68871"
+   ],
+   "sequence": "VHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH",
+   "sourceType": "natural",
+   "organism": "Homo sapiens"
+  }
+ ]
+}

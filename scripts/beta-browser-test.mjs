@@ -10,11 +10,11 @@ await mkdir('artifacts',{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
 const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-const check=n=>checks.push(n),button=name=>page.getByRole('button',{name,exact:true}),viewer=()=>page.getByTestId('sheet-viewer'),canvas=()=>page.locator('canvas'),shot=()=>canvas().screenshot();
+const check=n=>checks.push(n),button=name=>page.getByRole('button',{name,exact:true}),viewer=()=>page.getByTestId('sheet-viewer'),canvas=()=>page.locator('canvas'),shot=async()=>{/* Same scroll offset for every capture: the canvas sits at a fractional page y, so pixels depend on scroll. */await canvas().evaluate(e=>e.scrollIntoView({block:'start'}));return canvas().screenshot();};
 try{
  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
- const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),5);
- await nav.getByRole('button',{name:/β-Sheet/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('main').getAttribute('data-sheet-type'),'antiparallel');check('Five completed modules; antiparallel initial state and WebGL');
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),6);
+ await nav.getByRole('button',{name:/β-Sheet/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('main').getAttribute('data-sheet-type'),'antiparallel');check('Six completed modules; antiparallel initial state and WebGL');
  const initial=await shot();
  for(const type of ['antiparallel','parallel']){
   await button(type==='parallel'?'Parallel':'Antiparallel').click();const data=audit[type],bonds=data.displayed;

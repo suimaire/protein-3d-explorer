@@ -68,8 +68,10 @@ export function polarContacts(structure:ProteinStructure,residueIndex:number,cut
 }
 
 /** Covalent bonds from heavy-atom distances: within a residue or peptide C(i)–N(i+1). */
-const COVALENT:Record<string,number>={C:0.76,N:0.71,O:0.66,S:1.05};
-export function inferBonds(structure:ProteinStructure,tolerance=0.45):[number,number][]{
+/** Covalent radii, Å (Cordero 2008; Fe high-spin 1.52, used only inside hetero groups such as heme). */
+export const COVALENT:Record<string,number>={C:0.76,N:0.71,O:0.66,S:1.05,FE:1.52};
+/** Peptide C(i)–N(i+1) is added only within one chain, so chain ends never bond to the next chain. */
+export function inferBonds(structure:Pick<ProteinStructure,'atoms'|'residues'>,tolerance=0.45):[number,number][]{
  const bonds:[number,number][]=[];
  structure.residues.forEach((r,ri)=>{
   const candidates=[...r.atoms];
@@ -78,7 +80,7 @@ export function inferBonds(structure:ProteinStructure,tolerance=0.45):[number,nu
    if(distance(a.position,b.position)<=COVALENT[a.element]+COVALENT[b.element]+tolerance)bonds.push([candidates[x],candidates[y]]);
   }
   const next=structure.residues[ri+1];
-  if(next&&next.resSeq===r.resSeq+1){
+  if(next&&next.chain===r.chain&&next.resSeq===r.resSeq+1){
    const c=r.atoms.find(i=>structure.atoms[i].name==='C'),n=next.atoms.find(i=>structure.atoms[i].name==='N');
    if(c!==undefined&&n!==undefined&&distance(structure.atoms[c].position,structure.atoms[n].position)<=COVALENT.C+COVALENT.N+tolerance)bonds.push([c,n]);
   }

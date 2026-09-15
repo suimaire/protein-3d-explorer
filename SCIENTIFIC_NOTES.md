@@ -383,3 +383,37 @@ Full audit: `SOLUBLE_MEMBRANE_VALIDATION.md`. Code: `src/protein/ompx.ts`, `memb
 - Fernández C et al. (2002) NMR of OmpX in detergent micelles — cited by OPM as boundary verification.
 - Horn BKP (1987) J. Opt. Soc. Am. A 4:629–642 — quaternion rigid fit.
 - Levy ED (2010) [J. Mol. Biol. 403:660–670](https://doi.org/10.1016/j.jmb.2010.09.028) — rASA 25 % surface convention.
+
+## Hemoglobin Quaternary Structure
+
+Chapter 3 — From Structure to Function (Phase 4A). Details, numbers and tests: `HEMOGLOBIN_QUATERNARY_VALIDATION.md`.
+
+- **Protein**: hemoglobin A (adult human), natural protein (RCSB entity source type "natural").
+- **Species**: *Homo sapiens*.
+- **PDB**: 2DN2 — Park, Yokoyama, Shibayama, Shiro & Tame (2006) J. Mol. Biol. 360:690–701. Unmodified RCSB file,
+  SHA-256 tested; served as a same-origin static asset loaded only when the module opens. Candidates compared: 2HHB,
+  4HHB, 1A3N, 2DN2.
+- **Experimental method / resolution**: X-ray diffraction, 1.25 Å.
+- **Ligand state**: deoxy — no O₂ or other heme ligand. Only this one crystal state is shown.
+- **Biological assembly**: one α2β2 tetramer (author TETRAMERIC, PISA TETRAMERIC) = deposited chains A–D under the
+  identity operator; RCSB `2DN2.pdb1` coordinates are identical to the deposited ones. Nothing copied or generated.
+- **Chain IDs / α-β mapping**: α from DBREF UniProt P69905 (HBA_HUMAN), β from P68871 (HBB_HUMAN), cross-checked with the
+  RCSB entities and SEQRES; not inferred from chain letters. Labels: α1 = A, β1 = B, α2 = C, β2 = D, where α1 is the
+  first α chain and β1 the β chain with the larger contact with α1. PDB chain IDs are always shown with the labels.
+- **Modeled residues**: 141/141 (A, C) and 146/146 (B, D) — sequence length from SEQRES, modeled count from coordinates.
+- **Heme count**: 4 HEM (43 heavy atoms each), 4 Fe; one per chain by coordinates (protein atoms within 4.5 Å),
+  never by record order. Fe–His NE2 2.16–2.21 Å (His87 α, His92 β), matching the file's LINK records.
+- **Heme handling**: a non-protein prosthetic group kept separate from amino-acid residues; no chemistry class; own
+  colors in every mode; not counted as a subunit. Fe is labelled "Fe" without an oxidation state. Deposited heme
+  geometry (including short propionate/vinyl distances) is shown unmodified.
+- **Waters / other ligands**: 221 waters hidden and excluded; the file contains no other ligands or ions. No O₂ drawn.
+- **Altloc policy**: one conformer per atom slot (chain + resSeq + insertion code + atom name), highest occupancy, first
+  on ties; 2DN2 has none. Residue identity is chain + resSeq + insertion code + resName.
+- **Interface criterion**: residue with any heavy atom ≤ 4.0 Å from a heavy atom of another chain (protein atoms only).
+  A geometric contact that may include hydrophobic contacts, hydrogen bonds, ionic interactions and van der Waals
+  contacts; no interaction type is assigned and no buried surface area is computed.
+- **Educational simplifications**: static crystal structure; translucent out-of-focus subunits; "Separate subunits"
+  translates each chain and its heme 8 Å outward (no rotation/deformation) and is labelled as not an experimentally
+  observed conformation; Fe display radius 2.0 Å in space filling; short primary→quaternary level summary only.
+- **Limitation — one structural state**: this is one deoxy crystal structure, not the fixed form of all hemoglobin
+  structures. O₂-linked T↔R changes, cooperativity, Bohr effect, 2,3-BPG and HbS are intentionally not covered here.

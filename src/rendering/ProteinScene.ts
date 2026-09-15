@@ -5,6 +5,7 @@ import type {ResidueExposure} from '../protein/exposure';
 import {SASA_RADII} from '../protein/sasa';
 import {atomColor,DIMMED,hex,type ColorScheme} from '../protein/colors';
 import type {MembraneSlab} from '../protein/membrane';
+import {ribbonGeometry} from './ribbon';
 
 export type Representation='ribbon'|'atoms'|'spacefill';
 export type ProteinView={representation:Representation;color:ColorScheme;highlighted:Set<number>;filtered:boolean;selected:number|null;clip:number|null;membrane?:boolean};
@@ -16,7 +17,7 @@ export type SceneOptions={
 const vector=(p:number[])=>new T.Vector3(p[0],p[1],p[2]);
 /** Display-only proper rotation (x, y, z) → (x, z, −y): the membrane normal becomes screen-up (three.js +y). */
 const membraneDisplay=(p:number[])=>new T.Vector3(p[0],p[2],-p[1]);
-const SAMPLES=8,SELECT=0xb0327c,SLAB_FILL=0x8fb3c9,SLAB_EDGE=0x4f7890;
+const SELECT=0xb0327c,SLAB_FILL=0x8fb3c9,SLAB_EDGE=0x4f7890;
 
 /** Three.js view of an experimental protein chain. Coordinates are never modified; clipping is visual only. */
 export class ProteinScene{
@@ -198,44 +199,10 @@ export class ProteinScene{
    this.pickables.push({object:rods,residueOf:hit=>{const [a,b]=bonds[Math.floor(hit.instanceId!/2)];return residueOfAtom[hit.instanceId!%2?b:a];}});
   }
  }
- /** Cartoon through actual Cα coordinates; width follows the deposited HELIX/SHEET records. */
+ /** Cartoon through actual Cα coordinates (shared ribbon builder); width follows the deposited HELIX/SHEET records. */
  private ribbon(view:ProteinView,ghost:boolean){
-  const {structure}=this,residues=structure.residues,n=residues.length;
-  const ca=residues.map(r=>this.positions[r.atoms.find(i=>structure.atoms[i].name==='CA')!]);
-  const guide=residues.map((r,i)=>{const c=r.atoms.find(j=>structure.atoms[j].name==='C'),o=r.atoms.find(j=>structure.atoms[j].name==='O');return c!==undefined&&o!==undefined?this.positions[o].clone().sub(this.positions[c]):ca[Math.min(i+1,n-1)].clone().sub(ca[Math.max(i-1,0)]).cross(new T.Vector3(0,0,1));});
-  const curve=new T.CatmullRomCurve3(ca,false,'centripetal');
-  const size=(i:number,frac:number)=>{
-   const ss=residues[i].secondary,nextSame=i+1<n&&residues[i+1].secondary==='strand';
-   if(ss==='strand'&&!nextSame)return [2.4*(1-frac)+0.25,0.34];
-   if(ss==='strand')return [1.6,0.34];
-   if(ss==='helix')return [1.5,0.32];
-   if(ss==='helix310')return [1.1,0.3];
-   return [0.5,0.5];
-  };
-  const rings=(n-1)*SAMPLES+1,segments=12,pos:number[]=[],nor:number[]=[],col:number[]=[],index:number[]=[],vertexResidue:number[]=[];
-  let previous:T.Vector3|null=null;
-  const flipped=guide.map(()=>1);
-  for(let i=1;i<n;i++)if(guide[i].dot(guide[i-1])*flipped[i-1]<0)flipped[i]=-1;
-  for(let s=0;s<rings;s++){
-   const t=s/(rings-1),p=curve.getPoint(t),tangent=curve.getTangent(t).normalize(),u=t*(n-1),i=Math.min(Math.floor(u),n-1),frac=u-i,j=Math.min(i+1,n-1);
-   const g=guide[i].clone().multiplyScalar(flipped[i]).lerp(guide[j].clone().multiplyScalar(flipped[j]),frac);
-   let normal=g.sub(tangent.clone().multiplyScalar(g.dot(tangent)));
-   if(normal.lengthSq()<1e-6)normal=previous?.clone()??new T.Vector3(0,0,1).cross(tangent);
-   normal.normalize();if(previous&&normal.dot(previous)<0)normal.negate();previous=normal.clone();
-   const binormal=tangent.clone().cross(normal).normalize(),ri=Math.round(u),[w0,h0]=size(i,frac),[w1,h1]=size(j,0);
-   const arrow=residues[i].secondary==='strand'&&residues[j].secondary!=='strand',blend=arrow||residues[i].secondary===residues[j].secondary||frac<0.5?0:(frac-0.5)*2;
-   const w=(w0+(w1-w0)*blend)/2,h=(h0+(h1-h0)*blend)/2;
-   const color=new T.Color(ghost?DIMMED:view.highlighted.has(ri)||!view.filtered?this.residueColor(ri,null,view):DIMMED);
-   for(let k=0;k<segments;k++){
-    const a=k/segments*Math.PI*2,c=Math.cos(a),sn=Math.sin(a);
-    pos.push(...p.clone().addScaledVector(normal,c*w).addScaledVector(binormal,sn*h).toArray());
-    nor.push(...normal.clone().multiplyScalar(c/w).addScaledVector(binormal,sn/h).normalize().toArray());
-    col.push(color.r,color.g,color.b);vertexResidue.push(ri);
-   }
-   if(s>0)for(let k=0;k<segments;k++){const a=(s-1)*segments+k,b=(s-1)*segments+(k+1)%segments,c2=a+segments,d=b+segments;index.push(a,c2,b,b,c2,d);}
-  }
-  const geometry=new T.BufferGeometry();
-  geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));geometry.setAttribute('normal',new T.Float32BufferAttribute(nor,3));geometry.setAttribute('color',new T.Float32BufferAttribute(col,3));geometry.setIndex(index);
+  const {structure}=this;
+  const {geometry,vertexResidue}=ribbonGeometry(structure.residues,structure.atoms,this.positions,r=>ghost?DIMMED:view.highlighted.has(r.index)||!view.filtered?this.residueColor(r.index,null,view):DIMMED);
   const material=this.material(0xffffff,ghost?0.28:1);material.vertexColors=true;
   const mesh=new T.Mesh(geometry,material);this.group.add(mesh);
   if(!ghost)this.pickables.push({object:mesh,residueOf:hit=>vertexResidue[hit.face!.a]});
