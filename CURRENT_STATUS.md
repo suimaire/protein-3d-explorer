@@ -1,5 +1,63 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 4C — Hemoglobin Cooperativity & Allostery, completed and verified (2026-09-16)
+
+## Completed
+
+- Chapter 1: **Peptide Geometry**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Soluble vs Membrane Protein**
+
+## Chapter 3 — From Structure to Function
+
+Completed:
+- **Hemoglobin Quaternary Structure**
+- **Hemoglobin T ↔ R Structural Transition**
+- **Hemoglobin Cooperativity & Allostery**
+
+Hemoglobin Cooperativity & Allostery:
+
+- Model: MWC concerted two-state, n = 4; x = p/K_R, L0 = [T0]/[R0], c = K_R/K_T (dissociation). L0 = 9054, c = 0.014
+  (MWC 1965 Hb set, as quoted in literature) — normalized pedagogical model, not a physiological HbA fit; not tuned.
+- `src/protein/cooperativity.ts` (pure math): partition terms, stable ratio form, P_T/P_R, Y, P(k), analytic Hill
+  coefficient Var(k)/(4Y(1−Y)), bisection P50, normalized model in u = pO₂/P50, same-P50 one-site reference u/(1+u).
+- Model P50 = 9.8968 K_R (0.1386 K_T); n_H(P50) = 2.85 (max 2.856 at u 1.05); sigmoid inflection u ≈ 0.81.
+  u = 0: T 99.989 % / R 0.011 %; u = 1: Y 0.500, T 51.9 % / R 48.1 %; u = 3: Y 0.941, T 3.9 % / R 96.1 %.
+  Saturating limit P_R = 1/(1+L0c⁴) = 99.965 %. Occupancy at P50: 30.9 / 17.3 / 5.6 / 13.6 / 32.7 %.
+- UI: SVG saturation graph (solid Hb MWC vs dashed same-P50 one-site reference; optional dotted pure-T / pure-R limits;
+  P50 guide; ● / ◇ markers), curve selector, pO₂/P50 slider 0–4 with presets, Y / reference / 4Y (ensemble average),
+  T-like / R-like bars and per-state site saturation, prediction prompt first, collapsed occupancy histogram (vs
+  binomial), collapsed Advanced (L0, c, P50, n_H with caveats), collapsed 관찰 후 확인하기, MWC limitation note.
+- Structure: "Inspect T-like (2DN2) / R-like (2DN1)" lazily loads the Phase 4B scene via shared
+  `src/protein/transitionAssets.ts`; `inspectionView(endpoint)` = T or R, fraction 0, no guide. The slider never changes
+  coordinates or the 4 deposited O₂. No new renderer. Phase 4B numbers unchanged (0.93 Å, 14.1°, 3.1 Å, chain RMSD).
+
+## Verified
+
+- Initial main / HEAD / origin/main `1b44769`, clean, 0/0. Only this repository modified.
+- `npm run typecheck` passed. `npm test`: **282 passed = 259 preserved + 23 Phase 4C** (none deleted or skipped).
+- `npm run build` passed. Vite >500 kB advisory unchanged for the shared three.js chunk (518.42 kB). New lazy chunks
+  `HemoglobinCooperativityLab` ~23 kB and `CooperativityStructurePanel` ~2 kB; `transitionAssets` shared with T ↔ R.
+  Opening the module requests no .pdb and creates no canvas; 2DN2/2DN1 load only on Inspect.
+- `npm run test:browser`: all eight scripts pass (24 + 24 + 31 + 18 + 16 + 17 + 15 + 12 = 157), console errors 0.
+  Existing scripts changed only for the eight-module navigation (count / label lists) and the Chapter 3 nav scope regex
+  (no longer forbids "cooperativ"; still forbids HbS / sickle / Bohr / 2,3-BPG). 1440 / 768 / 390 / 320 px.
+- Screenshots: `phase4c-cooperativity.png`, `phase4c-low-o2.png`, `phase4c-p50.png`, `phase4c-high-o2.png`,
+  `phase4c-mobile.png`, `phase4c-structure-r.png`; `phase4c-browser-results.json`; audit
+  `node scripts/hemoglobin-cooperativity-audit.mjs`. Details: `HEMOGLOBIN_COOPERATIVITY_VALIDATION.md`.
+- Local commit only; **no push**.
+
+## Scientific simplifications
+
+- Two-state concerted model, four identical sites; no tertiary/intermediate states, α/β differences or KNF coupling.
+- One fixed literature parameter set; relative pressure only (no mmHg); no pH, CO₂, 2,3-BPG, temperature.
+- Pure T / R curves are hypothetical limits; reference curve is not a myoglobin curve.
+
+## Next recommended
+
+- **Phase 4D — HbA → HbS → Polymerization**, in a separate session. Not started.
+
+---
+
 ## Phase 4B patch — rigid-body quaternary motion guide (2026-09-16)
 
 - Removed the linear atom-by-atom T↔R Morph (it distorted bonds at intermediate positions).

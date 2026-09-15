@@ -463,3 +463,47 @@ Chapter 3 — From Structure to Function (Phase 4B). Details, all numbers and te
   states. No claim that T cannot bind O₂ or that R is always fully saturated. 2DN1 lacks α/β Val1 and β His2 side-chain atoms
   (excluded from R and contact comparison). The R tetramer is exactly symmetric (generated). Cooperativity, O₂-binding
   curves, Hill coefficient, MWC/KNF, Bohr effect, 2,3-BPG and HbS are not covered.
+
+## Hemoglobin Cooperativity & Allostery
+
+Chapter 3 — From Structure to Function (Phase 4C). Details, all numbers and tests: `HEMOGLOBIN_COOPERATIVITY_VALIDATION.md`.
+
+- **Cooperativity definition (as taught)**: positive cooperativity = as O₂ binds, the ensemble occupies the
+  higher-affinity conformational state more, so further O₂ binding becomes relatively more favourable. Explicitly an MWC
+  view. Never described as O₂ molecules attracting each other, one heme pulling another, or the first O₂ "switching on"
+  the other sites.
+- **Allostery definition**: ligand binding at one site is coupled to the conformational equilibrium of the whole protein
+  and thereby affects function at other sites. Distant hemes are not said to touch or pull each other.
+- **MWC model**: concerted two-state model, n = 4 equivalent sites. Q_R = (1+x)⁴, Q_T = L0(1+cx)⁴, P_R = Q_R/Q,
+  P_T = Q_T/Q, Y = [x(1+x)³ + L0·c·x(1+cx)³]/Q = P_R·x/(1+x) + P_T·cx/(1+cx), P(k) = C(4,k)[x^k + L0(cx)^k]/Q.
+  Implemented in `src/protein/cooperativity.ts` (no UI code); overflow-free ratio form.
+- **Parameter convention**: x = p/K_R, L0 = [T0]/[R0] (ligand-free T/R ratio; large ⇒ T-like dominates without O₂; not a
+  "T affinity"), c = K_R/K_T with dissociation constants (0 < c < 1 ⇒ R higher affinity). Both T and R bind O₂.
+  With association constants the same ratio is written K_T/K_R.
+- **Parameter values**: L0 = 9054, c = 0.014 — the hemoglobin set reported by Monod, Wyman & Changeux (1965), as quoted
+  in later literature. This parameter set is a normalized educational example for explaining MWC cooperativity, not an
+  exact HbA fit for any specific physiological condition. Not tuned.
+- **Normalized pO₂**: x-axis u = pO₂/P50 with the model P50 solved by bisection (x50 = 9.90 K_R = 0.139 K_T); u = 1 ⇒
+  Y = 0.5. No mmHg values, because real P50 depends on pH, temperature, CO₂ and 2,3-BPG (not modelled here).
+- **T/R population interpretation**: P_T and P_R are fractions of an ensemble of molecules, each in one state (u = 0:
+  T 99.989 %; u = 1: T 51.9 % / R 48.1 %; u = 3: T 3.9 % / R 96.1 %). Not a single molecule partway between T and R.
+  PDB 2DN2 / 2DN1 are shown as experimental structural representatives of T-like / R-like, not as the exact structures
+  of the MWC populations. The pO₂ slider never interpolates coordinates or removes the deposited O₂ of 2DN1.
+- **Independent reference**: one-site noncooperative Y = u/(1+u) with the same P50, so only shape differs. Labelled
+  "One-site noncooperative reference"; myoglobin is mentioned only as a biological example of noncooperative
+  single-site binding — the curve is not a myoglobin curve.
+- **Hill coefficient caveat**: n_H = d ln(Y/(1−Y))/d ln p, computed analytically as Var(k)/(4Y(1−Y)); 2.85 at P50.
+  An empirical measure of cooperativity, not the number of O₂ bound at once; n_H ≤ n (= 4) with equality only for an
+  all-or-none limit; independent sites give 1.
+- **Ensemble-average caveat**: Y and the mean 4Y (e.g. 2.00 O₂ per tetramer at P50) are ensemble averages; the occupancy
+  histogram shows that at P50 about 31 % of tetramers hold 0 and 33 % hold 4 O₂.
+- **Model limitations**: MWC is a representative two-state allosteric model for hemoglobin cooperativity; real hemoglobin
+  also has tertiary/intermediate states, α/β differences and heterotropic regulation. Bohr effect, CO₂, 2,3-BPG, fetal
+  Hb and HbS are not covered in this module.
+
+### Sources
+
+- Monod J, Wyman J, Changeux J-P (1965) J. Mol. Biol. 12:88–118.
+- Saroff HA (2007) Biochem. Biophys. Res. Commun. (PMID 17977512) — two MWC parameter sets fit Hb O₂ binding.
+- Henry ER et al. (2021) Biophys. J. 120:2543–2551 — MWC partition function Q = (1+K_R x)⁴ + L(1+K_T x)⁴ with association constants.
+- Imai K (1983) J. Mol. Biol. 167:741–749 — condition dependence of L0 and K_T.

@@ -20,9 +20,9 @@ const motion=async value=>{await page.locator('#motion-guide').fill(String(value
 try{
  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
- assert.equal(await nav.getByRole('button').count(),7);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-2),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition']);
- assert.doesNotMatch(await nav.innerText(),/cooperativ|sickle|HbS|Bohr|Hill|2,3-BPG/i);
+ assert.equal(await nav.getByRole('button').count(),8);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-3),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery']);
+ assert.doesNotMatch(await nav.innerText(),/sickle|HbS|Bohr|Hill|2,3-BPG|AlphaFold/i);
  assert.equal(requests.some(u=>/HemoglobinTransitionLab|2DN1|2DN2/.test(u)),false,'T↔R chunk and structures must not load at start');
  check('Seven completed modules; Chapter 3 lists Quaternary Structure and T ↔ R; the T↔R chunk, 2DN2 and 2DN1 are not requested at start');
 

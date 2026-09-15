@@ -1,6 +1,6 @@
 # Protein 3D Explorer
 
-고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure, Hemoglobin T ↔ R Structural Transition을 제공합니다.
+고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure, Hemoglobin T ↔ R Structural Transition, Hemoglobin Cooperativity & Allostery를 제공합니다.
 Ac–(L-Ala)₅–NHMe의 Ala 3에서 φ/ψ를 조작하고 peptide plane, schematic Ramachandran map,
 0.40 Å를 넘는 심한 비결합 원자 겹침을 함께 관찰합니다. 실제 에너지 계산이나 protein folding simulation은 아닙니다.
 
@@ -50,6 +50,13 @@ Heme·O₂ ligand·Interface·Rearrangement guide, Tetramer / Dimer comparison /
 화면 수치: reference dimer RMSD 0.93 Å, α2β2 상대 회전 14.1°, chain별 개별 fit RMSD. Motion guide는 α1β1을 고정하고 T 구조의
 α2β2 전체를 계산된 회전·이동만큼 rigid body로 옮기며(내부 결합 길이 불변), 실제 전이 경로나 R 구조 자체가 아님을 항상 표시합니다.
 상세: `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`.
+
+**Hemoglobin Cooperativity & Allostery** — Monod–Wyman–Changeux(MWC) two-state model(n = 4, L0 = 9054, c = K_R/K_T = 0.014;
+교육용 normalized parameter)로 O₂ saturation curve를 그립니다. x축은 모델에서 수치적으로 구한 P50에 대한 상대 압력(pO₂/P50)이며
+실제 mmHg가 아닙니다. Sigmoid Hemoglobin 곡선과 같은 P50의 one-site noncooperative reference(hyperbola) 비교, pO₂/P50 slider와
+graph marker, fractional saturation Y, ensemble 평균 O₂ 수 4Y, T-like / R-like population, tetramer occupancy 분포 P(k=0–4),
+effective Hill coefficient(P50에서 2.85)와 해석 주의. "Inspect T-like / R-like structure"는 T ↔ R module의 실험 구조
+(PDB 2DN2 / 2DN1)를 그대로 보여 주며, slider에 따라 구조를 보간하지 않습니다. 상세: `HEMOGLOBIN_COOPERATIVITY_VALIDATION.md`.
 
 ## Local development
 
@@ -117,6 +124,8 @@ Vite base는 `/protein-3d-explorer/`로 설정했습니다. `dist/`가 정적 �
 - `HYDROPHOBIC_CORE_VALIDATION.md`: Phase 3A 구조 출처, SASA 검증, 구성 분포, residue 수동 검토
 - `SOLUBLE_MEMBRANE_VALIDATION.md`: Phase 3B 후보 평가, OPM orientation, 분류 기준, 조성, residue 수동 검토
 - `HEMOGLOBIN_QUATERNARY_VALIDATION.md`, `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`: Phase 4A/4B 구조 선택, assembly, chain 대응, 정렬·회전 수치
+- `HEMOGLOBIN_COOPERATIVITY_VALIDATION.md`: Phase 4C MWC 수식, parameter convention, P50 normalization, Hill coefficient, occupancy 분포
+- `src/protein/cooperativity.ts`, `src/components/SaturationPlot.tsx`: MWC model 계산(UI와 분리)과 SVG saturation graph
 - `src/protein/hemoglobin.ts`, `hemoglobinTransition.ts`, `quaternary.ts`; `src/rendering/AssemblyScene.ts`, `TransitionScene.ts`: hemoglobin 분석과 3D 화면
 - `CURRENT_STATUS.md`: 최신 완료 상태와 후속 작업
 

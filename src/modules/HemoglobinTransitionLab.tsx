@@ -1,16 +1,10 @@
 import {useEffect,useMemo,useState} from 'react';
-import tUrl from '../data/structures/2DN2.pdb?url';
-import rUrl from '../data/structures/2DN1.pdb?url';
 import {TransitionViewer} from '../components/TransitionViewer';
 import {Segmented} from '../components/Segmented';
 import {COMPARISON_COLORS,GUIDE_RADIUS,type TransitionCamera,type TransitionHighlight,type TransitionState} from '../rendering/TransitionScene';
-import {analyzeTransition,transitionSceneModel,MOVING_DIMER,REFERENCE_DIMER,R_SOURCE,T_SOURCE,type TransitionModel} from '../protein/hemoglobinTransition';
+import {transitionSceneModel,MOVING_DIMER,REFERENCE_DIMER,R_SOURCE,T_SOURCE,type TransitionModel} from '../protein/hemoglobinTransition';
+import {loadTransition} from '../protein/transitionAssets';
 import {GLOBIN_INFO,SUBUNIT_ORDER} from '../protein/hemoglobin';
-
-// Both deposited files are separate static assets, fetched from the same origin only when this module opens.
-let pending:Promise<TransitionModel>|null=null;
-const text=(url:string)=>fetch(url).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.text();});
-const loadTransition=()=>pending??=Promise.all([text(tUrl),text(rUrl)]).then(([t,r])=>analyzeTransition(t,r));
 
 export function HemoglobinTransitionLab(){
  const [model,setModel]=useState<TransitionModel|null>(null),[error,setError]=useState<string|null>(null);
