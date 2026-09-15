@@ -1,5 +1,18 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 4B patch — rigid-body quaternary motion guide (2026-09-16)
+
+- Removed the linear atom-by-atom T↔R Morph (it distorted bonds at intermediate positions).
+- Added **Motion guide**: α1β1 fixed; T α2β2 (all protein atoms + 2 hemes) moved as one rigid body by the calculated
+  relative motion (quaternion SLERP of 14.1° about the T Cα centroid + linear 3.1 Å centroid shift). Internal geometry
+  identical at every position (max bond change 1.9e-14 Å). 100 % ≠ experimental R (0.89 Å Cα); T / R / Overlay unchanged.
+- Individual chain Cα RMSD (own fit, matched Cα): α1 0.61 (140), β1 0.84 (145), α2 0.54 (140), β2 0.84 Å (145); shown in
+  "관찰 후 확인하기" next to α2β2 5.19 Å.
+- `npm run typecheck` passed; `npm test` **259 passed** (Phase 4B 27 → 34: four Morph tests replaced, rigid-guide / chain-RMSD /
+  frame-invariance tests added); `npm run build` passed (three.js chunk advisory unchanged); `npm run test:browser` all seven
+  scripts pass (24 + 24 + 31 + 18 + 16 + 17 + 15 = 145), 1440 / 768 / 390 / 320 px, console errors 0.
+- Screenshot `phase4b-hb-morph-midpoint.png` replaced by `phase4b-hb-motion-guide.png`. Local commit only; **no push**.
+
 ## Phase 4B — Hemoglobin T ↔ R Structural Transition, completed and verified (2026-09-15)
 
 ## Completed
@@ -27,9 +40,9 @@ Hemoglobin T ↔ R Structural Transition:
   centroid displacement **3.1 Å** (consistent with the ~15° Baldwin & Chothia description; not tuned). Whole-tetramer fit 2.41 Å.
 - Heme: Fe–His NE2 T 2.16–2.21 / R 2.06–2.07 Å; Fe–porphyrin plane T +0.40–0.50 / R +0.06–0.09 Å; O₂ Fe–O1 1.82 / 1.78 Å.
 - Inter-dimer contacts (≤ 4.0 Å, common atoms): T 56, R 40, common 23, lost 33, gained 17.
-- UI: State T / Overlay / R / Morph (camera kept), Highlight whole / reference / moving dimer, Show Heme / Ligand (O₂) /
-  Interface / Rearrangement guide, Tetramer / Dimer comparison / Heme view / Fit / Reset, heme 1–4 T-vs-R table, morph slider
-  with permanent "visual interpolation, not a molecular trajectory" warning, T/R model note, answers collapsed.
+- UI: State T / Overlay / R / Motion guide (camera kept), Highlight whole / reference / moving dimer, Show Heme / Ligand (O₂) /
+  Interface / Rearrangement guide, Tetramer / Dimer comparison / Heme view / Fit / Reset, heme 1–4 T-vs-R table, rigid-body motion-guide
+  slider with a permanent "not a molecular pathway or the R structure" warning, individual subunit RMSD, T/R model note, answers collapsed.
 
 ## Verified
 
@@ -41,7 +54,7 @@ Hemoglobin T ↔ R Structural Transition:
   changed only for the seven-module navigation (count/labels) and the Phase 4A nav scope regex (no longer forbids "T ↔ R").
   1440 px and 768/390/320 px checked.
 - Screenshots: `phase4b-hb-t.png`, `phase4b-hb-r.png`, `phase4b-hb-overlay.png`, `phase4b-hb-moving-dimer.png`,
-  `phase4b-hb-morph-midpoint.png`, `phase4b-hb-mobile.png`; `phase4b-browser-results.json`; audit
+  `phase4b-hb-motion-guide.png`, `phase4b-hb-mobile.png`; `phase4b-browser-results.json`; audit
   `node scripts/hemoglobin-transition-audit.mjs`. Details: `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`.
 - Local commit only; **no push**.
 

@@ -45,9 +45,10 @@ Heme 1–4 확인과 Focus heme(측정한 Fe–proximal His), 좌표로 계산�
 
 **Hemoglobin T ↔ R Structural Transition** — 두 실험 구조 PDB 2DN2 (deoxy, T-like)와 PDB 2DN1 (oxy, O₂ bound, R-like; 둘 다
 X-ray 1.25 Å, 같은 연구)를 비교합니다. 2DN1 tetramer는 파일의 BIOMT operator로 만들고, α1β1 dimer의 Cα만으로 R을 T에
-rigid-body 정렬합니다(tetramer 전체 fit 아님). T state / Overlay / R state / Morph, Reference·Moving αβ dimer 강조,
+rigid-body 정렬합니다(tetramer 전체 fit 아님). T state / Overlay / R state / Motion guide, Reference·Moving αβ dimer 강조,
 Heme·O₂ ligand·Interface·Rearrangement guide, Tetramer / Dimer comparison / Heme view, heme별 Fe–His·Fe–porphyrin 평면 비교.
-화면 수치: reference dimer RMSD 0.93 Å, α2β2 상대 회전 14.1°. Morph는 실제 분자 경로가 아닌 시각적 보간임을 항상 표시합니다.
+화면 수치: reference dimer RMSD 0.93 Å, α2β2 상대 회전 14.1°, chain별 개별 fit RMSD. Motion guide는 α1β1을 고정하고 T 구조의
+α2β2 전체를 계산된 회전·이동만큼 rigid body로 옮기며(내부 결합 길이 불변), 실제 전이 경로나 R 구조 자체가 아님을 항상 표시합니다.
 상세: `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`.
 
 ## Local development
@@ -85,8 +86,8 @@ Hydrophobic Core 캡처: `phase3a-hydrophobic-core.png`, `phase3a-buried.png`, `
 Soluble vs Membrane 캡처: `phase3b-soluble-vs-membrane.png`, `phase3b-lipid-facing.png`, `phase3b-aqueous-facing.png`, `phase3b-mobile.png`.
 `python scripts/sasa-reference.py`(Biopython 필요, 프로젝트 의존성 아님)는 독립 SASA 참조 fixture를 만듭니다.
 α-Helix 캡처: `phase2a-alpha-helix.png`, `phase2a-alpha-helix-top.png`, `phase2a-mobile-390.png`.
-`node scripts/hemoglobin-transition-audit.mjs`는 T↔R 대응·정렬·회전·heme·contact·morph 수치를 `artifacts/hemoglobin-transition-audit.json`에 재생성합니다.
-Hemoglobin T ↔ R 캡처: `phase4b-hb-t.png`, `phase4b-hb-r.png`, `phase4b-hb-overlay.png`, `phase4b-hb-moving-dimer.png`, `phase4b-hb-morph-midpoint.png`, `phase4b-hb-mobile.png`.
+`node scripts/hemoglobin-transition-audit.mjs`는 T↔R 대응·정렬·회전·heme·contact·motion guide·chain RMSD 수치를 `artifacts/hemoglobin-transition-audit.json`에 재생성합니다.
+Hemoglobin T ↔ R 캡처: `phase4b-hb-t.png`, `phase4b-hb-r.png`, `phase4b-hb-overlay.png`, `phase4b-hb-moving-dimer.png`, `phase4b-hb-motion-guide.png`, `phase4b-hb-mobile.png`.
 `npm run test:browser`는 현재 일곱 모듈의 검증 스크립트 여섯 개와 T ↔ R 스크립트를 모두 실행합니다.
 
 ## GitHub Pages

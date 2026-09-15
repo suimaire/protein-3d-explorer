@@ -15,7 +15,7 @@ const tv=()=>page.getByTestId('tr-viewer'),shot=()=>tv().locator('canvas').scree
 const checkbox=name=>page.getByRole('checkbox',{name,exact:true}),main=()=>page.locator('main');
 const near=(text,v,tol=0.0006)=>{const got=text.split(',').map(Number);assert.equal(got.length,3);got.forEach((x,k)=>assert.ok(Math.abs(x-v[k])<tol,`${text} vs ${v}`));};
 const camera=async()=>({direction:await data('camera-direction'),distance:await data('camera-distance'),target:await data('camera-target')});
-const morph=async value=>{await page.locator('#morph').fill(String(value));await settle();};
+const motion=async value=>{await page.locator('#motion-guide').fill(String(value));await settle();};
 
 try{
  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
@@ -37,23 +37,24 @@ try{
  assert.match(await page.getByTestId('reference-rmsd').innerText(),new RegExp(`Cα ${audit.reference.matched}개`));
  assert.match(await page.locator('.module-heading').innerText(),/O₂가 결합한 hemoglobin은 같은 구조에 O₂만 더해진 것일까/);
  assert.match(await page.getByTestId('science-note').innerText(),/T와 R은 hemoglobin의 주요 quaternary conformational states를 설명하는 유용한 모델입니다[\s\S]*여러 conformational states를 점유할 수 있습니다[\s\S]*O₂를 전혀 결합하지 못한다거나/);
- assert.ok(await page.getByTestId('morph-warning').isVisible());
- assert.match(await page.getByTestId('morph-warning').innerText(),/Morph = visual interpolation, not a molecular trajectory\.[\s\S]*두 실험 구조 사이의 시각적 보간입니다\. 실제 원자 이동 경로나 반응속도를 의미하지 않습니다\./);
+ assert.ok(await page.getByTestId('motion-warning').isVisible());
+ assert.match(await page.getByTestId('motion-warning').innerText(),/계산된 α2β2의 상대 회전·이동만 시각화한 가이드입니다\. 실제 분자 전이 경로나 R 구조 자체가 아닙니다\./);
+ assert.doesNotMatch(await main().innerText(),/morph|visual interpolation/i);
  assert.equal(await page.getByTestId('tr-observation').evaluate(e=>e.open),false);
  assert.match(await page.getByTestId('tr-tip').innerText(),/Overlay: one αβ dimer \(α1β1\) is aligned so the quaternary rearrangement of the other \(α2β2\) can be seen/);
  assert.equal(await tv().locator('.dimer-label:not([hidden])').count(),2);
- check(`Loads on demand (same-origin assets only): Overlay default, RMSD ${audit.reference.rmsd.toFixed(2)} Å and rotation ${audit.moving.angle.toFixed(1)}° equal the audit; scientific note and morph disclaimer visible; answers collapsed`);
+ check(`Loads on demand (same-origin assets only): Overlay default, RMSD ${audit.reference.rmsd.toFixed(2)} Å and rotation ${audit.moving.angle.toFixed(1)}° equal the audit; scientific note and motion-guide disclaimer visible; no Morph wording; answers collapsed`);
  const init=await shot();await page.screenshot({path:'artifacts/phase4b-hb-overlay.png',fullPage:false});
 
  await tv().locator('canvas').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowUp');await settle();
  const cam=await camera(),images={};
- for(const [label,state,layers] of [['T state','T','T'],['R state','R','R'],['Overlay','overlay','T,R'],['Morph','morph','morph']]){
+ for(const [label,state,layers] of [['T state','T','T'],['R state','R','R'],['Overlay','overlay','T,R'],['Motion guide','motion','motion']]){
   await button(label).click();await settle();
   assert.equal(await data('state'),state);assert.equal(await data('layers'),layers);assert.deepEqual(await camera(),cam,`camera kept for ${state}`);
   images[state]=await shot();
  }
  assert.notDeepEqual(images.T,images.R);assert.notDeepEqual(images.T,images.overlay);assert.notDeepEqual(images.R,images.overlay);
- check('T / R / Overlay / Morph switch the drawn layers while the camera direction, distance and target stay exactly the same');
+ check('T / R / Overlay / Motion guide switch the drawn layers while the camera direction, distance and target stay exactly the same');
 
  await button('T state').click();await settle();
  near(await data('sample-position'),audit.samples.T.position);assert.equal(await data('sample-atom'),audit.samples.T.atom);
@@ -90,18 +91,23 @@ try{
  await checkbox('Heme').check();await button('Tetramer view').click();await settle();
  check('Interface emphasis and Heme toggle change the rendering and legend');
 
- await button('Morph').click();await morph(0);const m0=await shot();
- assert.equal(await data('fraction'),'0.00');near(await data('sample-position'),audit.samples.morph.t);
- await morph(50);assert.equal(await data('state'),'morph');assert.equal(await data('fraction'),'0.50');assert.equal(await page.getByTestId('morph-value').innerText(),'50%');
- near(await data('sample-position'),audit.samples.morph.mid);assert.equal(await data('visible-ligands'),'0');
- assert.match(await page.getByTestId('state-badge').innerText(),/MORPH 50%/);
- await button('Moving αβ dimer').click();await settle();await page.screenshot({path:'artifacts/phase4b-hb-morph-midpoint.png'});await button('Whole tetramer').click();await settle();
- await morph(100);near(await data('sample-position'),audit.samples.morph.r);assert.equal(await data('visible-ligands'),'4');
- await morph(37);await morph(0);assert.deepEqual(await shot(),m0);near(await data('sample-position'),audit.samples.morph.t);
- assert.ok(await page.getByTestId('morph-warning').isVisible());
- await button('R state').click();await settle();assert.equal(await page.getByTestId('morph-value').innerText(),'100%');
- await morph(20);assert.equal(await data('state'),'morph');
- check('Morph slider: 0% = T coordinates, 50% = pair midpoint, 100% = aligned R coordinates (O₂ only at 100%); back to 0% restores the identical image; disclaimer always visible');
+ await button('Motion guide').click();await motion(0);const m0=await shot();
+ assert.equal(await data('fraction'),'0.00');near(await data('moving-sample-position'),audit.samples.motion.g0);assert.equal(await data('moving-sample-atom'),audit.samples.motion.atom);
+ await button('T state').click();await settle();const tDrawn=[await data('sample-position'),await data('moving-sample-position'),await camera()];near(tDrawn[1],audit.samples.motion.g0);
+ await button('Motion guide').click();await settle();assert.deepEqual([await data('sample-position'),await data('moving-sample-position'),await camera()],tDrawn,'guide 0% draws the T coordinates from the same viewpoint');
+ await motion(50);assert.equal(await data('state'),'motion');assert.equal(await data('fraction'),'0.50');assert.equal(await page.getByTestId('motion-value').innerText(),'50%');
+ near(await data('moving-sample-position'),audit.samples.motion.mid);near(await data('sample-position'),audit.samples.motion.reference);assert.equal(await data('visible-ligands'),'0');
+ assert.match(await page.getByTestId('state-badge').innerText(),/MOTION GUIDE 50%/);
+ assert.match(await page.getByTestId('tr-tip').innerText(),/하나의 rigid body로 옮긴 화면입니다[\s\S]*dimer 내부 모양은 변하지 않습니다/);
+ await button('Moving αβ dimer').click();await settle();await page.screenshot({path:'artifacts/phase4b-hb-motion-guide.png'});await button('Whole tetramer').click();await settle();
+ await motion(100);near(await data('moving-sample-position'),audit.samples.motion.g1);assert.equal(await data('visible-ligands'),'0');
+ await button('R state').click();await settle();const rImage=await shot();near(await data('sample-position'),audit.samples.R.position);
+ assert.equal(await page.getByTestId('motion-value').innerText(),'100%','R state does not move the guide slider');
+ await button('Motion guide').click();await settle();assert.ok(!(await shot()).equals(rImage),'guide 100% is not the experimental R structure');
+ await motion(37);await motion(0);assert.ok((await shot()).equals(m0),'back to 0% restores the image');near(await data('moving-sample-position'),audit.samples.motion.g0);
+ assert.ok(await page.getByTestId('motion-warning').isVisible());
+ await button('R state').click();await motion(20);assert.equal(await data('state'),'motion');
+ check('Motion guide slider: 0% = T coordinates from the same viewpoint; 50%/100% = T α2β2 under the calculated rigid motion (α1β1 fixed, no O₂); 100% differs from the R view; back to 0% restores the identical image; disclaimer always visible');
 
  for(const h of audit.hemes.t){
   const r=audit.hemes.r.find(x=>x.number===h.number);
@@ -123,26 +129,28 @@ try{
  for(const [k,v] of [['state','overlay'],['highlight','all'],['heme','on'],['ligand','on'],['interface','off'],['guide','off'],['camera-preset','tetramer'],['heme-focus','']])assert.equal(await data(k),v,k);
  assert.deepEqual(await shot(),init);
  await page.getByText('관찰 후 확인하기').click();
+ for(const [l,v] of Object.entries(audit.subunitFits)){const cells=await page.getByTestId(`subunit-rmsd-${l}`).locator('th,td').allInnerTexts();assert.deepEqual(cells,[l,`${v.rmsd.toFixed(2)} Å`,`Cα ${v.matched}`]);}
+ assert.match(await page.getByTestId('tr-observation').innerText(),/각 globin subunit의 fold 변화\(≤ [\d.]+ Å\)보다 subunit 사이의 상대적 재배열\(α2β2 [\d.]+ Å\)이 더 두드러집니다/);
  assert.equal(await page.getByTestId('contacts-t').innerText(),String(audit.contacts.t));assert.equal(await page.getByTestId('contacts-r').innerText(),String(audit.contacts.r));
  assert.equal(await page.getByTestId('moving-displacement').innerText(),`${audit.moving.centroidDisplacement.toFixed(1)} Å`);
  for(const c of audit.correspondence){const cells=await page.getByTestId(`tr-mapping-${c.label}`).locator('th,td').allInnerTexts();assert.deepEqual(cells,[c.label,c.tChain,c.rChain===c.rSourceChain?c.rChain:`${c.rChain} (copy of ${c.rSourceChain})`,c.type==='alpha'?'α-globin':'β-globin',`${c.tModeled} / ${c.rModeled}`]);}
  const text=await main().innerText();
  assert.doesNotMatch(text,/cooperativ|Hill coefficient|Bohr|2,3-BPG|sickle|Glu6Val|HbS|oxygen-binding curve|saturation curve/i);
  assert.doesNotMatch(text,/O₂-bound structure.*2DN3|carbonmonoxy|CO-bound/i);
- check(`Full reset restores the exact initial rendering and defaults; collapsed check shows contacts T ${audit.contacts.t} / R ${audit.contacts.r}, displacement and the audited T↔R chain table; no out-of-scope topics`);
+ check(`Full reset restores the exact initial rendering and defaults; collapsed check shows contacts T ${audit.contacts.t} / R ${audit.contacts.r}, displacement, individual subunit RMSD and the audited T↔R chain table; no out-of-scope topics`);
 
  for(const width of [768,390,320]){
   await page.setViewportSize({width,height:844});await page.waitForTimeout(300);
-  await button('Moving αβ dimer').click();await checkbox('Rearrangement guide').check();await morph(50);await settle();
+  await button('Moving αβ dimer').click();await checkbox('Rearrangement guide').check();await motion(50);await settle();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`overflow at ${width}`);
   const v=await tv().boundingBox();assert.ok(v.width>=width-60&&v.height>=300,`viewer ${v.width}x${v.height} at ${width}`);
-  for(const sel of ['.tr-controls','.tr-panel','[data-testid="morph-control"]','[data-testid="tr-legend"]','#morph']){const c=await page.locator(sel).boundingBox();assert.ok(c.x>=0&&c.x+c.width<=width+0.5,`${sel} wider than ${width}`);}
+  for(const sel of ['.tr-controls','.tr-panel','[data-testid="motion-control"]','[data-testid="tr-legend"]','#motion-guide']){const c=await page.locator(sel).boundingBox();assert.ok(c.x>=0&&c.x+c.width<=width+0.5,`${sel} wider than ${width}`);}
   for(const group of ['State','Highlight'])for(const b of await page.getByRole('group',{name:group}).getByRole('button').all()){const r=await b.boundingBox();assert.ok(r.x>=0&&r.x+r.width<=width,`${group} button outside at ${width}`);}
-  const slider=await page.locator('#morph').boundingBox();assert.ok(slider.width>=(width-48)*0.9,`slider width ${slider.width} at ${width}`);
-  await page.locator('#morph').fill('80');await settle();assert.equal(await data('fraction'),'0.80');
+  const slider=await page.locator('#motion-guide').boundingBox();assert.ok(slider.width>=(width-48)*0.9,`slider width ${slider.width} at ${width}`);
+  await page.locator('#motion-guide').fill('80');await settle();assert.equal(await data('fraction'),'0.80');
   if(width===390)await page.screenshot({path:'artifacts/phase4b-hb-mobile.png',fullPage:true});
   await button('전체 초기화').click();
-  check(`${width}px: no horizontal overflow; State/Highlight buttons, legend and morph slider inside the screen; viewer ≥300 px tall; slider operable`);
+  check(`${width}px: no horizontal overflow; State/Highlight buttons, legend and motion-guide slider inside the screen; viewer ≥300 px tall; slider operable`);
  }
  await page.setViewportSize({width:1440,height:1100});
  for(let i=0;i<3;i++){

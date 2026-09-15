@@ -3,7 +3,7 @@
 Validated 2026-09-15. Initial main / HEAD `1389cd8`, clean working tree, 0 ahead / 0 behind origin/main. Only
 `protein-3d-explorer` modified. All numbers below come from `node scripts/hemoglobin-transition-audit.mjs`
 (writes `artifacts/hemoglobin-transition-audit.json`), which runs the same code as the app
-(`src/protein/hemoglobinTransition.ts`). Unit tests: `tests/hemoglobinTransition.test.ts` (27).
+(`src/protein/hemoglobinTransition.ts`). Unit tests: `tests/hemoglobinTransition.test.ts` (34).
 Browser QA: `node scripts/hemoglobin-transition-browser-test.mjs` (production preview on port 4173).
 
 # Preflight — heme bond rendering (Phase 4A note)
@@ -96,7 +96,8 @@ once; atom identity is independent of record order (test 9, R file with HETATM f
 - α1β1 is the tightly packed αβ unit (largest interface, above) and changes little between T and R; the αβ dimers move
   relative to each other across the α1β2/α2β1 interfaces. This is the classical frame used to describe the T→R quaternary
   change (Baldwin & Chothia 1979 superposed one αβ dimer and described the motion of the other).
-- Choice checked with data: per-subunit own-fit Cα RMSD α1 0.61, β1 0.85, α2 0.54, β2 0.84 Å (subunits rigid-like), and the
+- Choice checked with data: per-subunit own-fit Cα RMSD α1 0.61, β1 0.84, α2 0.54, β2 0.84 Å (subunits rigid-like; see
+  Individual chain RMSD), and the
   reversed choice (α2β2 as reference) gives the same relative rotation, 14.11°.
 - Naming depends only on the Phase 4A contact rule, not on chain letters.
 
@@ -156,7 +157,7 @@ His NE2. R values are pairwise identical for symmetry copies (α1 = α2, β1 = �
 - Ligand: `OXY` O1/O2, occupancy 1.00, no altlocs, one per heme (assigned to the nearest Fe, must be ≤ 2.5 Å). B-factors:
   α O1 14.1 / O2 35.1, β O1 19.7 / O2 33.2 Å² (terminal O less ordered). Full occupancy is what was deposited; it is not a
   claim that every molecule in the crystal was oxygenated, and the UI does not say "fully saturated".
-- O₂ is drawn only for the R endpoint (R state, Overlay, and Morph at exactly 100%). Nothing is placed on T (test 25).
+- O₂ is drawn only for the R endpoint (R state and Overlay). Nothing is placed on T or in the motion guide (test 25).
 - Toluene (MBN ×2 per αβ): declared as an additive, excluded from display and analysis; 230 waters omitted (T: 221).
 - The UI states that local heme changes and the global quaternary change are observed together but that these two
   structures alone do not prove a single causal chain.
@@ -182,29 +183,62 @@ module does not label any salt bridge or hydrogen bond. Student UI shows only th
 and an "Interface" emphasis toggle. Phase 4A whole-chain interface analysis for 2DN1 (all atoms): α1–β1 19+19, α1–β2 9+9,
 α1–α2 2+2, β1–β2 2+2 residues.
 
-# Morph
+# Quaternary motion guide
 
-**Morph = visual interpolation, not a molecular trajectory.** The UI shows this sentence and its Korean version
-permanently under the slider.
+**Rigid-body guide, not a molecular trajectory and not the R structure.** The UI shows permanently under the slider:
+"계산된 α2β2의 상대 회전·이동만 시각화한 가이드입니다. 실제 분자 전이 경로나 R 구조 자체가 아닙니다."
 
-- Atoms: the 4516 common atoms only (no invented coordinates, no O₂/toluene/water). p(f) = (1 − f)·T + f·R_aligned per atom;
-  f = 0 returns the T coordinates and f = 1 the aligned R coordinates exactly (tests 19, 20, 22; browser: first Cα of the morph
-  layer equals the audit at 0 %, 50 % and 100 %, and returning to 0 % reproduces the identical image).
-- Connectivity: morph bonds are the T bonds among common atoms and are exactly the R bond set on the same atoms (test 21).
-- Intermediate geometry is not physical: straight lines chord through the rotation and flip differing groups. At f = 0.5,
-  bonds shortened by > 0.1 Å (vs the shorter endpoint): backbone 23/2280 (worst β2 Tyr145 C–N 1.32 → 0.30 Å, C termini), side
-  chains 345/2178 (worst α1 Lys90 CE–NZ 1.48 → 0.07 Å, different rotamers), heme 13/200 (propionates/vinyls, worst 1.40 → 0.44 Å).
-  The display uses ribbons (Cα path) and heme sticks; the UI adds that intermediate atom positions and bond lengths are not a
-  physical structure.
-- Colour blends gray (T) → orange (R); O₂ appears only at 100 %.
+- **Body**: the T (2DN2) moving dimer as one rigid body — all 2278 T atoms of α2 and β2 (polymer, incl. Val1 and the His2 side
+  chain) plus their two hemes (86 atoms). α1β1 (reference) never moves. No O₂ (T has none). T colours throughout.
+- **Motion**: the already calculated T → R relative motion of α2β2 (`moving.fit`, 285 Cα, 14.11°). No number is hard-coded.
+  At fraction f: rotation = quaternion SLERP from identity to the fit quaternion (angle f·14.11° about the fixed calculated axis),
+  pivot = T α2β2 Cα centroid, which moves in a straight line by f × the calculated 3.12 Å displacement. f = 0 is exactly T;
+  f = 1 is exactly the fit applied to T (x' = R·x + t).
+- **Internal geometry**: identical at every slider position. Audit, f = 0.25/0.5/0.75/1: 2350 moving-dimer bonds, maximum
+  bond-length change 1.9 × 10⁻¹⁴ Å. Tests check bond lengths, bond angles and sampled pairwise distances to 1e-9 Å.
+- **Guide endpoint ≠ experimental R**: at 100 % the moving-dimer Cα differ from aligned 2DN1 by 0.89 Å RMSD (the moving
+  dimer's own-fit RMSD, i.e. its tertiary differences). The experimental endpoints are only the T state / R state buttons;
+  choosing R does not move the guide slider. Midpoint rotation 7.056°.
+- Tests 19–24c: 0 % = T; 100 % = fit·T (exact) and continuous with the SLERP branch; pairwise distances, bond lengths and angles
+  preserved; rotation angle f·θ about the calculated axis (deterministic); centroid moves f × displacement (deterministic);
+  α1β1 fixed; moving hemes follow the same transform (Fe–His NE2 unchanged), reference hemes stay; T layer = deposited 2DN2
+  and R layer = deposited 2DN1 assembly under the reference superposition only. Browser: 0 % draws the same coordinates and
+  camera as T state; moving-dimer Cα at 0/50/100 % equals the audit while α1 Val1 Cα is unchanged; 100 % image differs from
+  the R view; returning to 0 % reproduces the identical image; T / R / Overlay / Motion guide keep one camera.
+
+# Individual chain RMSD
+
+Each chain is superposed on its own (T vs aligned R; frame-independent), using only Cα present in both structures, matched by
+subunit label + UniProt position + residue name (never array index). 2DN1 lacks Val1, so it is excluded automatically.
+
+| Chain | matched Cα | own-fit Cα RMSD |
+|---|---:|---:|
+| α1 | 140 | 0.607 Å |
+| β1 | 145 | 0.845 Å |
+| α2 | 140 | 0.539 Å |
+| β2 | 145 | 0.841 Å |
+
+- For contrast: α2β2 Cα after the α1β1 alignment only, 5.19 Å; the moving dimer's own fit 0.89 Å. Each subunit's fold changes
+  far less than the subunits' relative placement, so the UI sentence "각 globin subunit의 fold 변화보다 subunit 사이의 상대적
+  재배열이 더 두드러집니다" is supported (test 26 requires max chain RMSD × 4 < 5.19 Å).
+- Test 26 reproduces every value with an independent fit in the opposite direction. Test 27 applies two different arbitrary
+  rigid transforms to T and R: chain RMSD, reference RMSD, 14.1°, axial translation, centroid displacement and the moving-dimer
+  RMSDs are unchanged (to 1e-8), and the guide built in the transformed frame equals the transformed guide.
+
+# Validation history
+
+- The first Phase 4B build offered a "Morph" slider: straight-line interpolation of each common atom between T and aligned R.
+  It distorted internal geometry at intermediate positions (e.g. at 50 %, 23 backbone, 345 side-chain and 13 heme bonds
+  shortened by > 0.1 Å) and made 100 % look like a path to R. It was **removed** and replaced by the rigid-body quaternary
+  motion guide above.
 
 # Scientific simplifications
 
 - Two static crystal structures (different crystal forms; 2DN1 crystals grown at 277 K) stand for "T-like" and "R-like"; the UI notes
   that T and R are useful models of major quaternary states and that hemoglobin can occupy several conformational states.
 - No statement that T cannot bind O₂ or that R is always fully saturated; affinity/cooperativity deferred to Phase 4C.
-- Frame = α1β1 Cα superposition; numbers shown to students: reference RMSD and relative rotation (displacement in the
-  collapsed section). Matrices, axis, screw translation are documentation only.
+- Frame = α1β1 Cα superposition; numbers shown to students: reference RMSD and relative rotation (displacement and
+  individual subunit RMSD in the collapsed section). Matrices, axis, screw translation are documentation only.
 - Rearrangement guide: dashed calculated rotation axis; a wedge whose **angle** is the calculated 14.1° drawn at an enlarged
   34 Å display radius (stated in the tip); a short bar for the 3.1 Å centroid shift. Labelled "relative structural difference
   after alignment", not a trajectory.
@@ -213,7 +247,7 @@ permanently under the slider.
 
 # Known limitations
 
-- 2DN1 lacks α/β Val1 and the β His2 side chain; these atoms are absent from R, from the morph and from contact comparison,
+- 2DN1 lacks α/β Val1 and the β His2 side chain; these atoms are absent from R and from contact comparison,
   but T still displays them in the T state (the difference is listed in the UI source notes).
 - The R tetramer is generated by crystal symmetry, so its two αβ dimers are exactly identical; T's two dimers are not.
 - 2DN1 header gives no R_free; REMARK 3 states the toluene bond angles were not restrained — not displayed.

@@ -66,6 +66,7 @@ export type ContactComparison={cutoff:number;
  t:string[];r:string[];common:string[];lost:string[];gained:string[];
  byPair:Record<string,{t:number;r:number;common:number;lost:number;gained:number}>};
 
+export type SubunitFit={matched:number;rmsd:number};
 export type TransitionModel={
  t:HemoglobinModel;r:HemoglobinModel;
  correspondence:ChainCorrespondence[];
@@ -78,7 +79,7 @@ export type TransitionModel={
   /** Cα RMSD of the moving dimer without refitting (after reference alignment only). */ rmsdBeforeFit:number};
  /** Control: moving dimer as reference and reference dimer as moving (should give a similar angle). */ reversed:{referenceRmsd:number;angle:number};
  /** Contrast: whole-tetramer best-fit Cα RMSD (hides part of the rearrangement in the fit). */ wholeTetramerRmsd:number;
- perSubunitRmsd:Record<SubunitLabel,number>;
+ /** Each chain fitted on its own (T vs aligned R, matched Cα only): fold change of the subunit itself. */ subunitFits:Record<SubunitLabel,SubunitFit>;
  hemes:{t:HemeGeometry[];r:HemeGeometry[]};
  contacts:ContactComparison;
 };
@@ -147,6 +148,26 @@ function interDimerContacts(end:Endpoint,positions:Vec[],allowed:Set<number>,cut
  return out;
 }
 
+type CommonAtom={key:string;t:number;r:number};
+/** Matched Cα pairs of the given subunits, selected by atom key (label + UniProt position), never by array index. */
+const commonCa=(common:CommonAtom[],labels:SubunitLabel[])=>common.filter(c=>labels.some(l=>c.key.startsWith(`${l}:`))&&c.key.endsWith(':CA')&&!c.key.includes(':HEM:'));
+
+/**
+ * Frame-dependent inputs → frame-independent comparison: reference-dimer superposition of R onto T, the rigid motion of
+ * the moving dimer relative to it, and an independent Cα fit of every chain. `tPositions` / `rPositions` are full atom
+ * coordinate arrays of each endpoint; only matched Cα enter the fits.
+ */
+export function quaternaryMetrics(common:CommonAtom[],tPositions:Vec[],rPositions:Vec[]){
+ const refCa=commonCa(common,REFERENCE_DIMER),movCa=commonCa(common,MOVING_DIMER);
+ const reference=superpose(refCa.map(c=>rPositions[c.r]),refCa.map(c=>tPositions[c.t]));
+ const rAligned=rPositions.map(p=>applyRigid(reference,p));
+ const tMov=movCa.map(c=>tPositions[c.t]),rMov=movCa.map(c=>rAligned[c.r]);
+ const fit=superpose(tMov,rMov),centroidT=mean(tMov),centroidR=mean(rMov);
+ const subunitFits=Object.fromEntries(SUBUNIT_ORDER.map(l=>{const list=commonCa(common,[l]);return [l,{matched:list.length,rmsd:fitRigid(list.map(c=>tPositions[c.t]),list.map(c=>rAligned[c.r])).rmsd}];})) as Record<SubunitLabel,SubunitFit>;
+ return {reference,rAligned,subunitFits,
+  moving:{fit,screw:screwMotion(fit,centroidT),centroidT,centroidR,centroidDisplacement:norm(sub(centroidR,centroidT)),rmsdBeforeFit:rms(tMov,rMov)}};
+}
+
 /**
  * T ↔ R comparison. Chains correspond by educational label (α1, β1, α2, β2 from each endpoint's own DBREF/contact
  * analysis); residues by UniProt position with identical residue names; atoms by name. The R structure is placed in
@@ -171,17 +192,11 @@ export function analyzeTransition(tText:string,rText:string):TransitionModel{
    commonResidues,tOnly:only(tr,rr),rOnly:only(rr,tr),incomplete};
  });
  const common=[...T.keys].filter(([k])=>R.keys.has(k)).map(([key,i])=>({key,t:i,r:R.keys.get(key)!})).sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0);
- const ca=(labels:SubunitLabel[])=>common.filter(c=>labels.some(l=>c.key.startsWith(`${l}:`))&&c.key.endsWith(':CA')&&!c.key.includes(':HEM:'));
- const refCa=ca(REFERENCE_DIMER),movCa=ca(MOVING_DIMER);
- const reference=superpose(refCa.map(c=>ra[c.r].position),refCa.map(c=>ta[c.t].position));
- const rAligned=ra.map(a=>applyRigid(reference,a.position));
- const tMov=movCa.map(c=>ta[c.t].position),rMov=movCa.map(c=>rAligned[c.r]);
- const fit=superpose(tMov,rMov),centroidT=mean(tMov),centroidR=mean(rMov);
- const screw=screwMotion(fit,centroidT);
+ const {reference,rAligned,moving,subunitFits}=quaternaryMetrics(common,ta.map(a=>a.position),ra.map(a=>a.position));
+ const refCa=commonCa(common,REFERENCE_DIMER),movCa=commonCa(common,MOVING_DIMER),tMov=movCa.map(c=>ta[c.t].position);
  const revRef=superpose(movCa.map(c=>ra[c.r].position),tMov),revAligned=(p:Vec)=>applyRigid(revRef,p);
  const revFit=fitRigid(refCa.map(c=>ta[c.t].position),refCa.map(c=>revAligned(ra[c.r].position)));
- const allCa=ca(SUBUNIT_ORDER),whole=fitRigid(allCa.map(c=>ra[c.r].position),allCa.map(c=>ta[c.t].position));
- const perSubunitRmsd=Object.fromEntries(SUBUNIT_ORDER.map(l=>{const list=ca([l]),f=fitRigid(list.map(c=>ra[c.r].position),list.map(c=>ta[c.t].position));return [l,f.rmsd];})) as Record<SubunitLabel,number>;
+ const allCa=commonCa(common,SUBUNIT_ORDER),whole=fitRigid(allCa.map(c=>ra[c.r].position),allCa.map(c=>ta[c.t].position));
  const tPos=ta.map(a=>a.position);
  const commonT=new Set(common.map(c=>c.t)),commonR=new Set(common.map(c=>c.r));
  const tc=interDimerContacts(T,tPos,commonT,INTERFACE_CUTOFF),rc=interDimerContacts(R,rAligned,commonR,INTERFACE_CUTOFF);
@@ -192,33 +207,71 @@ export function analyzeTransition(tText:string,rText:string):TransitionModel{
  for(const k of tc){byPair[pairOf(k)].t++;if(rc.has(k))byPair[pairOf(k)].common++;else byPair[pairOf(k)].lost++;}
  for(const k of rc){byPair[pairOf(k)].r++;if(!tc.has(k))byPair[pairOf(k)].gained++;}
  return {t,r,correspondence,common,reference,rAligned,
-  moving:{fit,screw,centroidT,centroidR,centroidDisplacement:norm(sub(centroidR,centroidT)),rmsdBeforeFit:rms(tMov,rMov)},
+  moving,
   reversed:{referenceRmsd:revRef.rmsd,angle:screwMotion(revFit,mean(refCa.map(c=>ta[c.t].position))).angle},
-  wholeTetramerRmsd:whole.rmsd,perSubunitRmsd,
+  wholeTetramerRmsd:whole.rmsd,subunitFits,
   hemes:{t:hemeGeometry(t,tPos),r:hemeGeometry(r,rAligned)},
   contacts:{cutoff:INTERFACE_CUTOFF,t:sorted(tc),r:sorted(rc),common:sorted([...tc].filter(k=>rc.has(k))),lost:sorted([...tc].filter(k=>!rc.has(k))),gained:sorted([...rc].filter(k=>!tc.has(k))),byPair},
  };
 }
 
-/**
- * Visual morph between the two experimental endpoints: straight-line interpolation of each common atom,
- * p(f) = (1 − f)·T + f·R_aligned. f = 0 returns the T coordinates and f = 1 the aligned R coordinates exactly.
- * Not a molecular pathway, trajectory or kinetics.
- */
-export function morphPositions(model:Pick<TransitionModel,'t'|'rAligned'|'common'>,fraction:number):Vec[]{
- const ta=model.t.structure.atoms;
- return interpolatePositions(model.common.map(c=>ta[c.t].position),model.common.map(c=>model.rAligned[c.r]),fraction);
+export type Quaternion=[number,number,number,number];
+/** Unit quaternion [w, x, y, z] (w ≥ 0) of a proper rotation matrix (Shoemake); inverse of the matrix used in `fitRigid`. */
+export function quaternionOf(R:Mat3):Quaternion{
+ const tr=R[0][0]+R[1][1]+R[2][2];let q:Quaternion;
+ if(tr>0){const s=0.5/Math.sqrt(tr+1);q=[0.25/s,(R[2][1]-R[1][2])*s,(R[0][2]-R[2][0])*s,(R[1][0]-R[0][1])*s];}
+ else if(R[0][0]>=R[1][1]&&R[0][0]>=R[2][2]){const s=2*Math.sqrt(1+R[0][0]-R[1][1]-R[2][2]);q=[(R[2][1]-R[1][2])/s,s/4,(R[1][0]+R[0][1])/s,(R[0][2]+R[2][0])/s];}
+ else if(R[1][1]>=R[2][2]){const s=2*Math.sqrt(1-R[0][0]+R[1][1]-R[2][2]);q=[(R[0][2]-R[2][0])/s,(R[1][0]+R[0][1])/s,s/4,(R[2][1]+R[1][2])/s];}
+ else{const s=2*Math.sqrt(1-R[0][0]-R[1][1]+R[2][2]);q=[(R[1][0]-R[0][1])/s,(R[0][2]+R[2][0])/s,(R[2][1]+R[1][2])/s,s/4];}
+ const n=Math.hypot(...q),sign=q[0]<0?-1:1;
+ return q.map(v=>sign*v/n) as Quaternion;
 }
-/** Pairwise straight-line interpolation; endpoints are returned exactly (copies). */
-export function interpolatePositions(from:Vec[],to:Vec[],fraction:number):Vec[]{
- if(!(fraction>=0&&fraction<=1))throw new Error('Morph fraction must be within 0…1');
- if(from.length!==to.length)throw new Error('Morph endpoints need the same atoms');
- return from.map((a,k)=>{
-  const b=to[k];
-  if(fraction===0)return [a[0],a[1],a[2]];
-  if(fraction===1)return [b[0],b[1],b[2]];
-  return [a[0]+(b[0]-a[0])*fraction,a[1]+(b[1]-a[1])*fraction,a[2]+(b[2]-a[2])*fraction];
- });
+export const quaternionMatrix=([w,x,y,z]:Quaternion):Mat3=>[[w*w+x*x-y*y-z*z,2*(x*y-w*z),2*(x*z+w*y)],[2*(x*y+w*z),w*w-x*x+y*y-z*z,2*(y*z-w*x)],[2*(x*z-w*y),2*(y*z+w*x),w*w-x*x-y*y+z*z]];
+/** Spherical linear interpolation between unit quaternions (shortest arc): constant angular speed about one fixed axis. */
+export function slerp(a:Quaternion,b:Quaternion,f:number):Quaternion{
+ let d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];const e=d<0?b.map(v=>-v) as Quaternion:b;d=Math.abs(d);
+ if(d>1-1e-12)return a.map((v,k)=>v+(e[k]-v)*f) as Quaternion;
+ const theta=Math.acos(d),s=Math.sin(theta),wa=Math.sin((1-f)*theta)/s,wb=Math.sin(f*theta)/s;
+ return a.map((v,k)=>wa*v+wb*e[k]) as Quaternion;
+}
+
+/**
+ * Quaternary motion guide: the T-state moving αβ dimer (all its protein atoms and its two hemes) moved as ONE rigid body
+ * by the calculated T → R relative motion (`moving.fit`), with the reference dimer fixed. The guide endpoint is the T dimer
+ * after that rigid motion — not the experimental R coordinates (R also differs by small tertiary changes). Not a pathway.
+ */
+export type RigidGuide={
+ /** T atom indices that move (moving-dimer polymer atoms + its heme atoms), ascending. */ atoms:number[];
+ /** Full calculated motion (guide at 100 %). */ fit:RigidTransform;
+ /** Rotation of `fit` as a unit quaternion. */ quaternion:Quaternion;
+ /** Rotation pivot = moving-dimer Cα centroid in T; the centroid travels in a straight line by `displacement`. */ pivot:Vec;displacement:Vec};
+
+export function rigidGuide(m:Pick<TransitionModel,'t'|'moving'>):RigidGuide{
+ const {structure}=m.t,atoms:number[]=[];
+ for(const s of m.t.subunits)if(MOVING_DIMER.includes(s.label)){
+  for(const i of s.residues)atoms.push(...structure.residues[i].atoms);
+  atoms.push(...structure.hetero.find(g=>g.index===s.heme.group)!.atoms);
+ }
+ const {fit,centroidT,centroidR}=m.moving;
+ return {atoms:atoms.sort((a,b)=>a-b),fit:{rotation:fit.rotation,translation:fit.translation},quaternion:quaternionOf(fit.rotation),pivot:centroidT,displacement:sub(centroidR,centroidT)};
+}
+
+/**
+ * Rigid transform of the guide at fraction f: rotation SLERP(identity → q, f) about the pivot, pivot moved by f·displacement.
+ * f = 0 is the identity and f = 1 is exactly the calculated fit (x' = R·x + t, since R·pivot + t = pivot + displacement).
+ */
+export function guidePose(guide:RigidGuide,fraction:number):RigidTransform{
+ if(!(fraction>=0&&fraction<=1))throw new Error('Guide fraction must be within 0…1');
+ if(fraction===0)return {rotation:[[1,0,0],[0,1,0],[0,0,1]],translation:[0,0,0]};
+ if(fraction===1)return guide.fit;
+ const rotation=quaternionMatrix(slerp([1,0,0,0],guide.quaternion,fraction)),c=guide.pivot;
+ return {rotation,translation:sub(add(c,scale(guide.displacement,fraction)),applyRigid({rotation,translation:[0,0,0]},c))};
+}
+/** T coordinates with only the guide atoms moved by `guidePose`; every other atom (reference dimer) is an unchanged copy. */
+export function guidePositions(tPositions:Vec[],guide:RigidGuide,fraction:number):Vec[]{
+ const pose=guidePose(guide,fraction),out=tPositions.map(p=>[p[0],p[1],p[2]] as Vec);
+ if(fraction>0)for(const i of guide.atoms)out[i]=applyRigid(pose,tPositions[i]);
+ return out;
 }
 
 /** One drawable structure for the scene: atom metadata, residues/hemes as atom-index lists into `atoms`, and bonds. */
@@ -231,40 +284,32 @@ export type TransitionLayer={
  /** Residue indices in an inter-dimer contact (≤ 4.0 Å, atoms common to both endpoints). */ interfaceResidues:Set<number>};
 export type TransitionSceneModel={
  t:TransitionLayer&{positions:Vec[]};r:TransitionLayer&{positions:Vec[]};
- /** Common-atom layer; positions come from `morphPositions`. */ morph:TransitionLayer&{tPositions:Vec[];rPositions:Vec[]};
+ /** Quaternary motion guide on the T layer; positions come from `guidePositions(t.positions, motion, f)`. */ motion:RigidGuide;
  guide:{axis:Vec;axisPoint:Vec;angle:number;screwTranslation:number;centroidT:Vec;centroidR:Vec};
  reference:SubunitLabel[];moving:SubunitLabel[];
 };
 
-function layerOf(model:HemoglobinModel,contacts:string[],keep?:(atom:number)=>number):TransitionLayer{
- const end=endpoint(model),map=keep??((i:number)=>i),{structure}=model,atoms=structure.atoms;
- const residues:PdbResidue[]=[];
+function layerOf(model:HemoglobinModel,contacts:string[]):TransitionLayer{
+ const end=endpoint(model),{structure}=model,atoms=structure.atoms;
  const residueName=(r:PdbResidue)=>`${end.labelOf.get(r.chain)}:${end.positionOf(r)}:${r.resName}`;
- const contactNames=new Set(contacts.flatMap(k=>k.split('|'))),interfaceResidues=new Set<number>();
- for(const r of structure.residues){
-  const list=r.atoms.map(map).filter(i=>i>=0);if(!list.length)continue;
-  const copy={...r,index:residues.length,atoms:list};residues.push(copy);
-  if(contactNames.has(residueName(r)))interfaceResidues.add(copy.index);
- }
- const ownerBonds=(bonds:[number,number][])=>bonds.map(([a,b]):[number,number]=>[map(a),map(b)]).filter(([a,b])=>a>=0&&b>=0);
- const side=(res:PdbResidue)=>res.atoms.filter(i=>!['N','C','O','OXT'].includes(atoms[i].name)).map(map).filter(i=>i>=0);
+ const contactNames=new Set(contacts.flatMap(k=>k.split('|')));
+ const residues=structure.residues.map((r,index)=>({...r,index}));
+ const interfaceResidues=new Set(residues.filter(r=>contactNames.has(residueName(r))).map(r=>r.index));
+ const side=(res:PdbResidue)=>res.atoms.filter(i=>!['N','C','O','OXT'].includes(atoms[i].name));
  return {atoms:[],residues,labelOf:Object.fromEntries(end.labelOf),interfaceResidues,
-  hemes:model.subunits.map(s=>({label:s.label,number:s.heme.number,atoms:structure.hetero.find(g=>g.index===s.heme.group)!.atoms.map(map).filter(i=>i>=0),iron:map(s.heme.iron),
-   proximalSide:side(structure.residues[s.heme.proximal.residue]),proximalAtom:map(s.heme.proximal.atom)})),
-  ligands:keep?[]:model.ligands.map(l=>({label:end.labelOf.get(model.hemes.find(h=>h.group===l.heme)!.association.chain)!,resName:l.resName,atoms:l.atoms})),
-  hemeBonds:ownerBonds(model.hemeBonds),polymerBonds:ownerBonds(model.bonds)};
+  hemes:model.subunits.map(s=>({label:s.label,number:s.heme.number,atoms:structure.hetero.find(g=>g.index===s.heme.group)!.atoms,iron:s.heme.iron,
+   proximalSide:side(structure.residues[s.heme.proximal.residue]),proximalAtom:s.heme.proximal.atom})),
+  ligands:model.ligands.map(l=>({label:end.labelOf.get(model.hemes.find(h=>h.group===l.heme)!.association.chain)!,resName:l.resName,atoms:l.atoms})),
+  hemeBonds:model.hemeBonds,polymerBonds:model.bonds};
 }
 
-/** Scene data: T (deposited), R (rigidly aligned copy), and the common-atom morph layer with its two endpoint coordinate sets. */
+/** Scene data: T (deposited), R (rigidly aligned copy), and the rigid-body motion guide applied to the T layer. */
 export function transitionSceneModel(m:TransitionModel):TransitionSceneModel{
  const tLayer=layerOf(m.t,m.contacts.t),rLayer=layerOf(m.r,m.contacts.r);
- const index=new Int32Array(m.t.structure.atoms.length).fill(-1);m.common.forEach((c,k)=>{index[c.t]=k;});
- // Morph atoms keep T residue order; each common atom's index in `m.common` is its morph index.
- const morph=layerOf(m.t,m.contacts.common,i=>index[i]);
  return {
   t:{...tLayer,atoms:m.t.structure.atoms,positions:m.t.structure.atoms.map(a=>a.position)},
   r:{...rLayer,atoms:m.r.structure.atoms,positions:m.rAligned},
-  morph:{...morph,atoms:m.common.map(c=>m.t.structure.atoms[c.t]),tPositions:morphPositions(m,0),rPositions:morphPositions(m,1)},
+  motion:rigidGuide(m),
   guide:{axis:m.moving.screw.axis,axisPoint:m.moving.screw.axisPoint,angle:m.moving.screw.angle,screwTranslation:m.moving.screw.screwTranslation,centroidT:m.moving.centroidT,centroidR:m.moving.centroidR},
   reference:REFERENCE_DIMER,moving:MOVING_DIMER,
  };

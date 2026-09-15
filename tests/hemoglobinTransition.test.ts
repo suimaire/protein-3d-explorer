@@ -5,8 +5,8 @@ import metaText from './fixtures/2dn1-rcsb-metadata.json?raw';
 import ccdText from './fixtures/hem-ccd-bonds.json?raw';
 import {parsePdbHeader,parseMultiChainPdb,residueKey} from '../src/protein/pdb';
 import {analyzeHemoglobin,HEMOGLOBIN_SOURCE,SUBUNIT_ORDER} from '../src/protein/hemoglobin';
-import {analyzeTransition,interpolatePositions,morphPositions,planeDistance,screwMotion,transitionSceneModel,MOVING_DIMER,REFERENCE_DIMER,R_SOURCE,T_SOURCE} from '../src/protein/hemoglobinTransition';
-import {applyRigid,determinant,fitRigid} from '../src/protein/rigid';
+import {analyzeTransition,guidePose,guidePositions,planeDistance,quaternaryMetrics,quaternionMatrix,quaternionOf,rigidGuide,screwMotion,slerp,transitionSceneModel,MOVING_DIMER,REFERENCE_DIMER,R_SOURCE,T_SOURCE} from '../src/protein/hemoglobinTransition';
+import {applyRigid,determinant,fitRigid,type Mat3,type RigidTransform} from '../src/protein/rigid';
 import {buildAssembly,INTERFACE_CUTOFF} from '../src/protein/quaternary';
 import {inferBonds} from '../src/protein/exposure';
 import {distance,type Vec} from '../src/geometry/vector';
@@ -232,44 +232,131 @@ describe('Quaternary difference of the moving αβ dimer',()=>{
  });
 });
 
-describe('Morph (visual interpolation only)',()=>{
- const scene=transitionSceneModel(model);
- it('19 · fraction 0 returns exactly the T coordinates of the common atoms',()=>{
-  expect(morphPositions(model,0)).toEqual(model.common.map(c=>ta[c.t].position));
-  expect(scene.morph.tPositions).toEqual(model.common.map(c=>ta[c.t].position));
+describe('Quaternary motion guide (rigid-body, α1β1 fixed)',()=>{
+ const scene=transitionSceneModel(model),guide=scene.motion,tPos=ta.map(a=>a.position);
+ const FRACTIONS=[0.1,0.37,0.5,0.83,0.999];
+ const moving=new Set(guide.atoms),labelOfAtom=(i:number)=>t.subunits.find(s=>s.chain===ta[i].chain)!.label;
+ const angleOf=(R:Mat3)=>Math.acos(Math.min(1,Math.max(-1,(R[0][0]+R[1][1]+R[2][2]-1)/2)))*180/Math.PI;
+ it('19 · guide 0% returns exactly the T coordinates; the moving body is every α2β2 atom of T plus its two hemes',()=>{
+  expect(guidePositions(tPos,guide,0)).toEqual(tPos);
+  const expected=t.subunits.filter(s=>MOVING_DIMER.includes(s.label)).flatMap(s=>[...s.residues.flatMap(i=>t.structure.residues[i].atoms),...t.structure.hetero.find(g=>g.index===s.heme.group)!.atoms]).sort((x,y)=>x-y);
+  expect(guide.atoms).toEqual(expected);expect(guide.atoms.every(i=>MOVING_DIMER.includes(labelOfAtom(i)))).toBe(true);
+  expect(guide.atoms.filter(i=>ta[i].resName==='HEM')).toHaveLength(86);
+  expect(()=>guidePositions(tPos,guide,1.2)).toThrow();expect(()=>guidePositions(tPos,guide,Number.NaN)).toThrow();
  });
- it('20 · fraction 1 returns exactly the aligned R coordinates',()=>{
-  expect(morphPositions(model,1)).toEqual(model.common.map(c=>model.rAligned[c.r]));
-  expect(scene.morph.rPositions).toEqual(model.common.map(c=>model.rAligned[c.r]));
+ it('20 · guide 100% = the calculated moving-dimer fit applied to T (not the experimental R coordinates)',()=>{
+  const end=guidePositions(tPos,guide,1);
+  expect(guidePose(guide,1)).toEqual({rotation:model.moving.fit.rotation,translation:model.moving.fit.translation});
+  for(const i of guide.atoms)expect(end[i]).toEqual(applyRigid(model.moving.fit,tPos[i]));
+  // The SLERP branch is continuous with the exact endpoint.
+  const near1=guidePositions(tPos,guide,1-1e-9);for(const i of guide.atoms.filter((_,k)=>k%37===0))near1[i].forEach((v,k)=>expect(v).toBeCloseTo(end[i][k],6));
+  quaternionMatrix(guide.quaternion).forEach((row,i)=>row.forEach((v,j)=>expect(v).toBeCloseTo(model.moving.fit.rotation[i][j],12)));
+  // Guide endpoint ≠ experimental R: matched moving-dimer Cα still differ by the moving dimer's own-fit RMSD (tertiary differences).
+  const movCa=caOf(MOVING_DIMER),dev=Math.sqrt(movCa.reduce((s,c)=>s+distance(end[c.t],model.rAligned[c.r])**2,0)/movCa.length);
+  expect(dev).toBeCloseTo(model.moving.fit.rmsd,9);expect(dev).toBeGreaterThan(0.3);
  });
- it('21 · fraction 0.5 is finite, the midpoint of each pair; bonds are kept and no atom appears or disappears',()=>{
-  const mid=morphPositions(model,0.5);
-  expect(mid).toHaveLength(model.common.length);expect(mid.every(p=>p.every(Number.isFinite))).toBe(true);
-  mid.forEach((p,k)=>{if(k%97)return;const a=ta[model.common[k].t].position,b=model.rAligned[model.common[k].r];p.forEach((v,i)=>expect(v).toBeCloseTo((a[i]+b[i])/2,9));});
-  // Connectivity: the morph layer's bonds are the T bonds among common atoms, and the same key pairs are bonds in R.
-  const rKey=new Map(model.common.map((c,k)=>[c.r,k])),rBonds=new Set([...r.bonds,...r.hemeBonds].map(([a,b])=>[rKey.get(a),rKey.get(b)]).filter(([a,b])=>a!==undefined&&b!==undefined).map(p=>(p as number[]).sort((x,y)=>x-y).join('-')));
-  const morphBonds=[...scene.morph.polymerBonds,...scene.morph.hemeBonds].map(p=>[...p].sort((x,y)=>x-y).join('-'));
-  expect(morphBonds.length).toBeGreaterThan(4000);
-  expect(morphBonds.every(b=>rBonds.has(b))).toBe(true);
-  expect(new Set(morphBonds)).toEqual(rBonds);
-  // Endpoint bond lengths are the deposited ones; midpoint lengths are finite and non-zero but NOT physical
-  // (straight-line interpolation shortens bonds where side chains, C-terminal carbonyls or propionates differ; documented).
-  const t0=morphPositions(model,0),t1=morphPositions(model,1);
-  for(const [a,b] of scene.morph.polymerBonds){
-   expect(distance(t0[a],t0[b])).toBe(distance(ta[model.common[a].t].position,ta[model.common[b].t].position));
-   expect(distance(t1[a],t1[b])).toBe(distance(model.rAligned[model.common[a].r],model.rAligned[model.common[b].r]));
-   expect(distance(mid[a],mid[b])).toBeGreaterThan(0);
+ it('21 · at every intermediate position the moving dimer keeps all internal pairwise distances of T',()=>{
+  const sample=guide.atoms.filter((_,k)=>k%41===0),ref=scene.t.residues.find(r=>r.chain===label(t,'α1').chain)!.atoms[0];
+  expect(sample.length).toBeGreaterThan(50);
+  for(const f of FRACTIONS){
+   const p=guidePositions(tPos,guide,f);
+   for(let x=0;x<sample.length;x++)for(let y=x+1;y<sample.length;y++){const i=sample[x],j=sample[y];expect(Math.abs(distance(p[i],p[j])-distance(tPos[i],tPos[j]))).toBeLessThan(1e-9);}
+   // …while its placement relative to α1β1 does change.
+   expect(Math.abs(distance(p[ref],p[sample[0]])-distance(tPos[ref],tPos[sample[0]]))).toBeGreaterThan(0.01);
   }
-  const shortened=[...scene.morph.polymerBonds,...scene.morph.hemeBonds].filter(([a,b])=>distance(mid[a],mid[b])<Math.min(distance(t0[a],t0[b]),distance(t1[a],t1[b]))-0.1);
-  expect(shortened.length).toBeGreaterThan(0);expect(shortened.length/morphBonds.length).toBeLessThan(0.1);
-  expect(()=>morphPositions(model,1.2)).toThrow();expect(()=>morphPositions(model,Number.NaN)).toThrow();
  });
- it('22 · returning to either endpoint after intermediate values restores the exact endpoint; inputs are never modified',()=>{
-  const before=JSON.stringify(ta.map(a=>a.position)),aligned=JSON.stringify(model.rAligned);
-  for(const f of [0.3,0.77,0.5])interpolatePositions(scene.morph.tPositions,scene.morph.rPositions,f);
-  expect(interpolatePositions(scene.morph.tPositions,scene.morph.rPositions,0)).toEqual(scene.morph.tPositions);
-  expect(interpolatePositions(scene.morph.tPositions,scene.morph.rPositions,1)).toEqual(scene.morph.rPositions);
-  expect(JSON.stringify(ta.map(a=>a.position))).toBe(before);expect(JSON.stringify(model.rAligned)).toBe(aligned);
+ it('22 · bond lengths and bond angles of the moving dimer do not depend on the slider position',()=>{
+  const bonds=[...scene.t.polymerBonds,...scene.t.hemeBonds].filter(([a,b])=>moving.has(a)&&moving.has(b));
+  expect(bonds.length).toBeGreaterThan(2000);
+  const byAtom=new Map<number,number[]>();for(const [a,b] of bonds){byAtom.set(a,[...(byAtom.get(a)??[]),b]);byAtom.set(b,[...(byAtom.get(b)??[]),a]);}
+  const angles:[number,number,number][]=[];for(const [c,n] of byAtom)if(n.length>=2)angles.push([n[0],c,n[1]]);
+  expect(angles.length).toBeGreaterThan(1000);
+  const angle=(p:Vec[],[a,c,b]:[number,number,number])=>{const u=[0,1,2].map(k=>p[a][k]-p[c][k]),w=[0,1,2].map(k=>p[b][k]-p[c][k]);return Math.acos((u[0]*w[0]+u[1]*w[1]+u[2]*w[2])/(Math.hypot(...u)*Math.hypot(...w)));};
+  for(const f of [...FRACTIONS,1]){
+   const p=guidePositions(tPos,guide,f);
+   for(const [a,b] of bonds)expect(Math.abs(distance(p[a],p[b])-distance(tPos[a],tPos[b]))).toBeLessThan(1e-9);
+   for(const x of angles)expect(Math.abs(angle(p,x)-angle(tPos,x))).toBeLessThan(1e-9);
+  }
+ });
+ it('23 · rotation interpolation is deterministic quaternion SLERP: angle = f·θ about the fixed calculated axis',()=>{
+  const theta=model.moving.screw.angle,u=model.moving.screw.axis;
+  for(const f of FRACTIONS){
+   const a=guidePose(guide,f);expect(guidePose(guide,f).rotation).toEqual(a.rotation);
+   expect(determinant(a.rotation)).toBeCloseTo(1,12);expect(angleOf(a.rotation)).toBeCloseTo(f*theta,8);
+   applyRigid({rotation:a.rotation,translation:[0,0,0]},u).forEach((v,k)=>expect(v).toBeCloseTo(u[k],9));
+  }
+  expect(slerp([1,0,0,0],guide.quaternion,0.5)).toEqual(slerp([1,0,0,0],guide.quaternion,0.5));
+  quaternionOf(quaternionMatrix(guide.quaternion)).forEach((v,k)=>expect(v).toBeCloseTo(guide.quaternion[k],12));
+  expect(rigidGuide(analyzeTransition(tRaw,rRaw))).toEqual(guide);
+ });
+ it('24 · translation interpolation is deterministic: the moving-dimer Cα centroid travels f × the calculated displacement',()=>{
+  const {centroidT,centroidR}=model.moving;
+  for(const f of FRACTIONS){
+   const a=guidePose(guide,f);expect(guidePose(guide,f).translation).toEqual(a.translation);
+   const c=applyRigid(a,centroidT);c.forEach((v,k)=>expect(v).toBeCloseTo(centroidT[k]+f*(centroidR[k]-centroidT[k]),9));
+   expect(distance(c,centroidT)).toBeCloseTo(f*model.moving.centroidDisplacement,9);
+  }
+  expect(guidePositions(tPos,guide,0.5)).toEqual(guidePositions(tPos,guide,0.5));
+ });
+ it('24a · the α1β1 reference dimer never moves in the guide; inputs are never modified',()=>{
+  const before=JSON.stringify(tPos),reference=ta.map((_,i)=>i).filter(i=>!moving.has(i));
+  expect(reference.length+guide.atoms.length).toBe(ta.length);
+  expect(reference.every(i=>REFERENCE_DIMER.includes(labelOfAtom(i)))).toBe(true);
+  for(const f of [...FRACTIONS,1]){const p=guidePositions(tPos,guide,f);for(const i of reference)expect(p[i]).toEqual(tPos[i]);}
+  expect(JSON.stringify(tPos)).toBe(before);
+ });
+ it('24b · moving-dimer hemes follow the same rigid transform (Fe–His NE2 preserved); reference hemes stay in place',()=>{
+  for(const f of [...FRACTIONS,1]){
+   const pose=guidePose(guide,f),p=guidePositions(tPos,guide,f);
+   for(const s of t.subunits){
+    for(const i of t.structure.hetero.find(g=>g.index===s.heme.group)!.atoms)expect(p[i]).toEqual(MOVING_DIMER.includes(s.label)?applyRigid(pose,tPos[i]):tPos[i]);
+    expect(Math.abs(distance(p[s.heme.iron],p[s.heme.proximal.atom])-distance(tPos[s.heme.iron],tPos[s.heme.proximal.atom]))).toBeLessThan(1e-9);
+   }
+  }
+ });
+ it('24c · experimental views unchanged: T layer = deposited 2DN2, R layer = 2DN1 assembly under the reference superposition only',()=>{
+  const tDep=parseMultiChainPdb(tRaw).atoms,rDep=parseMultiChainPdb(rRaw).atoms;
+  expect(scene.t.atoms).toBe(ta);expect(scene.t.positions).toEqual(tPos);
+  for(const a of ta)expect(a.position).toEqual(tDep.find(x=>x.serial===a.serial&&x.chain===a.chain)!.position);
+  expect(scene.r.atoms).toBe(ra);expect(scene.r.positions).toBe(model.rAligned);
+  ra.forEach((a,i)=>{if(a.chain!=='A'&&a.chain!=='B')return;const dep=rDep.find(x=>x.serial===a.serial)!;expect(a.position).toEqual(dep.position);expect(scene.r.positions[i]).toEqual(applyRigid(model.reference,dep.position));});
+ });
+});
+
+describe('Individual chain RMSD (each chain fitted on its own)',()=>{
+ const rms=(a:Vec[],b:Vec[])=>Math.sqrt(a.reduce((s,p,i)=>s+distance(p,b[i])**2,0)/a.length);
+ it('26 · α1/β1/α2/β2 Cα RMSD are reproduced by an independent Kabsch fit on matched Cα (by UniProt key, not array index)',()=>{
+  const expected:Record<string,number>={α1:140,β1:145,α2:140,β2:145};
+  for(const l of SUBUNIT_ORDER){
+   const pairs=caOf([l]);expect(pairs).toHaveLength(expected[l]);expect(model.subunitFits[l].matched).toBe(expected[l]);
+   // Val1 (absent in 2DN1) is excluded automatically; every pair is the same residue of the same subunit.
+   expect(pairs.some(c=>c.key===`${l}:1:VAL:CA`)).toBe(false);
+   for(const c of pairs){expect(ta[c.t].chain).toBe(label(t,l).chain);expect(ra[c.r].chain).toBe(label(r,l).chain);expect(ra[c.r].resSeq).toBe(ta[c.t].resSeq);expect(ra[c.r].resName).toBe(ta[c.t].resName);}
+   // Independent fit in the opposite direction (aligned R → T) gives the same RMSD.
+   const X=pairs.map(c=>ta[c.t].position),Y=pairs.map(c=>model.rAligned[c.r]),f=fitRigid(Y,X);
+   expect(rms(Y.map(p=>applyRigid(f,p)),X)).toBeCloseTo(model.subunitFits[l].rmsd,9);expect(determinant(f.rotation)).toBeCloseTo(1,12);
+   // Least squares: never above the no-refit RMSD after α1β1 alignment only.
+   expect(model.subunitFits[l].rmsd).toBeLessThanOrEqual(rms(Y,X)+1e-12);
+  }
+  // Documented values; each chain's own fold changes far less than the α2β2 placement relative to α1β1.
+  expect(SUBUNIT_ORDER.map(l=>Number(model.subunitFits[l].rmsd.toFixed(2)))).toEqual([0.61,0.84,0.54,0.84]);
+  expect(Math.max(...SUBUNIT_ORDER.map(l=>model.subunitFits[l].rmsd))*4).toBeLessThan(model.moving.rmsdBeforeFit);
+ });
+ it('27 · arbitrary global rigid transforms of T and R leave chain RMSD, the 14.1° rearrangement and the guide geometry unchanged',()=>{
+  const rot=(ax:Vec,deg:number):Mat3=>{const n=Math.hypot(...ax),h=deg*Math.PI/360,s=Math.sin(h);return quaternionMatrix([Math.cos(h),ax[0]/n*s,ax[1]/n*s,ax[2]/n*s]);};
+  const G1:RigidTransform={rotation:rot([0.3,-0.8,0.5],127),translation:[41.7,-13.2,88.4]},G2:RigidTransform={rotation:rot([-0.6,0.1,0.9],-73),translation:[-250,19.5,6.25]};
+  const tPos=ta.map(a=>a.position),tG=tPos.map(p=>applyRigid(G1,p)),rG=ra.map(a=>applyRigid(G2,a.position));
+  expect(quaternaryMetrics(model.common,tPos,ra.map(a=>a.position)).subunitFits).toEqual(model.subunitFits);
+  const moved=quaternaryMetrics(model.common,tG,rG);
+  for(const l of SUBUNIT_ORDER){expect(moved.subunitFits[l].matched).toBe(model.subunitFits[l].matched);expect(moved.subunitFits[l].rmsd).toBeCloseTo(model.subunitFits[l].rmsd,9);}
+  expect(moved.reference.rmsd).toBeCloseTo(model.reference.rmsd,9);
+  expect(moved.moving.screw.angle).toBeCloseTo(model.moving.screw.angle,8);expect(Number(moved.moving.screw.angle.toFixed(1))).toBe(14.1);
+  expect(moved.moving.screw.screwTranslation).toBeCloseTo(model.moving.screw.screwTranslation,8);
+  expect(moved.moving.centroidDisplacement).toBeCloseTo(model.moving.centroidDisplacement,8);
+  expect(moved.moving.rmsdBeforeFit).toBeCloseTo(model.moving.rmsdBeforeFit,8);expect(moved.moving.fit.rmsd).toBeCloseTo(model.moving.fit.rmsd,8);
+  // The guide built in the transformed frame is the transformed guide at every fraction (covariant).
+  const g=rigidGuide(model),gG=rigidGuide({t,moving:moved.moving});
+  for(const f of [0.5,1]){const a=guidePositions(tG,gG,f),b=guidePositions(tPos,g,f);for(const i of gG.atoms.filter((_,k)=>k%53===0))applyRigid(G1,b[i]).forEach((v,k)=>expect(a[i][k]).toBeCloseTo(v,8));}
  });
 });
 
@@ -297,11 +384,11 @@ describe('Heme and ligand',()=>{
   // Plane distance helper: a point 1 Å above a flat square, sign follows the reference side.
   const sq:Vec[]=[[0,0,0],[1,0,0],[0,1,0],[1,1,0]];expect(planeDistance(sq,[0.5,0.5,1],[0,0,5])).toBeCloseTo(1,12);expect(planeDistance(sq,[0.5,0.5,1],[0,0,-5])).toBeCloseTo(-1,12);
  });
- it('25 · ligand belongs only to the R endpoint: R scene layer has 4 O₂, T and morph layers none, and no O₂ atom enters the morph',()=>{
+ it('25 · ligand belongs only to the R endpoint: R scene layer has 4 O₂, T layer (also used by the motion guide) none; no O₂ atom moves in the guide',()=>{
   const scene=transitionSceneModel(model);
   expect(scene.r.ligands.map(l=>[l.label,l.resName])).toEqual([['α1','OXY'],['β1','OXY'],['α2','OXY'],['β2','OXY']]);
-  expect(scene.t.ligands).toEqual([]);expect(scene.morph.ligands).toEqual([]);
-  expect(scene.morph.atoms.some(a=>a.resName==='OXY')).toBe(false);
+  expect(scene.t.ligands).toEqual([]);
+  expect(scene.motion.atoms.some(i=>ta[i].resName==='OXY')).toBe(false);
   expect(model.hemes.t.every(h=>h.ligand===null)).toBe(true);expect(model.hemes.r.every(h=>h.ligand?.resName==='OXY')).toBe(true);
   for(const l of scene.r.ligands){const h=scene.r.hemes.find(x=>x.label===l.label)!;expect(Math.min(...l.atoms.map(a=>distance(scene.r.positions[a],scene.r.positions[h.iron])))).toBeLessThan(2);}
  });

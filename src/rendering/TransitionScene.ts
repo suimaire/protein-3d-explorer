@@ -3,14 +3,14 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import type {Vec} from '../geometry/vector';
 import type {PdbResidue} from '../protein/pdb';
 import {ELEMENT_COLORS} from '../protein/colors';
-import {interpolatePositions,type TransitionLayer,type TransitionSceneModel} from '../protein/hemoglobinTransition';
+import {guidePositions,type TransitionLayer,type TransitionSceneModel} from '../protein/hemoglobinTransition';
 import type {SubunitLabel} from '../protein/hemoglobin';
 import {ribbonGeometry} from './ribbon';
 
-export type TransitionState='T'|'overlay'|'R'|'morph';
+export type TransitionState='T'|'overlay'|'R'|'motion';
 export type TransitionHighlight='all'|'reference'|'moving';
 export type TransitionView={state:TransitionState;
- /** Morph fraction 0 (T) … 1 (R); used only in the morph state. */ fraction:number;
+ /** Motion-guide fraction 0 (T) … 1 (T moving dimer after the full calculated rigid motion); used only in the motion state. */ fraction:number;
  highlight:TransitionHighlight;showHeme:boolean;showLigand:boolean;showInterface:boolean;showGuide:boolean;
  /** Heme number (1–4) whose proximal His is drawn, or null. */ heme:number|null};
 export type TransitionCamera={view:'tetramer'|'dimer'|'heme'|'fit';heme?:number;token:number};
@@ -24,15 +24,13 @@ export const COMPARISON_COLORS={
 const FADED=0.14,LIGHT=0.62;
 /** Display radius (Å) of the rotation wedge; only its angle and axis are calculated quantities. */
 export const GUIDE_RADIUS=34;
-/** A morph layer's comparison color: T gray → R orange by fraction (display only). */
-export const morphColor=(f:number)=>new T.Color(COMPARISON_COLORS.T.ribbon).lerp(new T.Color(COMPARISON_COLORS.R.ribbon),f).getHex();
 
-type Drawn={layer:TransitionLayer;positions:T.Vector3[];ribbon:number;heme:number;ligand:boolean;name:'T'|'R'|'morph'};
+type Drawn={layer:TransitionLayer;positions:T.Vector3[];ribbon:number;heme:number;ligand:boolean;name:'T'|'R'|'motion'};
 
 /**
  * T ↔ R comparison view. T is drawn at its deposited coordinates, R at its rigidly aligned coordinates (reference
- * αβ dimer superposition), and the morph layer at straight-line interpolated common-atom coordinates. The camera is
- * independent of the state, so switching T / Overlay / R / Morph never moves the view.
+ * αβ dimer superposition), and the motion guide as the T structure whose moving αβ dimer is displaced as one rigid body
+ * (never deformed). The camera is independent of the state, so switching T / Overlay / R / Motion guide never moves the view.
  */
 export class TransitionScene{
  private renderer:T.WebGLRenderer;
@@ -155,11 +153,10 @@ export class TransitionScene{
   const m=this.model,drawn:Drawn[]=[];
   if(view.state==='T'||view.state==='overlay')drawn.push({layer:m.t,positions:this.tPositions,ribbon:COMPARISON_COLORS.T.ribbon,heme:COMPARISON_COLORS.T.heme,ligand:false,name:'T'});
   if(view.state==='R'||view.state==='overlay')drawn.push({layer:m.r,positions:this.rPositions,ribbon:COMPARISON_COLORS.R.ribbon,heme:COMPARISON_COLORS.R.heme,ligand:true,name:'R'});
-  if(view.state==='morph'){
-   const f=view.fraction,mp=interpolatePositions(m.morph.tPositions,m.morph.rPositions,f).map(p=>new T.Vector3(...p));
-   drawn.push({layer:m.morph,positions:mp,ribbon:morphColor(f),heme:new T.Color(COMPARISON_COLORS.T.heme).lerp(new T.Color(COMPARISON_COLORS.R.heme),f).getHex(),ligand:false,name:'morph'});
-   // The deposited O₂ belongs to the R endpoint only: drawn at f = 1, never interpolated or placed on T.
-   if(f===1)drawn.push({layer:{...m.r,residues:[],hemes:[]},positions:this.rPositions,ribbon:0,heme:0,ligand:true,name:'R'});
+  if(view.state==='motion'){
+   // T geometry throughout (T colors, no O₂): only the moving dimer's placement changes.
+   const positions=view.fraction===0?this.tPositions:guidePositions(m.t.positions,m.motion,view.fraction).map(p=>new T.Vector3(...p));
+   drawn.push({layer:m.t,positions,ribbon:COMPARISON_COLORS.T.ribbon,heme:COMPARISON_COLORS.T.heme,ligand:false,name:'motion'});
   }
   for(const d of drawn)this.drawLayer(d,view);
   if(view.showGuide)this.drawGuide();
@@ -174,6 +171,9 @@ export class TransitionScene{
   // First backbone atoms of the primary layer as displayed (for endpoint exactness checks).
   const first=primary.layer.residues[0],ca=first.atoms.find(i=>primary.layer.atoms[i].name==='CA')!;
   ds.sampleAtom=`${primary.layer.atoms[ca].chain}:${first.resSeq}:${first.resName}:CA`;ds.samplePosition=primary.positions[ca].toArray().map(v=>v.toFixed(3)).join(',');
+  // Same for the first moving-dimer residue (the part the motion guide displaces).
+  const mFirst=primary.layer.residues.find(r=>m.moving.includes(primary.layer.labelOf[r.chain]))!,mca=mFirst.atoms.find(i=>primary.layer.atoms[i].name==='CA')!;
+  ds.movingSampleAtom=`${primary.layer.atoms[mca].chain}:${mFirst.resSeq}:${mFirst.resName}:CA`;ds.movingSamplePosition=primary.positions[mca].toArray().map(v=>v.toFixed(3)).join(',');
   this.render();
  }
  cameraView(request:TransitionCamera){

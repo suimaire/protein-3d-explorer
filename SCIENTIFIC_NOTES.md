@@ -445,10 +445,15 @@ Chapter 3 — From Structure to Function (Phase 4B). Details, all numbers and te
   ~1 Å shift described by Baldwin & Chothia (1979); the number depends on the structure pair, atoms and frame and was not tuned.
 - **Heme / local geometry**: Fe–His NE2 T 2.16–2.21 Å, R 2.06–2.07 Å; Fe from the 24-atom porphyrin plane (+ toward His)
   T +0.40 to +0.50 Å, R +0.06 to +0.09 Å. Shown per heme as T vs R; not presented as a single causal chain to the quaternary change.
-- **Morph policy**: straight-line interpolation of common atoms only; f = 0 / 1 are exactly T / aligned R; bonds (connectivity)
-  kept; no invented atoms. Labelled "Morph = visual interpolation, not a molecular trajectory" (always visible). Intermediate
-  bond lengths are not physical (e.g. at 50 %: 23/2280 backbone, 345/2178 side-chain, 13/200 heme bonds shorter by > 0.1 Å).
-- **Ligand handling**: O₂ only on the R endpoint (R, Overlay, Morph at 100 %); never interpolated or placed on T.
+- **Quaternary motion guide**: α1β1 fixed; the whole T α2β2 (all protein atoms + its two hemes) moved as one rigid body by
+  the calculated relative motion — quaternion SLERP rotation (f × 14.1° about the calculated axis) about the T Cα centroid plus
+  f × the calculated 3.1 Å centroid displacement. Bond lengths, angles and internal distances are exactly those of T at every
+  position. 100 % = T α2β2 after the rigid motion, not the experimental R coordinates (0.89 Å Cα RMSD from aligned R).
+  Always labelled "계산된 α2β2의 상대 회전·이동만 시각화한 가이드입니다. 실제 분자 전이 경로나 R 구조 자체가 아닙니다."
+  An earlier straight-line atom morph was removed because it distorted bonds at intermediate positions.
+- **Individual chain RMSD** (each chain fitted alone, matched Cα only): α1 0.61 (140), β1 0.84 (145), α2 0.54 (140),
+  β2 0.84 Å (145) vs 5.19 Å for α2β2 after α1β1 alignment — subunit folds change much less than their relative arrangement.
+- **Ligand handling**: O₂ only on the R endpoint (R, Overlay); never interpolated or placed on T or in the motion guide.
 - **Interface comparison**: same ≤ 4.0 Å heavy-atom criterion for both, between α1/β1 and α2/β2 residues on common atoms:
   T 56, R 40 residue pairs; 23 common, 33 lost, 17 gained. Geometric contacts only; no salt bridge or H-bond labelled.
 - **Guide**: calculated rotation axis, a wedge with the calculated angle at an enlarged 34 Å display radius, and the
@@ -456,5 +461,5 @@ Chapter 3 — From Structure to Function (Phase 4B). Details, all numbers and te
 - **Scientific limitations**: two static crystal structures in different crystal forms stand for T-like and R-like; T and R
   are presented as useful models of major quaternary states, with a note that hemoglobin occupies several conformational
   states. No claim that T cannot bind O₂ or that R is always fully saturated. 2DN1 lacks α/β Val1 and β His2 side-chain atoms
-  (excluded from R, morph and contact comparison). The R tetramer is exactly symmetric (generated). Cooperativity, O₂-binding
+  (excluded from R and contact comparison). The R tetramer is exactly symmetric (generated). Cooperativity, O₂-binding
   curves, Hill coefficient, MWC/KNF, Bohr effect, 2,3-BPG and HbS are not covered.

@@ -6,7 +6,7 @@ await mkdir('artifacts',{recursive:true});
 const server=await createServer({server:{middlewareMode:true},appType:'custom'});
 try{
  const tText=await readFile('src/data/structures/2DN2.pdb','utf8'),rText=await readFile('src/data/structures/2DN1.pdb','utf8');
- const {analyzeTransition,morphPositions,REFERENCE_DIMER,MOVING_DIMER}=await server.ssrLoadModule('/src/protein/hemoglobinTransition.ts');
+ const {analyzeTransition,guidePose,guidePositions,REFERENCE_DIMER,MOVING_DIMER}=await server.ssrLoadModule('/src/protein/hemoglobinTransition.ts');
  const {interfaceContacts}=await server.ssrLoadModule('/src/protein/quaternary.ts');
  const started=performance.now(),m=analyzeTransition(tText,rText),ms=performance.now()-started;
  const round=(v,n=3)=>Number(v.toFixed(n)),vec=(v,n=3)=>v.map(x=>round(x,n));
@@ -25,12 +25,13 @@ try{
   polymerHeavyAtoms:model.structure.residues.reduce((n,r)=>n+r.atoms.length,0),bonds:model.bonds.length,hemeBonds:model.hemeBonds.length,
  });
  const T=endpoint(m.t,'src/data/structures/2DN2.pdb'),R=endpoint(m.r,'src/data/structures/2DN1.pdb');T.sha256=await sha(T.file);R.sha256=await sha(R.file);
- const mid=morphPositions(m,0.5),t0=morphPositions(m,0),t1=morphPositions(m,1);
- const {transitionSceneModel}=await server.ssrLoadModule('/src/protein/hemoglobinTransition.ts'),scene=transitionSceneModel(m);
- const len=(p,a,b)=>Math.hypot(p[a][0]-p[b][0],p[a][1]-p[b][1],p[a][2]-p[b][2]),BB=new Set(['N','CA','C','O','OXT']),nameOf=i=>m.common[i].key.split(':').at(-1);
- const bondStats=list=>{const d=list.map(([a,b])=>({bond:`${m.common[a].key}–${nameOf(b)}`,endpointMin:len(t0,a,b)<len(t1,a,b)?len(t0,a,b):len(t1,a,b),mid:len(mid,a,b)})).map(x=>({...x,short:x.endpointMin-x.mid})).sort((x,y)=>y.short-x.short);
-  return {bonds:d.length,shortenedOver0_1:d.filter(x=>x.short>0.1).length,shortenedOver0_5:d.filter(x=>x.short>0.5).length,minMidpoint:round(Math.min(...d.map(x=>x.mid))),worst:d.slice(0,8).map(x=>`${x.bond} ${round(x.endpointMin,2)}→${round(x.mid,2)} Å`)};};
- const backbone=scene.morph.polymerBonds.filter(([a,b])=>BB.has(nameOf(a))&&BB.has(nameOf(b))),side=scene.morph.polymerBonds.filter(([a,b])=>!(BB.has(nameOf(a))&&BB.has(nameOf(b))));
+ const {transitionSceneModel}=await server.ssrLoadModule('/src/protein/hemoglobinTransition.ts'),scene=transitionSceneModel(m),guide=scene.motion;
+ const tPos=m.t.structure.atoms.map(a=>a.position),len=(p,a,b)=>Math.hypot(p[a][0]-p[b][0],p[a][1]-p[b][1],p[a][2]-p[b][2]);
+ const movingSet=new Set(guide.atoms),guideBonds=[...scene.t.polymerBonds,...scene.t.hemeBonds].filter(([a,b])=>movingSet.has(a)&&movingSet.has(b));
+ const g0=guidePositions(tPos,guide,0),gMid=guidePositions(tPos,guide,0.5),g1=guidePositions(tPos,guide,1);
+ const maxBondChange=Math.max(...[0.25,0.5,0.75,1].flatMap(f=>{const p=guidePositions(tPos,guide,f);return guideBonds.map(([a,b])=>Math.abs(len(p,a,b)-len(tPos,a,b)));}));
+ const movCa=m.common.filter(c=>c.key.endsWith(':CA')&&!c.key.includes(':HEM:')&&MOVING_DIMER.some(l=>c.key.startsWith(l+':')));
+ const guideEndVsR=Math.sqrt(movCa.reduce((s,c)=>s+len([g1[c.t],m.rAligned[c.r]],0,1)**2,0)/movCa.length);
  // Sensitivity: exclude three residues at each chain terminus from the reference fit.
  const {fitRigid}=await server.ssrLoadModule('/src/protein/rigid.ts');
  const out={
@@ -43,16 +44,21 @@ try{
    determinant:round(m.moving.fit.determinant,12),angle:round(m.moving.screw.angle,2),axis:vec(m.moving.screw.axis,4),axisPoint:vec(m.moving.screw.axisPoint,2),
    screwTranslation:round(m.moving.screw.screwTranslation,2),radius:round(m.moving.screw.radius,2),centroidT:vec(m.moving.centroidT,2),centroidR:vec(m.moving.centroidR,2),centroidDisplacement:round(m.moving.centroidDisplacement,2)},
   reversed:{referenceRmsd:round(m.reversed.referenceRmsd),angle:round(m.reversed.angle,2)},
-  wholeTetramerFitRmsd:round(m.wholeTetramerRmsd),perSubunitFitRmsd:Object.fromEntries(Object.entries(m.perSubunitRmsd).map(([k,v])=>[k,round(v)])),
+  wholeTetramerFitRmsd:round(m.wholeTetramerRmsd),subunitFits:Object.fromEntries(Object.entries(m.subunitFits).map(([k,v])=>[k,{matched:v.matched,rmsd:round(v.rmsd,6)}])),
   hemes:{t:m.hemes.t.map(h=>({...h,feHis:round(h.feHis,5),feFromPorphyrin:round(h.feFromPorphyrin,5),feFromPyrroleN:round(h.feFromPyrroleN,5)})),r:m.hemes.r.map(h=>({...h,feHis:round(h.feHis,5),feFromPorphyrin:round(h.feFromPorphyrin,5),feFromPyrroleN:round(h.feFromPyrroleN,5),ligand:h.ligand&&{...h.ligand,feDistance:round(h.ligand.feDistance,5)}}))},
   contacts:{cutoff:m.contacts.cutoff,t:m.contacts.t.length,r:m.contacts.r.length,common:m.contacts.common.length,lost:m.contacts.lost.length,gained:m.contacts.gained.length,byPair:m.contacts.byPair,
    lostList:m.contacts.lost,gainedList:m.contacts.gained},
-  morph:{midpointFinite:mid.every(p=>p.every(Number.isFinite)),atoms:mid.length,
-   midpointBondDistortion:{note:'straight-line interpolation at fraction 0.5; shortening relative to the shorter endpoint length',backbone:bondStats(backbone),sideChain:bondStats(side),heme:bondStats(scene.morph.hemeBonds)}},
+  motionGuide:{method:'moving dimer (all T polymer atoms + 2 hemes) as one rigid body; rotation = quaternion SLERP about the T Cα centroid, centroid moved linearly; α1β1 fixed',
+   movingAtoms:guide.atoms.length,hemeAtoms:guide.atoms.filter(i=>m.t.structure.atoms[i].resName==='HEM').length,quaternion:vec(guide.quaternion,6),
+   midpointAngle:round(Math.acos(Math.min(1,(guidePose(guide,0.5).rotation.reduce((s,r,i)=>s+r[i],0)-1)/2))*180/Math.PI,3),
+   bondsChecked:guideBonds.length,maxBondLengthChange:maxBondChange,
+   endpointVsExperimentalRCaRmsd:round(guideEndVsR),note:'guide 100% = T moving dimer after the calculated rigid motion; differs from aligned R by the moving dimer own-fit RMSD'},
   analysisMs:round(ms,1),
   // First displayed Cα of each layer (browser endpoint-exactness checks).
-  samples:(()=>{const ca=(atoms,chain)=>atoms.findIndex(a=>a.chain===chain&&a.name==='CA'&&!a.hetero),k=m.common.findIndex(c=>c.key==='α1:2:LEU:CA'),t=m.t.structure.atoms,r=m.r.structure.atoms;
-   return {T:{atom:'A:1:VAL:CA',position:t[ca(t,'A')].position},R:{atom:'A:2:LEU:CA',position:m.rAligned[ca(r,'A')]},morph:{atom:'A:2:LEU:CA',t:t0[k],r:t1[k],mid:mid[k]}};})(),
+  samples:(()=>{const ca=(atoms,chain)=>atoms.findIndex(a=>a.chain===chain&&a.name==='CA'&&!a.hetero),t=m.t.structure.atoms,r=m.r.structure.atoms;
+   const mv=ca(t,'C');
+   return {T:{atom:'A:1:VAL:CA',position:t[ca(t,'A')].position},R:{atom:'A:2:LEU:CA',position:m.rAligned[ca(r,'A')]},
+    motion:{atom:'C:1:VAL:CA',g0:g0[mv],mid:gMid[mv],g1:g1[mv],referenceAtom:'A:1:VAL:CA',reference:gMid[ca(t,'A')]}};})(),
   camera:{dimerDirection:m.moving.screw.axis},
  };
  const trimmed=m.common.filter(c=>c.key.endsWith(':CA')&&!c.key.includes(':HEM:')&&['α1','β1'].some(l=>c.key.startsWith(l+':'))).filter(c=>{const [l,p]=c.key.split(':');const n=l.startsWith('α')?141:146;return +p>4&&+p<=n-3;});
