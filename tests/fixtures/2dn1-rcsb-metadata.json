@@ -1,0 +1,138 @@
+{
+ "source": "RCSB Data API (data.rcsb.org/rest/v1/core entry, assembly, polymer_entity, nonpolymer_entity) and files.rcsb.org/download/2DN1.pdb1, retrieved 2026-09-15",
+ "entry": {
+  "title": "1.25A resolution crystal structure of human hemoglobin in the oxy form",
+  "resolution": 1.25,
+  "method": "X-RAY DIFFRACTION",
+  "crystalGrowth": "sodium/potassium phosphate, glycerol, pH 6.7, Batch, temperature 277K",
+  "depositedModeledMonomers": 285,
+  "depositedUnmodeledMonomers": 2
+ },
+ "assembly": {
+  "id": "1",
+  "details": "author_defined_assembly",
+  "oligomericCount": 4,
+  "oligomericDetails": "tetrameric",
+  "operators": [
+   {
+    "id": "1",
+    "type": "identity operation",
+    "symmetry": "x,y,z",
+    "matrix": [
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      0,
+      0,
+      1
+     ]
+    ],
+    "vector": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "id": "2",
+    "type": "crystal symmetry operation",
+    "symmetry": "y,x,-z",
+    "matrix": [
+     [
+      0,
+      1,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      -1
+     ]
+    ],
+    "vector": [
+     0,
+     0,
+     0
+    ]
+   }
+  ],
+  "operExpression": "1,2",
+  "polymerInstances": 4,
+  "modeledPolymerMonomers": 570,
+  "unmodeledPolymerMonomers": 4
+ },
+ "assemblyFile": {
+  "name": "2DN1.pdb1",
+  "sha256": "e6477125cc29a5bf2490ebddfe290f0e68f703b6dbe308f1a1b870b9b888216b",
+  "models": 2,
+  "coordinateRecordsPerModel": [
+   2506,
+   2506
+  ],
+  "coordinateDigest": {
+   "method": "sha256 of ATOM/HETATM lines, columns 1-66, joined by \n, per MODEL",
+   "model1": "7e11300b4b92e1b06671ba2470a314cb11a0a0873a725309a6b44d4a7b0af638",
+   "model2": "6b167d681288f4e934cf9328bd819e261de47fb0e5c9cd6c48170588e6bdbfa2"
+  }
+ },
+ "entities": [
+  {
+   "entity": 1,
+   "description": "Hemoglobin alpha subunit",
+   "chains": [
+    "A"
+   ],
+   "uniprot": [
+    "P69905"
+   ],
+   "sequence": "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+   "sourceType": "natural",
+   "organism": "Homo sapiens",
+   "mutations": 0
+  },
+  {
+   "entity": 2,
+   "description": "Hemoglobin beta subunit",
+   "chains": [
+    "B"
+   ],
+   "uniprot": [
+    "P68871"
+   ],
+   "sequence": "VHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH",
+   "sourceType": "natural",
+   "organism": "Homo sapiens",
+   "mutations": 0
+  }
+ ],
+ "nonpolymerEntities": [
+  {
+   "entity": 3,
+   "compId": "HEM",
+   "name": "PROTOPORPHYRIN IX CONTAINING FE"
+  },
+  {
+   "entity": 4,
+   "compId": "OXY",
+   "name": "OXYGEN MOLECULE"
+  },
+  {
+   "entity": 5,
+   "compId": "MBN",
+   "name": "TOLUENE"
+  }
+ ]
+}

@@ -1,5 +1,56 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 4B — Hemoglobin T ↔ R Structural Transition, completed and verified (2026-09-15)
+
+## Completed
+
+- Chapter 1: **Peptide Geometry**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Soluble vs Membrane Protein**
+
+## Chapter 3 — From Structure to Function
+
+Completed:
+- **Hemoglobin Quaternary Structure**
+- **Hemoglobin T ↔ R Structural Transition**
+
+Hemoglobin T ↔ R Structural Transition:
+
+- Preflight: heme bonds inferred by distance = CCD HEM bond table (50/50 per heme); the 1.0–1.25 Å propionate/vinyl
+  distances are deposited coordinates (case A). No renderer change.
+- Candidates 2DN1 (O₂), 2DN3 (CO), 1IRD (CO), 1HHO (O₂, 2.1 Å). T = **2DN2** (deoxy, unchanged); R = **2DN1** (human oxy HbA,
+  1.25 Å, same study). Unmodified asset, SHA-256 tested, lazy-fetched with the module.
+- 2DN1 assembly = αβ + BIOMT 2 (y, x, −z) → A, B, A_2, B_2; equals RCSB `2DN1.pdb1` (digest test). `analyzeHemoglobin`
+  generalised (operator copies, declared hetero roles, DBREF-position SEQRES check); 2DN2 results unchanged.
+- Mapping T A/B/C/D ↔ R A/B/A_2/B_2 by label + accession + identical SEQRES; atoms by label + UniProt position + resName + name.
+  4516 common atoms; R lacks α/β Val1 and β His2 side chain.
+- α1β1 Cα (285) rigid superposition: RMSD **0.93 Å**, det +1. α2β2 relative rotation **14.1°**, axial shift −1.3 Å,
+  centroid displacement **3.1 Å** (consistent with the ~15° Baldwin & Chothia description; not tuned). Whole-tetramer fit 2.41 Å.
+- Heme: Fe–His NE2 T 2.16–2.21 / R 2.06–2.07 Å; Fe–porphyrin plane T +0.40–0.50 / R +0.06–0.09 Å; O₂ Fe–O1 1.82 / 1.78 Å.
+- Inter-dimer contacts (≤ 4.0 Å, common atoms): T 56, R 40, common 23, lost 33, gained 17.
+- UI: State T / Overlay / R / Morph (camera kept), Highlight whole / reference / moving dimer, Show Heme / Ligand (O₂) /
+  Interface / Rearrangement guide, Tetramer / Dimer comparison / Heme view / Fit / Reset, heme 1–4 T-vs-R table, morph slider
+  with permanent "visual interpolation, not a molecular trajectory" warning, T/R model note, answers collapsed.
+
+## Verified
+
+- Initial main / HEAD / origin/main `1389cd8`, clean, 0/0. Only this repository modified.
+- `npm run typecheck` passed. `npm test`: **252 passed = 225 preserved + 27 Phase 4B**.
+- `npm run build` passed. Vite >500 kB advisory remains for the shared three.js chunk (509.84 → 518.42 kB, Tube/Cone
+  geometry for the guide); new lazy chunk `HemoglobinTransitionLab` ~37 kB; 2DN1 asset 450 kB, not requested at start.
+- `npm run test:browser`: all seven scripts pass (24 + 24 + 31 + 18 + 16 + 17 + 15 = 145), console errors 0. Existing scripts
+  changed only for the seven-module navigation (count/labels) and the Phase 4A nav scope regex (no longer forbids "T ↔ R").
+  1440 px and 768/390/320 px checked.
+- Screenshots: `phase4b-hb-t.png`, `phase4b-hb-r.png`, `phase4b-hb-overlay.png`, `phase4b-hb-moving-dimer.png`,
+  `phase4b-hb-morph-midpoint.png`, `phase4b-hb-mobile.png`; `phase4b-browser-results.json`; audit
+  `node scripts/hemoglobin-transition-audit.mjs`. Details: `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`.
+- Local commit only; **no push**.
+
+## Next recommended
+
+- **Phase 4C — Hemoglobin Cooperativity & Allostery**, in a separate session. Not started.
+
+---
+
 ## Phase 4A — Hemoglobin Quaternary Structure, completed and verified (2026-09-15)
 
 ## Completed
@@ -43,7 +94,7 @@ Hemoglobin Quaternary Structure:
 
 ## Next recommended
 
-- **Phase 4B — Hemoglobin T ↔ R Structural Transition**, in a separate session. Not started.
+- (Historical, Phase 4A) Phase 4B — Hemoglobin T ↔ R Structural Transition. Completed 2026-09-15; see top.
 
 ---
 

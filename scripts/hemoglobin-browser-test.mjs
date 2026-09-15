@@ -19,11 +19,11 @@ const pairFor=(a,b)=>audit.interfaces.pairs.find(p=>p.chains===`${a}-${b}`||p.ch
 try{
  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
- assert.equal(await nav.getByRole('button').count(),6);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-2),['Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure']);
+ assert.equal(await nav.getByRole('button').count(),7);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-3),['Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition']);
  assert.equal(requests.some(u=>/HemoglobinQuaternaryLab|2DN2/.test(u)),false,'hemoglobin chunk and structure must not load initially');
- assert.doesNotMatch(await nav.innerText(),/T ?↔ ?R|cooperativ|sickle|HbS|Bohr/i);
- check('Six completed modules with Chapter 3 · Hemoglobin Quaternary Structure; its chunk and 2DN2 asset are not requested at start');
+ assert.doesNotMatch(await nav.innerText(),/cooperativ|sickle|HbS|Bohr|Hill|2,3-BPG/i);
+ check('Seven completed modules with Chapter 3 · Hemoglobin Quaternary Structure; its chunk and 2DN2 asset are not requested at start');
 
  await nav.getByRole('button',{name:/Hemoglobin Quaternary/}).click();await hv().locator('canvas').waitFor();await settle();
  const loaded=requests.filter(u=>/HemoglobinQuaternaryLab|2DN2/.test(u));

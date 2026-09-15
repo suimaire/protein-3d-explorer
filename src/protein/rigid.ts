@@ -13,7 +13,7 @@ export const applyRigid=({rotation:R,translation:t}:RigidTransform,p:Vec):Vec=>[
 export const determinant=(R:Mat3)=>R[0][0]*(R[1][1]*R[2][2]-R[1][2]*R[2][1])-R[0][1]*(R[1][0]*R[2][2]-R[1][2]*R[2][0])+R[0][2]*(R[1][0]*R[2][1]-R[1][1]*R[2][0]);
 
 /** Symmetric-matrix eigen decomposition by cyclic Jacobi rotations (small, dependency-free). */
-function jacobi(input:number[][]){
+export function jacobi(input:number[][]){
  const A=input.map(r=>[...r]),n=A.length,V=A.map((r,i)=>r.map((_,j):number=>i===j?1:0));
  for(let sweep=0;sweep<60;sweep++)for(let p=0;p<n;p++)for(let q=p+1;q<n;q++){
   if(Math.abs(A[p][q])<1e-14)continue;
@@ -27,7 +27,8 @@ function jacobi(input:number[][]){
 
 /**
  * Least-squares proper rotation + translation mapping `from` onto `to` (Horn 1987 unit quaternion).
- * Used only to recover and verify the rigid-body orientation that OPM applied to the deposited file.
+ * Used to recover the rigid-body orientation that OPM applied to 1QJ8 and to superpose hemoglobin αβ dimers (T ↔ R).
+ * The quaternion always encodes a proper rotation (determinant +1): no reflection and no scaling are possible.
  */
 export function fitRigid(from:Vec[],to:Vec[]):RigidTransform&{rmsd:number;maxDeviation:number}{
  if(from.length!==to.length||from.length<3)throw new Error('fitRigid needs ≥3 paired points');

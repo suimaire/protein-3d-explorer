@@ -89,6 +89,45 @@ export function nearestPolymerLigand(structure:MultiChainStructure,metal:number)
  return best;
 }
 
+export type AssemblyOperator={rotation:[Vec,Vec,Vec];translation:Vec};
+export type AssemblyCopy={chain:string;source:string;operator:number};
+/** Chain ID of an operator copy: operator 1 keeps the deposited ID; operator k > 1 gives `A_k` (a generated symmetry copy of PDB chain A). */
+export const copyChainId=(source:string,operator:number)=>operator===1?source:`${source}_${operator}`;
+
+/**
+ * Biological assembly from REMARK 350 BIOMT operators: every listed chain (polymer residues and its non-water hetero
+ * groups) is copied once per operator, p' = R·p + t. Operator 1 = identity reproduces the deposited coordinates exactly.
+ * Copies are rigid (a proper rotation and translation from the file); no coordinate is invented.
+ */
+export function buildAssembly(structure:MultiChainStructure,chains:string[],operators:AssemblyOperator[]):{structure:MultiChainStructure;copies:AssemblyCopy[]}{
+ const atoms:PdbAtom[]=[],residues:PdbResidue[]=[],hetero:PdbResidue[]=[],copies:AssemblyCopy[]=[];
+ const apply=({rotation:R,translation:t}:AssemblyOperator,p:Vec):Vec=>[0,1,2].map(i=>R[i][0]*p[0]+R[i][1]*p[1]+R[i][2]*p[2]+t[i]) as Vec;
+ const identity=(op:AssemblyOperator)=>op.rotation.every((row,i)=>row.every((v,j)=>v===(i===j?1:0)))&&op.translation.every(v=>v===0);
+ const polymerOrder:PdbAtom[][]=[],heteroOrder:{atoms:PdbAtom[];source:PdbResidue}[]=[];
+ operators.forEach((op,k)=>{
+  const same=identity(op);
+  for(const source of structure.chains.filter(c=>chains.includes(c))){
+   const chain=copyChainId(source,k+1);copies.push({chain,source,operator:k+1});
+   const move=(a:PdbAtom):PdbAtom=>({...a,chain,position:same?a.position:apply(op,a.position)});
+   for(const r of structure.residues.filter(r=>r.chain===source))polymerOrder.push(r.atoms.map(i=>move(structure.atoms[i])));
+   for(const g of structure.hetero.filter(g=>g.chain===source))heteroOrder.push({atoms:g.atoms.map(i=>move(structure.atoms[i])),source:g});
+  }
+ });
+ for(const list of polymerOrder){
+  const r:PdbResidue={index:residues.length,resName:list[0].resName,resSeq:list[0].resSeq,insertionCode:list[0].insertionCode,chain:list[0].chain,atoms:[],occupancy:Math.min(...list.map(a=>a.occupancy)),secondary:'other'};
+  const src=structure.residues.find(x=>x.resSeq===r.resSeq&&x.insertionCode===r.insertionCode&&x.resName===r.resName&&copies.find(c=>c.chain===r.chain)!.source===x.chain)!;
+  r.secondary=src.secondary;
+  for(const a of list){r.atoms.push(atoms.length);atoms.push(a);}
+  residues.push(r);
+ }
+ for(const {atoms:list,source} of heteroOrder){
+  const g:PdbResidue={...source,index:residues.length+hetero.length,chain:list[0].chain,atoms:[]};
+  for(const a of list){g.atoms.push(atoms.length);atoms.push(a);}
+  hetero.push(g);
+ }
+ return {structure:{id:structure.id,chains:copies.map(c=>c.chain),atoms,residues,hetero,omitted:structure.omitted},copies};
+}
+
 /** Mean position of a set of atoms. */
 export function centroid(atoms:PdbAtom[],indices:number[]):Vec{
  const s:Vec=[0,0,0];for(const i of indices){const p=atoms[i].position;s[0]+=p[0];s[1]+=p[1];s[2]+=p[2];}

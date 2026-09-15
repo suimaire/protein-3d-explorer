@@ -1,6 +1,6 @@
 # Protein 3D Explorer
 
-고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure를 제공합니다.
+고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure, Hemoglobin T ↔ R Structural Transition을 제공합니다.
 Ac–(L-Ala)₅–NHMe의 Ala 3에서 φ/ψ를 조작하고 peptide plane, schematic Ramachandran map,
 0.40 Å를 넘는 심한 비결합 원자 겹침을 함께 관찰합니다. 실제 에너지 계산이나 protein folding simulation은 아닙니다.
 
@@ -43,6 +43,13 @@ Ribbon / Atoms / Space filling, Color by subunit(α1–Chain A 등 legend)·by c
 Heme 1–4 확인과 Focus heme(측정한 Fe–proximal His), 좌표로 계산한 subunit interface(≤ 4.0 Å)와
 설명용 Separate subunits(실험 구조 상태 아님). 한 가지 구조 상태(deoxy)만 보여줍니다. 상세: `HEMOGLOBIN_QUATERNARY_VALIDATION.md`.
 
+**Hemoglobin T ↔ R Structural Transition** — 두 실험 구조 PDB 2DN2 (deoxy, T-like)와 PDB 2DN1 (oxy, O₂ bound, R-like; 둘 다
+X-ray 1.25 Å, 같은 연구)를 비교합니다. 2DN1 tetramer는 파일의 BIOMT operator로 만들고, α1β1 dimer의 Cα만으로 R을 T에
+rigid-body 정렬합니다(tetramer 전체 fit 아님). T state / Overlay / R state / Morph, Reference·Moving αβ dimer 강조,
+Heme·O₂ ligand·Interface·Rearrangement guide, Tetramer / Dimer comparison / Heme view, heme별 Fe–His·Fe–porphyrin 평면 비교.
+화면 수치: reference dimer RMSD 0.93 Å, α2β2 상대 회전 14.1°. Morph는 실제 분자 경로가 아닌 시각적 보간임을 항상 표시합니다.
+상세: `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`.
+
 ## Local development
 
 Node.js 22.12 이상, npm을 사용합니다.
@@ -78,6 +85,9 @@ Hydrophobic Core 캡처: `phase3a-hydrophobic-core.png`, `phase3a-buried.png`, `
 Soluble vs Membrane 캡처: `phase3b-soluble-vs-membrane.png`, `phase3b-lipid-facing.png`, `phase3b-aqueous-facing.png`, `phase3b-mobile.png`.
 `python scripts/sasa-reference.py`(Biopython 필요, 프로젝트 의존성 아님)는 독립 SASA 참조 fixture를 만듭니다.
 α-Helix 캡처: `phase2a-alpha-helix.png`, `phase2a-alpha-helix-top.png`, `phase2a-mobile-390.png`.
+`node scripts/hemoglobin-transition-audit.mjs`는 T↔R 대응·정렬·회전·heme·contact·morph 수치를 `artifacts/hemoglobin-transition-audit.json`에 재생성합니다.
+Hemoglobin T ↔ R 캡처: `phase4b-hb-t.png`, `phase4b-hb-r.png`, `phase4b-hb-overlay.png`, `phase4b-hb-moving-dimer.png`, `phase4b-hb-morph-midpoint.png`, `phase4b-hb-mobile.png`.
+`npm run test:browser`는 현재 일곱 모듈의 검증 스크립트 여섯 개와 T ↔ R 스크립트를 모두 실행합니다.
 
 ## GitHub Pages
 
@@ -105,6 +115,8 @@ Vite base는 `/protein-3d-explorer/`로 설정했습니다. `dist/`가 정적 �
 - `BETA_SHEET_VALIDATION.md`: Phase 2B geometry, registration, H-bond pair audit
 - `HYDROPHOBIC_CORE_VALIDATION.md`: Phase 3A 구조 출처, SASA 검증, 구성 분포, residue 수동 검토
 - `SOLUBLE_MEMBRANE_VALIDATION.md`: Phase 3B 후보 평가, OPM orientation, 분류 기준, 조성, residue 수동 검토
+- `HEMOGLOBIN_QUATERNARY_VALIDATION.md`, `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`: Phase 4A/4B 구조 선택, assembly, chain 대응, 정렬·회전 수치
+- `src/protein/hemoglobin.ts`, `hemoglobinTransition.ts`, `quaternary.ts`; `src/rendering/AssemblyScene.ts`, `TransitionScene.ts`: hemoglobin 분석과 3D 화면
 - `CURRENT_STATUS.md`: 최신 완료 상태와 후속 작업
 
 React/Vite/TypeScript/Vitest는 기존 carbohydrate explorer 패턴을 따릅니다. Three.js r170과

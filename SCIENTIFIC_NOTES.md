@@ -417,3 +417,44 @@ Chapter 3 — From Structure to Function (Phase 4A). Details, numbers and tests:
   observed conformation; Fe display radius 2.0 Å in space filling; short primary→quaternary level summary only.
 - **Limitation — one structural state**: this is one deoxy crystal structure, not the fixed form of all hemoglobin
   structures. O₂-linked T↔R changes, cooperativity, Bohr effect, 2,3-BPG and HbS are intentionally not covered here.
+
+## Hemoglobin T ↔ R Structural Transition
+
+Chapter 3 — From Structure to Function (Phase 4B). Details, all numbers and tests: `HEMOGLOBIN_TR_TRANSITION_VALIDATION.md`.
+
+- **T structure**: PDB 2DN2, human deoxyhemoglobin A, X-ray 1.25 Å (Phase 4A asset, unchanged; re-checked as deoxy/T-like).
+- **R structure**: PDB 2DN1, human oxyhemoglobin A, X-ray 1.25 Å, same study (Park et al. 2006, J. Mol. Biol. 360:690–701).
+  Unmodified RCSB file, SHA-256 tested, fetched on demand. Candidates compared: 2DN1 (O₂), 2DN3 (CO), 1IRD (CO), 1HHO (O₂, 2.1 Å).
+- **Ligand state**: T none; R one deposited O₂ (OXY) per heme Fe, occupancy 1.00, no altlocs, Fe–O1 1.82 (α) / 1.78 (β) Å.
+  Called "R-like (oxy)" / "O₂ bound". Toluene (MBN) additive and waters are not displayed.
+- **Biological assemblies**: T = deposited chains A–D (identity). R = αβ asymmetric unit + BIOMT 2 (y, x, −z) → chains A, B,
+  A_2, B_2; reproduces RCSB `2DN1.pdb1` exactly. α2β2 from DBREF accessions in both.
+- **Heme preflight**: distance-inferred heme bonds equal the CCD HEM bond table (50/50) in every heme; the 1.0–1.25 Å
+  propionate/vinyl distances are deposited coordinates, kept as is.
+- **Chain mapping**: labels α1/β1/α2/β2 assigned in each structure by the Phase 4A rule, then matched by label with type,
+  accession, identical SEQRES and residue names checked: T A/B/C/D ↔ R A/B/A_2/B_2. Residues by UniProt position; atoms by
+  name; key = subunit label + position + resName + atom name (never record index or chain letter).
+- **Alignment reference**: α1β1 (largest αβ interface in both states; classical frame). Moving dimer: α2β2.
+- **Alignment method**: rigid least-squares superposition (Horn quaternion, det +1; no scaling, reflection or deformation)
+  of R onto T; T coordinates unchanged, aligned R derived at runtime. Never a whole-tetramer fit (that gives 2.41 Å and hides
+  the rearrangement).
+- **Matched atoms**: 285 common Cα of α1β1 (α 2–141, β 2–146); 4516 common atoms overall.
+- **Reference RMSD**: 0.93 Å (0.81 Å with termini excluded by a pre-defined rule).
+- **Moving dimer rotation**: 14.1° (14.0° without termini; same value with roles swapped), axial translation −1.3 Å.
+- **Moving dimer displacement**: Cα centroid 3.1 Å. Qualitatively and in magnitude consistent with the ~15° rotation plus
+  ~1 Å shift described by Baldwin & Chothia (1979); the number depends on the structure pair, atoms and frame and was not tuned.
+- **Heme / local geometry**: Fe–His NE2 T 2.16–2.21 Å, R 2.06–2.07 Å; Fe from the 24-atom porphyrin plane (+ toward His)
+  T +0.40 to +0.50 Å, R +0.06 to +0.09 Å. Shown per heme as T vs R; not presented as a single causal chain to the quaternary change.
+- **Morph policy**: straight-line interpolation of common atoms only; f = 0 / 1 are exactly T / aligned R; bonds (connectivity)
+  kept; no invented atoms. Labelled "Morph = visual interpolation, not a molecular trajectory" (always visible). Intermediate
+  bond lengths are not physical (e.g. at 50 %: 23/2280 backbone, 345/2178 side-chain, 13/200 heme bonds shorter by > 0.1 Å).
+- **Ligand handling**: O₂ only on the R endpoint (R, Overlay, Morph at 100 %); never interpolated or placed on T.
+- **Interface comparison**: same ≤ 4.0 Å heavy-atom criterion for both, between α1/β1 and α2/β2 residues on common atoms:
+  T 56, R 40 residue pairs; 23 common, 33 lost, 17 gained. Geometric contacts only; no salt bridge or H-bond labelled.
+- **Guide**: calculated rotation axis, a wedge with the calculated angle at an enlarged 34 Å display radius, and the
+  centroid shift; "relative structural difference after alignment", not a trajectory.
+- **Scientific limitations**: two static crystal structures in different crystal forms stand for T-like and R-like; T and R
+  are presented as useful models of major quaternary states, with a note that hemoglobin occupies several conformational
+  states. No claim that T cannot bind O₂ or that R is always fully saturated. 2DN1 lacks α/β Val1 and β His2 side-chain atoms
+  (excluded from R, morph and contact comparison). The R tetramer is exactly symmetric (generated). Cooperativity, O₂-binding
+  curves, Hill coefficient, MWC/KNF, Bohr effect, 2,3-BPG and HbS are not covered.

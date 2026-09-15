@@ -124,7 +124,7 @@ export function parseMultiChainPdb(text:string):MultiChainStructure{
 }
 
 export type PdbHeader={
- /** DBREF: chain → reference database accession / entry name. */ dbref:{chain:string;database:string;accession:string;idCode:string}[];
+ /** DBREF: chain → reference database accession / entry name; first residue number in the file (`seqBegin`) and in the reference sequence (`dbBegin`). */ dbref:{chain:string;database:string;accession:string;idCode:string;seqBegin:number;dbBegin:number}[];
  /** SEQRES: chain → deposited sequence (three-letter codes), including residues that may be unmodeled. */ seqres:Map<string,string[]>;
  /** COMPND: MOL_ID → molecule name and chain list. */ molecules:{molId:number;name:string;chains:string[]}[];
  /** REMARK 350 biomolecules: chains and BIOMT operators (rotation rows + translation). */ assemblies:{id:number;author:string;software:string;chains:string[];operators:{rotation:[Vec,Vec,Vec];translation:Vec}[]}[];
@@ -140,7 +140,7 @@ export function parsePdbHeader(text:string):PdbHeader{
  for(const line of lines){
   const record=column(line,1,6);
   if(record==='SEQRES'){const chain=column(line,12,12);seqres.set(chain,[...(seqres.get(chain)??[]),...column(line,20,70).split(/\s+/).filter(Boolean)]);}
-  else if(record==='DBREF')dbref.push({chain:column(line,13,13),database:column(line,27,32),accession:column(line,34,41),idCode:column(line,43,54)});
+  else if(record==='DBREF')dbref.push({chain:column(line,13,13),database:column(line,27,32),accession:column(line,34,41),idCode:column(line,43,54),seqBegin:Number(column(line,15,18)),dbBegin:Number(column(line,56,60))});
   else if(record==='COMPND')compnd+=' '+column(line,11,80);
   else if(record==='EXPDTA')method=column(line,11,79);
   else if(record==='LINK'){const side=(o:number)=>({name:column(line,13+o,16+o),resName:column(line,18+o,20+o),chain:column(line,22+o,22+o),resSeq:Number(column(line,23+o,26+o))});links.push({a:side(0),b:side(30),distance:Number(column(line,74,78))});}
