@@ -25,11 +25,11 @@ try{
  const ubqSurface=highlightIndices(ubq,null,'surface'),ubqBuried=highlightIndices(ubq,null,'buried');
  const membraneZone=new Set(membrane.filter(m=>m.zone==='membrane').map(m=>m.index));
  const sensitivity=[0.15,0.2,0.25,0.3].map(threshold=>{const m=classifyMembrane(ompx,exposure.residues,OMPX_SLAB,threshold);return {threshold,lipid:countClasses(exposure.residues,highlightIndices(exposure.residues,m,'lipid',threshold)),aqueous:countClasses(exposure.residues,highlightIndices(exposure.residues,m,'aqueous',threshold)),ubiquitinSurface:countClasses(ubq,highlightIndices(ubq,null,'surface',threshold))};});
- // Numerical SASA sample points are fixed in the coordinate frame: compare deposited vs oriented frame.
+ // SASA is stored from the deposited frame. Diagnostic only: how much a recomputation on the oriented copy would differ.
  const {analyzeExposure}=await server.ssrLoadModule('/src/protein/exposure.ts');
- const deposited=analyzeExposure(ompxDeposited).residues;
- const frame={totalDeposited:deposited.reduce((s,r)=>s+r.sasa,0),totalOriented:exposure.total,maxResidueDiff:Math.max(...deposited.map((r,i)=>Math.abs(r.sasa-exposure.residues[i].sasa))),
-  maxRelativeDiff:Math.max(...deposited.map((r,i)=>Math.abs(r.relative-exposure.residues[i].relative))),surfaceFlips:deposited.filter((r,i)=>(r.relative>=SURFACE_THRESHOLD)!==(exposure.residues[i].relative>=SURFACE_THRESHOLD)).map(r=>`${name(r)} ${(r.relative*100).toFixed(1)}→${(exposure.residues[r.index].relative*100).toFixed(1)}`)};
+ const oriented=analyzeExposure(ompx).residues;
+ const frame={source:'deposited',totalStored:exposure.total,totalOrientedRecomputed:oriented.reduce((s,r)=>s+r.sasa,0),maxResidueDiff:Math.max(...oriented.map((r,i)=>Math.abs(r.sasa-exposure.residues[i].sasa))),
+  maxRelativeDiff:Math.max(...oriented.map((r,i)=>Math.abs(r.relative-exposure.residues[i].relative))),wouldFlip:exposure.residues.filter((r,i)=>(r.relative>=SURFACE_THRESHOLD)!==(oriented[i].relative>=SURFACE_THRESHOLD)).map(r=>`${name(r)} stored ${(r.relative*100).toFixed(1)} vs oriented ${(oriented[r.index].relative*100).toFixed(1)}`)};
  console.log('frame',JSON.stringify(frame));
  // Depth reference sensitivity: Cα instead of side-chain centroid.
  const caLipid=new Set(membrane.filter(m=>m.surface&&Math.abs(m.caDepth)<=OMPX_SLAB.halfThickness).map(m=>m.index));

@@ -7,9 +7,10 @@ import {analyzeExposure,composition,groupIndices} from '../src/protein/exposure'
 import {classOf,CLASS_INFO} from '../src/protein/chemistry';
 import {atomColor} from '../src/protein/colors';
 import {applyRigid,determinant,fitRigid,type RigidTransform} from '../src/protein/rigid';
-import {classifyMembrane,countClasses,findMembraneExamples,formatDepth,highlightIndices,isSurface,sideChainCentroid,transformStructure,zoneOf,SURFACE_THRESHOLD,type MembraneSlab} from '../src/protein/membrane';
+import {classifyMembrane,countClasses,matchExposure,findMembraneExamples,formatDepth,highlightIndices,isSurface,sideChainCentroid,transformStructure,zoneOf,SURFACE_THRESHOLD,type MembraneSlab} from '../src/protein/membrane';
 import {ompx,ompxDeposited,ompxBonds,ompxAnalysis,OMPX_OPM,OMPX_SLAB,OMPX_SOURCE,OMPX_TO_OPM} from '../src/protein/ompx';
 import {ubiquitin,ubiquitinExposure} from '../src/protein/ubiquitin';
+import {findExceptions} from '../src/protein/exposure';
 import {distance,type Vec} from '../src/geometry/vector';
 
 const opm=JSON.parse(opmText) as {dummyPlaneZ:number[];remark:string;opmRecord:{thickness:number;thicknesserror:number;tilt:number};backbone:[number,string,number,number,number][]};
@@ -100,7 +101,8 @@ describe('membrane orientation (OPM)',()=>{
  it('rigid transform preserves every internal distance and SASA',()=>{
   const n=ompx.atoms.length;
   for(let k=0;k<400;k++){const i=(k*37)%n,j=(k*101+7)%n;expect(distance(ompx.atoms[i].position,ompx.atoms[j].position)).toBeCloseTo(distance(ompxDeposited.atoms[i].position,ompxDeposited.atoms[j].position),9);}
-  // Shrake–Rupley test points are fixed in the coordinate frame, so rotation changes SASA only by sampling noise.
+  // Shrake–Rupley test points are fixed in the coordinate frame, so recomputing on a rotated copy changes SASA by sampling noise;
+  // the module therefore stores the deposited-frame values (see 'frame-invariant SASA' tests).
   const deposited=analyzeExposure(ompxDeposited).residues;
   expect(Math.abs(deposited.reduce((s,r)=>s+r.sasa,0)-exposure.total)/exposure.total).toBeLessThan(0.001);
   deposited.forEach((r,i)=>{
@@ -138,7 +140,7 @@ describe('residue membrane classification',()=>{
    expect(m.category).toBe(!m.surface?'buried':inside?'lipid-facing':'aqueous-facing');
   }
   // Synthetic: same exposure, different depth → different category; buried inside slab is not lipid-facing.
-  const fakeExposure=[{...residues[0],index:0,relative:0.6},{...residues[1],index:1,relative:0.05}];
+  const fakeExposure=[{...residues[0],index:0,resSeq:1,resName:'GLY',relative:0.6},{...residues[1],index:1,resSeq:2,resName:'GLY',relative:0.05}];
   const s=parsePdb(['ATOM      1  CA  GLY A   1       0.000   0.000   2.000  1.00 10.00           C','ATOM      2  CA  GLY A   2       0.000   0.000   3.000  1.00 10.00           C'].join('\n'));
   expect(classifyMembrane(s,fakeExposure,slab).map(m=>m.category)).toEqual(['lipid-facing','buried']);
   expect(classifyMembrane(s,[{...fakeExposure[0]},{...fakeExposure[1],relative:0.9}],{...slab,halfThickness:1}).map(m=>m.category)).toEqual(['aqueous-facing','aqueous-facing']);
@@ -151,14 +153,14 @@ describe('residue membrane classification',()=>{
  });
  it('reuses the shared chemistry classification and SASA code',()=>{
   for(const r of residues)expect(r.chemical).toBe(classOf(r.resName));
-  expect(analyzeExposure(ompx)).toEqual(exposure);
+  expect(analyzeExposure(ompxDeposited)).toEqual(exposure);
   expect(byNumber(100)).toMatchObject({resName:'ASN',chemical:'polar'});
  });
  it('observed compositions of this structure (not tuned)',()=>{
   const lipid=highlightIndices(residues,membrane,'lipid'),aqueous=highlightIndices(residues,membrane,'aqueous');
   expect(countClasses(residues,lipid)).toEqual({nonpolar:25,polar:7,acidic:0,basic:0,total:32,glycine:1});
-  expect(countClasses(residues,aqueous)).toEqual({nonpolar:11,polar:22,acidic:10,basic:7,total:50,glycine:2});
-  expect(countClasses(residues,highlightIndices(residues,membrane,'buried'))).toEqual({nonpolar:29,polar:28,acidic:4,basic:5,total:66,glycine:17});
+  expect(countClasses(residues,aqueous)).toEqual({nonpolar:10,polar:22,acidic:10,basic:7,total:49,glycine:2});
+  expect(countClasses(residues,highlightIndices(residues,membrane,'buried'))).toEqual({nonpolar:30,polar:28,acidic:4,basic:5,total:67,glycine:17});
   expect(residues.filter(r=>lipid.has(r.index)&&r.chemical==='polar').map(r=>r.resName)).toEqual(Array(7).fill('TYR'));
   const ubq=ubiquitinExposure().residues;
   expect(countClasses(ubq,highlightIndices(ubq,null,'surface'))).toEqual({nonpolar:15,polar:13,acidic:10,basic:11,total:49,glycine:6});
@@ -168,6 +170,63 @@ describe('residue membrane classification',()=>{
   const e=findMembraneExamples(ompx,residues,membrane),n=(m:{index:number}|null)=>m&&`${residues[m.index].resName}${residues[m.index].resSeq}`;
   expect(n(e.lipidNonpolar)).toBe('PHE125');expect(n(e.aqueousCharged)).toBe('ASP75');expect(n(e.lipidPolar)).toBe('TYR146');expect(n(e.buriedCharged)).toBe('LYS27');
   expect(memOf(125)).toMatchObject({zone:'membrane',category:'lipid-facing'});expect(memOf(75)).toMatchObject({zone:'sideB',category:'aqueous-facing'});
+ });
+});
+
+describe('frame-invariant SASA',()=>{
+ // Rigid motions that keep the OPM membrane frame (rotation about the normal + in-plane translation) and a general one.
+ const aboutNormal=(angle:number,dx:number,dy:number):RigidTransform=>({rotation:[[Math.cos(angle),-Math.sin(angle),0],[Math.sin(angle),Math.cos(angle),0],[0,0,1]],translation:[dx,dy,0]});
+ const general:RigidTransform={rotation:(()=>{const a=0.9,b=-0.4,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);return [[ca,-sa*cb,sa*sb],[sa,ca*cb,-ca*sb],[0,sb,cb]] as RigidTransform['rotation'];})(),translation:[12,-7,30]};
+ const recomputed=analyzeExposure(ompx).residues;
+ it('stored SASA/rSASA come from the deposited coordinates, not from the oriented copy',()=>{
+  const deposited=analyzeExposure(ompxDeposited);
+  expect(exposure).toEqual(deposited);
+  // The oriented recomputation really differs (sampling noise), which is why it is not used.
+  expect(Math.max(...recomputed.map((r,i)=>Math.abs(r.sasa-residues[i].sasa)))).toBeGreaterThan(1);
+  for(const m of membrane)expect(m.surface).toBe(deposited.residues[m.index].relative>=SURFACE_THRESHOLD);
+ });
+ it('rigid-body transformed structures reuse identical stored residue SASA/rSASA and give identical classification',()=>{
+  for(const T of [aboutNormal(0.8,5,-3),aboutNormal(-2.1,-20,14),aboutNormal(Math.PI,0,0)]){
+   const moved=transformStructure(ompx,T),joined=matchExposure(moved,residues);
+   joined.forEach((e,i)=>{expect(e).toBe(residues[i]);expect(e.sasa).toBe(residues[i].sasa);expect(e.relative).toBe(residues[i].relative);});
+   const m=classifyMembrane(moved,residues,OMPX_SLAB);
+   m.forEach((x,i)=>{expect(x.depth).toBeCloseTo(membrane[i].depth,9);expect(x.surface).toBe(membrane[i].surface);expect(x.category).toBe(membrane[i].category);});
+  }
+  // A general rotation moves the membrane frame, so only accessibility (not zone) must be invariant.
+  const tilted=classifyMembrane(transformStructure(ompx,general),residues,OMPX_SLAB);
+  tilted.forEach((x,i)=>expect(x.surface).toBe(membrane[i].surface));
+ });
+ it('residue identity, not array order, links SASA to oriented residues',()=>{
+  const shuffled=[...residues].reverse();
+  expect(classifyMembrane(ompx,shuffled,OMPX_SLAB)).toEqual(membrane);
+  expect(()=>matchExposure(ompx,residues.slice(1))).toThrow();
+  expect(()=>matchExposure(ompx,residues.map((r,i)=>i===134?{...r,resName:'ALA'}:r))).toThrow(/VAL135/);
+  expect(()=>matchExposure(ompx,[...residues.slice(0,147),{...residues[146]}])).toThrow(/Duplicate/);
+ });
+ it('Val135 and other near-cutoff residues keep their classification in every orientation',()=>{
+  const val=byNumber(135);
+  expect(val.resName).toBe('VAL');
+  expect(val.relative).toBeGreaterThan(0.24);expect(val.relative).toBeLessThan(SURFACE_THRESHOLD);
+  expect(memOf(135)).toMatchObject({zone:'sideA',surface:false,category:'buried'});
+  // Recomputing in the oriented frame would have crossed the cut-off; the stored value does not.
+  expect(recomputed[val.index].relative).toBeGreaterThanOrEqual(SURFACE_THRESHOLD);
+  const near=residues.filter(r=>Math.abs(r.relative-SURFACE_THRESHOLD)<0.02).map(r=>r.index);
+  expect(near).toContain(val.index);
+  for(const T of [aboutNormal(0.3,1,2),aboutNormal(1.7,-4,9),aboutNormal(4.4,11,-6)]){
+   const m=classifyMembrane(transformStructure(ompx,T),residues,OMPX_SLAB);
+   for(const i of near)expect(m[i].category).toBe(membrane[i].category);
+  }
+  for(const T of [general,OMPX_TO_OPM]){const m=classifyMembrane(transformStructure(ompx,T),residues,OMPX_SLAB);for(const i of near)expect(m[i].surface).toBe(membrane[i].surface);}
+ });
+ it('membrane depth is still measured on the OPM-oriented coordinates',()=>{
+  for(const m of membrane)expect(m.depth).toBe(sideChainCentroid(ompx,m.index)[2]);
+  expect(membrane.some(m=>Math.abs(m.depth-sideChainCentroid(ompxDeposited,m.index)[2])>1)).toBe(true);
+  expect(memOf(125).zone).toBe('membrane');expect(Math.abs(sideChainCentroid(ompxDeposited,byNumber(125).index)[2])).toBeGreaterThan(OMPX_SLAB.halfThickness);
+ });
+ it('Phase 3A ubiquitin exposure pipeline is untouched',()=>{
+  expect(ubiquitinExposure()).toEqual(analyzeExposure(ubiquitin));
+  const e=findExceptions(ubiquitin,ubiquitinExposure().residues);
+  expect([e.exposedNonpolar?.resSeq,e.buriedPolar?.resSeq]).toEqual([8,41]);
  });
 });
 

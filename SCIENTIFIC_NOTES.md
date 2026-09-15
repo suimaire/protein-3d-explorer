@@ -357,18 +357,23 @@ Full audit: `SOLUBLE_MEMBRANE_VALIDATION.md`. Code: `src/protein/ompx.ts`, `memb
 - **Surface exposure metric:** Phase 3A Shrake–Rupley SASA (probe 1.4 Å, 960 points, Bondi radii), relative to
   Tien 2013 maxima, of the protein alone. Called *surface accessibility* in this module, not water exposure, because
   a membrane protein's accessible surface may face lipid. Surface = rSASA ≥ 25 % (both proteins).
+- **Coordinate frame for SASA:** SASA is invariant to rigid-body motion, but Shrake–Rupley sample points are fixed in
+  the coordinate frame. OmpX SASA/rSASA is therefore computed once on the deposited 1QJ8 coordinates and joined to the
+  OPM-oriented residues by identity (resSeq + resName); oriented coordinates are used only for display, depth (z),
+  zone membership and membrane orientation.
 - **Lipid-facing classification:** side-chain heavy-atom centroid (Gly: Cα) with |z| ≤ 11.8 Å AND surface →
   *lipid-facing candidate*; outside the slab AND surface → *aqueous-facing*; otherwise buried. Transmembrane residues
   that are buried (barrel interior, e.g. Lys27, Asp124) are not lipid-facing.
 - **Chemistry classification:** unchanged educational four classes and palette (`chemistry.ts`, `colors.ts`).
 - **Observed (not a population statistic):** OmpX lipid-facing 25 nonpolar / 7 polar (all Tyr) / 0 acidic / 0 basic;
-  aqueous-facing 11 / 22 / 10 / 7; ubiquitin surface 15 (Gly 6) / 13 / 10 / 11.
+  aqueous-facing 10 / 22 / 10 / 7; ubiquitin surface 15 (Gly 6) / 13 / 10 / 11.
 - **Teaching wording:** nonpolar surface is unfavourable in water; the hydrocarbon interior of the bilayer can
   accommodate it. Avoided: "hydrophobic residues seek/are attracted to lipids", "binds lipid", "membrane region is
   all hydrophobic", "hydrophobic residues are always inside/outside".
 - **Limitations:** static structures, flat fixed-thickness slab (no interface gradient, no deformation, no lipid
   atoms, not MD); protein-alone SASA ignores detergent/crystal contacts; single side-chain reference point; fixed
-  25 % cut-off (15–30 % checked); SASA sampling noise between frames ≤2 Å² per residue (Val135 sits at the cut-off);
+  25 % cut-off (15–30 % checked); Shrake–Rupley sampling noise (≤2 Å²/residue between frames) is kept out of the classification by one
+  reference frame, but Val135 (24.1 %) still sits near the cut-off;
   OmpX is an outer-membrane β-barrel, not representative of all membrane proteins; Side A/B named neutrally.
 
 ### Sources

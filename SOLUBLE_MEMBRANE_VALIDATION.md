@@ -86,6 +86,11 @@ Choice was made before computing any composition (no candidate was compared on "
 All from `src/protein/membrane.ts`; SASA from the unchanged Phase 3A code (`analyzeExposure`, Shrake–Rupley,
 probe 1.4 Å, 960 points, Bondi radii, Tien 2013 maxima).
 
+- **Coordinate roles:** SASA/rSASA is computed **once on the deposited 1QJ8 coordinates** (`ompxDeposited`).
+  The OPM-oriented copy is used only for rendering, depth (z), zone membership and the membrane orientation.
+  The stored per-residue exposure is joined to the oriented residues by identity (resSeq + resName; count,
+  duplicates and index checked — `matchExposure`), never by recomputing SASA on the rotated copy.
+
 - **Depth** = signed z of the side-chain heavy-atom centroid (Gly: Cα) in the OPM frame. Cα z is also shown.
 - **Zone:** membrane if |depth| ≤ 11.8 Å, else Side A (+) / Side B (−).
 - **Surface** = whole-residue relative SASA ≥ **25 %**, applied identically to OmpX and ubiquitin. 25 % is a
@@ -107,42 +112,45 @@ Observed in these two structures (not tuned; counts include Gly as nonpolar).
 | Group | Nonpolar | Polar, uncharged | Acidic | Basic | Total |
 |---|---:|---:|---:|---:|---:|
 | **OmpX lipid-facing** | **25** (Gly 1) | 7 (all Tyr) | 0 | 0 | 32 |
-| **OmpX aqueous-facing** | 11 (Gly 2) | 22 | 10 | 7 | 50 |
-| OmpX buried | 29 (Gly 17) | 28 | 4 | 5 | 66 |
+| **OmpX aqueous-facing** | 10 (Gly 2) | 22 | 10 | 7 | 49 |
+| OmpX buried | 30 (Gly 17) | 28 | 4 | 5 | 67 |
 | OmpX all residues in membrane zone | 46 (Gly 14) | 22 | 2 | 2 | 72 |
 | **Ubiquitin surface (≥25 %)** | 15 (Gly 6) | 13 | 10 | 11 | 49 |
 | Ubiquitin buried | 19 | 6 | 1 | 1 | 27 |
 
-- Nonpolar fraction: OmpX lipid-facing 78 %; OmpX aqueous-facing 22 %; ubiquitin surface 31 % (9 % without Gly);
-  ubiquitin buried 70 %. Charged: lipid-facing 0 %, aqueous-facing 34 %, ubiquitin surface 43 %.
+- Nonpolar fraction: OmpX lipid-facing 78 %; OmpX aqueous-facing 20 %; ubiquitin surface 31 % (9 % without Gly);
+  ubiquitin buried 70 %. Charged: lipid-facing 0 %, aqueous-facing 35 %, ubiquitin surface 43 %.
 - **Threshold sensitivity** (lipid-facing / aqueous-facing / ubiquitin surface as np-polar-acid-base):
-  15 %: 31-8-0-0 / 13-27-11-9 / 20-16-11-11; 20 %: 30-7-0-0 / 12-24-10-8 / 17-14-10-11;
-  25 %: 25-7-0-0 / 11-22-10-7 / 15-13-10-11; 30 %: 20-6-0-0 / 8-18-7-7 / 11-11-10-10.
+  15 %: 31-8-0-0 / 13-27-10-9 / 20-16-11-11; 20 %: 29-7-0-0 / 12-23-10-8 / 17-14-10-11;
+  25 %: 25-7-0-0 / 10-22-10-7 / 15-13-10-11; 30 %: 20-6-0-0 / 8-18-7-7 / 11-11-10-10.
   No charged residue is lipid-facing at any tested threshold.
 - **Depth reference sensitivity:** using Cα z instead of the side-chain centroid gives lipid-facing 25-8-0-0 (33).
-- **Frame sensitivity (found during testing):** Shrake–Rupley sample points are fixed in the coordinate frame,
-  so SASA of the deposited vs OPM-oriented coordinates differs by sampling noise: total 8583.7 vs 8580.8 Å²,
-  max 1.97 Å² / 0.93 percentage points per residue. One residue crosses the 25 % line: Val135 (Side A)
-  24.1 % → 25.1 %, i.e. aqueous-facing nonpolar would be 10 instead of 11 in the deposited frame. The module
-  uses the oriented frame (the one displayed). A test bounds this noise.
+- **Frame invariance:** SASA is physically invariant to rigid-body motion, but Shrake–Rupley test points are fixed
+  in the coordinate frame, so recomputing on the OPM-oriented copy would add sampling noise (total 8580.8 vs
+  8583.7 Å², max 1.97 Å² / 0.93 percentage points per residue) and move Val135 (Side A) from 24.1 % to 25.1 %
+  across the unchanged 25 % cut-off. Earlier Phase 3B numbers used that oriented recomputation (aqueous-facing
+  11-22-10-7 = 50, buried 66). SASA is now computed once in the deposited frame and reused for every orientation:
+  Val135 = 24.1 %, **buried** (Side A). Regression tests apply further rigid motions and require identical stored
+  SASA/rSASA and unchanged classification for all residues within 2 % of the cut-off (Val135, Gly41, Thr92, …).
+  The audit still reports the oriented recomputation as a diagnostic only.
 
 # Manual validation
 
 | Residue | Class | rSASA | Depth (side chain / Cα) | Category | Check |
 |---|---|---:|---|---|---|
-| Phe125 | nonpolar | 42.2 % | +0.8 / +1.5 Å | lipid-facing | clear membrane-facing nonpolar at bilayer centre |
-| Leu26 | nonpolar | 43.9 % | +1.0 / +0.9 Å | lipid-facing | same, strand β2 |
-| Val144 | nonpolar | 50.9 % | −2.5 / −2.8 Å | lipid-facing | same; altloc residue (0.75) |
-| Asp75 | acidic | 69.0 % | −17.2 / −14.8 Å | aqueous-facing (Side B) | charged, outside slab |
-| Arg133 | basic | 66.8 % | +24.2 / +20.9 Å | aqueous-facing (Side A) | charged loop residue |
+| Phe125 | nonpolar | 42.3 % | +0.8 / +1.5 Å | lipid-facing | clear membrane-facing nonpolar at bilayer centre |
+| Leu26 | nonpolar | 44.3 % | +1.0 / +0.9 Å | lipid-facing | same, strand β2 |
+| Val144 | nonpolar | 50.7 % | −2.5 / −2.8 Å | lipid-facing | same; altloc residue (0.75) |
+| Asp75 | acidic | 68.1 % | −17.2 / −14.8 Å | aqueous-facing (Side B) | charged, outside slab |
+| Arg133 | basic | 66.9 % | +24.2 / +20.9 Å | aqueous-facing (Side A) | charged loop residue |
 | Glu119 | acidic | 67.9 % | −18.2 / −15.2 Å | aqueous-facing (Side B) | charged turn |
-| Tyr146 | polar (educational class) | 56.4 % | −9.1 / −9.5 Å | lipid-facing | **membrane-region polar exception**; aromatic girdle; UI note on the Tyr ring |
-| Tyr28 | polar | 43.0 % | −7.8 / −5.0 Å | lipid-facing | same; altloc B 0.65 used |
-| Lys27 | basic | 3.5 % | +0.1 / −1.6 Å | buried, membrane zone | **charged side chain at bilayer depth pointing into the barrel interior** — TM ≠ lipid-facing |
+| Tyr146 | polar (educational class) | 56.5 % | −9.1 / −9.5 Å | lipid-facing | **membrane-region polar exception**; aromatic girdle; UI note on the Tyr ring |
+| Tyr28 | polar | 43.1 % | −7.8 / −5.0 Å | lipid-facing | same; altloc B 0.65 used |
+| Lys27 | basic | 3.2 % | +0.1 / −1.6 Å | buried, membrane zone | **charged side chain at bilayer depth pointing into the barrel interior** — TM ≠ lipid-facing |
 | Asp124 | acidic | 0.3 % | −1.2 / −1.7 Å | buried, membrane zone | same, barrel interior |
-| Glu128 | acidic | 2.0 % | +7.9 / +8.3 Å | buried, membrane zone | same |
-| Phe90 | nonpolar | 36.1 % | +25.2 / +22.5 Å | aqueous-facing (Side A) | exposed nonpolar outside the slab (loop) |
-| Met118, Phe148 | nonpolar | 59.1 %, 63.4 % | −13.2, −12.7 Å | aqueous-facing (Side B) | exposed nonpolar just beyond the boundary (interface) |
+| Glu128 | acidic | 2.1 % | +7.9 / +8.3 Å | buried, membrane zone | same |
+| Phe90 | nonpolar | 35.8 % | +25.2 / +22.5 Å | aqueous-facing (Side A) | exposed nonpolar outside the slab (loop) |
+| Met118, Phe148 | nonpolar | 59.7 %, 62.7 % | −13.2, −12.7 Å | aqueous-facing (Side B) | exposed nonpolar just beyond the boundary (interface) |
 
 Buttons in the collapsed observation panel are chosen by rule (`findMembraneExamples`, full occupancy only):
 lipid-facing non-Gly nonpolar nearest the centre (Phe125), most accessible aqueous-facing charged (Asp75),
@@ -150,13 +158,14 @@ lipid-facing polar nearest the centre (Tyr146), buried charged in the slab neare
 
 # Automated and browser verification
 
-- `npm run typecheck`: passed. `npm test`: **198 passed = 172 preserved + 26 new**
-  (`tests/solubleMembrane.test.ts`: structure 6, orientation 7, classification 8, comparison 2, UI data 3).
+- `npm run typecheck`: passed. `npm test`: **204 passed = 172 preserved + 32 Phase 3B**
+  (`tests/solubleMembrane.test.ts`: structure 6, orientation 7, classification 8, frame-invariant SASA 6,
+  comparison 2, UI data 3; the frame-invariance patch added 6 tests and removed none).
   Regression for Peptide Geometry, α-Helix, β-Sheet and Hydrophobic Core is the unchanged 172 unit tests plus
   their browser suites; ubiquitin SHA-256 and Phase 3A compositions re-asserted.
 - `npm run build`: passed. Chunks: `index` 241.90 kB (unchanged size class), `three` **509.84 kB**
   (507.1 → 509.8 kB, Box/Plane geometry and Line for the slab; Vite's advisory >500 kB warning still appears),
-  lazy `SolubleMembraneLab` 166.78 kB (includes 1QJ8), shared lazy `ubiquitin` 101.18 kB,
+  lazy `SolubleMembraneLab` 167.30 kB (includes 1QJ8), shared lazy `ubiquitin` 101.18 kB,
   `HydrophobicCoreLab` 13.88 kB. The membrane chunk is not requested on initial load (browser check).
 - `npm run test:browser` (production preview, Chromium SwiftShader WebGL): **113 passed = 24 Peptide + 24 α-Helix
   + 31 β-Sheet + 18 Hydrophobic Core + 16 Soluble vs Membrane**; console errors / uncaught exceptions **0**.
@@ -187,7 +196,9 @@ lipid-facing polar nearest the centre (Tyr146), buried charged in the slab neare
 
 - No independent membrane-orientation program (PPM) was run locally; orientation is taken from OPM and its
   coordinate file is reproduced exactly.
-- Frame-dependent SASA sampling noise (≤2 Å² per residue) can move residues within ~1 % of the cut-off.
+- Shrake–Rupley sampling noise (≤2 Å² per residue) exists between coordinate frames; it is removed from the
+  classification by using one reference frame (deposited), but residues within ~1 % of the cut-off (Val135) remain
+  sensitive to the numerical method itself.
 - The OmpX outer-membrane context differs from eukaryotic plasma membranes; the teaching point (nonpolar
   exterior at hydrocarbon depth) is general, the specific protein is not representative of all membrane proteins.
 - Real iOS/Android devices and Safari/Firefox not tested (Chromium viewport emulation only).

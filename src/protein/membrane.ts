@@ -46,13 +46,26 @@ export function sideChainCentroid(structure:ProteinStructure,residueIndex:number
 }
 
 /**
+ * SASA is invariant to rigid-body motion, but Shrake–Rupley test points are fixed in the coordinate frame, so a
+ * rotated copy gives slightly different numbers. Exposure is therefore computed once on the deposited coordinates
+ * and joined to the oriented residues by identity (resSeq + resName), never by recomputation or array position.
+ */
+export function matchExposure(oriented:ProteinStructure,exposure:ResidueExposure[]):ResidueExposure[]{
+ const byId=new Map<string,ResidueExposure>(),key=(resSeq:number,resName:string)=>`${resSeq}:${resName}`;
+ for(const e of exposure){const k=key(e.resSeq,e.resName);if(byId.has(k))throw new Error(`Duplicate exposure residue ${k}`);byId.set(k,e);}
+ if(byId.size!==oriented.residues.length)throw new Error(`Exposure has ${byId.size} residues, structure ${oriented.residues.length}`);
+ return oriented.residues.map(r=>{const e=byId.get(key(r.resSeq,r.resName));if(!e)throw new Error(`No exposure for ${r.resName}${r.resSeq}`);if(e.index!==r.index)throw new Error(`Exposure index mismatch for ${r.resName}${r.resSeq}`);return e;});
+}
+
+/**
  * Lipid-facing candidate = side chain inside the hydrophobic slab AND protein-surface residue (rSASA ≥ threshold).
  * Aqueous-facing = surface residue whose side chain lies outside the slab. Everything else = buried.
  * This is a geometric classification of a detergent-free protein model, not an observed lipid contact.
  */
 export function classifyMembrane(oriented:ProteinStructure,exposure:ResidueExposure[],slab:MembraneSlab,threshold=SURFACE_THRESHOLD):ResidueMembrane[]{
+ const matched=matchExposure(oriented,exposure);
  return oriented.residues.map(r=>{
-  const depth=sideChainCentroid(oriented,r.index)[2],ca=r.atoms.find(i=>oriented.atoms[i].name==='CA'),zone=zoneOf(depth,slab),surface=isSurface(exposure[r.index],threshold);
+  const depth=sideChainCentroid(oriented,r.index)[2],ca=r.atoms.find(i=>oriented.atoms[i].name==='CA'),zone=zoneOf(depth,slab),surface=isSurface(matched[r.index],threshold);
   return {index:r.index,depth,caDepth:ca===undefined?Number.NaN:oriented.atoms[ca].position[2],zone,surface,category:!surface?'buried':zone==='membrane'?'lipid-facing':'aqueous-facing'};
  });
 }

@@ -19,7 +19,7 @@ Soluble vs Membrane Protein:
   (All / Surface / Buried / Lipid-facing / Aqueous-facing), Show membrane; OmpX Side / Top / Fit; ubiquitin Reset / Fit.
 - Residue panel: class, surface accessibility, membrane depth (side-chain centroid and Cα), inside/outside region,
   lipid-facing candidate criterion; altloc, His100N and Tyr notes. Conclusions and composition collapsed until opened.
-- Observed: OmpX lipid-facing 25 nonpolar / 7 polar (all Tyr) / 0 / 0; aqueous-facing 11 / 22 / 10 / 7;
+- Observed: OmpX lipid-facing 25 nonpolar / 7 polar (all Tyr) / 0 / 0; aqueous-facing 10 / 22 / 10 / 7;
   ubiquitin surface (rSASA ≥25 %) 15 (Gly 6) / 13 / 10 / 11. Exceptions kept: Tyr girdle, buried Lys27/Asp124 inside
   the barrel at bilayer depth, exposed nonpolar loop residues.
 - Module lazy-loaded; both SASA computed on first open (~90 ms for OmpX in Node).
@@ -27,9 +27,9 @@ Soluble vs Membrane Protein:
 ## Verified
 
 - Initial main / HEAD / origin/main `b8b5975` (also `git ls-remote`), clean, 0/0. Only this repository modified.
-- `npm run typecheck` passed. `npm test`: **198 passed = 172 preserved + 26 new**.
+- `npm run typecheck` passed. `npm test`: **204 passed = 172 preserved + 32 Phase 3B** (26 + 6 frame-invariant SASA tests).
 - `npm run build` passed. Vite >500 kB advisory warning remains for the shared three.js chunk (507.1 → 509.8 kB);
-  new lazy chunk `SolubleMembraneLab` 166.8 kB; initial `index` 241.9 kB; membrane chunk not requested at start.
+  new lazy chunk `SolubleMembraneLab` 167.3 kB; initial `index` 241.9 kB; membrane chunk not requested at start.
 - `npm run test:browser`: **113 passed = 24 + 24 + 31 + 18 + 16**, console errors / uncaught exceptions **0**.
   Existing scripts: only nav count 4 → 5 and expected nav labels. 1440 px and 768/390/320 px checked.
 - Screenshots reviewed: `phase3b-soluble-vs-membrane.png`, `phase3b-membrane-chemistry.png`, `phase3b-lipid-facing.png`,
@@ -41,7 +41,8 @@ Soluble vs Membrane Protein:
 
 - Static structures; slab = flat OPM hydrophobic region guide, not lipid atoms, not MD.
 - Protein-alone SASA ("surface accessibility"), fixed 25 % cut-off (15–30 % checked); single side-chain depth point.
-- SASA sampling differs ≤2 Å²/residue between coordinate frames (Val135 at the cut-off; documented).
+- SASA/rSASA computed once on deposited 1QJ8 coordinates and joined by residue identity; OPM-oriented coordinates
+  only for rendering, depth, zone and orientation (frame-invariant; Val135 24.1 % stays buried in every orientation).
 - Side A / Side B named neutrally; OmpX is an outer-membrane β-barrel.
 
 ## Next recommended module

@@ -30,12 +30,15 @@ export const OMPX_TO_OPM:RigidTransform={
 
 /** Deposited coordinates exactly as in the file (kept for provenance and tests). */
 export const ompxDeposited=parsePdb(pdbText,'A');
-/** Rigid-body oriented copy used for display and every membrane calculation. */
+/** Rigid-body oriented copy used for display, membrane depth and zone membership (never for SASA). */
 export const ompx=transformStructure(ompxDeposited,OMPX_TO_OPM);
 export const ompxBonds=inferBonds(ompx);
 let cached:{exposure:ExposureAnalysis;membrane:ResidueMembrane[]}|null=null;
-/** SASA with the shared Phase 3A implementation, then membrane classification; computed once on first use. */
+/**
+ * SASA/rSASA with the shared Phase 3A implementation on the deposited coordinates (frame-invariant by construction:
+ * one reference frame, computed once), then membrane classification on the oriented copy, joined by residue identity.
+ */
 export const ompxAnalysis=()=>{
- if(!cached){const exposure=analyzeExposure(ompx);cached={exposure,membrane:classifyMembrane(ompx,exposure.residues,OMPX_SLAB)};}
+ if(!cached){const exposure=analyzeExposure(ompxDeposited);cached={exposure,membrane:classifyMembrane(ompx,exposure.residues,OMPX_SLAB)};}
  return cached;
 };
