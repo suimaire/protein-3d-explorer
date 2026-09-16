@@ -507,3 +507,75 @@ Chapter 3 — From Structure to Function (Phase 4C). Details, all numbers and te
 - Saroff HA (2007) Biochem. Biophys. Res. Commun. (PMID 17977512) — two MWC parameter sets fit Hb O₂ binding.
 - Henry ER et al. (2021) Biophys. J. 120:2543–2551 — MWC partition function Q = (1+K_R x)⁴ + L(1+K_T x)⁴ with association constants.
 - Imai K (1983) J. Mol. Biol. 167:741–749 — condition dependence of L0 and K_T.
+
+## HbA → HbS → Polymerization
+
+Chapter 3 — From Structure to Function (Phase 4D). Details, all numbers and tests: `HBS_POLYMERIZATION_VALIDATION.md`.
+
+- **Mutation nomenclature**: the student UI writes **β6 Glu → Val** throughout — mature β-globin numbering, the
+  traditional hemoglobin convention and the residue numbering of both deposited files (DBREF `seqBegin` = `dbBegin` = 1
+  in every chain, checked). In modern HGVS protein notation, which counts the initiator methionine, the same variant is
+  written **HBB p.Glu7Val**. The two systems are never mixed in the student UI; this note is the only place both appear.
+  Positions 70 / 85 / 88 / 84 / 73 are likewise β-globin positions — the same numbers in an α chain are other residues.
+- **HbA reference**: PDB 2DN2, the deoxy HbA structure already used in Phase 4A/4B/4C, unchanged and analysed by the
+  same `analyzeHemoglobin()` code. β6 = Glu in both β chains.
+- **HbS structure**: PDB 2HBS, human deoxyhemoglobin S, X-ray 2.05 Å, space group P 1 21 1
+  (Harrington, Adachi & Royer Jr 1997, J. Mol. Biol. 272:398–407). β6 = Val in all four βS chains — an HbS tetramer has
+  **two** βS chains, not one. The asymmetric unit contains two complete α2βS2 tetramers, both REMARK 350 biomolecules
+  under the identity operator, so the pathological contact is visible in the deposited coordinates with no symmetry
+  operation at all.
+- **β6 chemistry**: Glu is classified **acidic** and Val **nonpolar** by the project's existing four-group side-chain
+  scheme, which is reused unchanged (Ala, Phe and Leu of the pocket are all nonpolar in it; Thr polar, Asp acidic).
+  The UI says the Glu carboxylate is *predominantly* negatively charged near physiological pH and states explicitly
+  that protonation depends on the local environment, so "Glu is always −1" is never claimed.
+- **Surface change, not refolding**: the module's message is that a small **local surface-chemistry** change makes a new
+  intermolecular interaction possible. It never says the mutation collapses or denatures the protein. Per-chain Cα fits
+  against HbA are 0.27–0.64 Å and whole-tetramer fits 0.59 / 0.61 Å, shown as a sanity check with the caveat that two
+  different crystals differ for reasons other than the mutation.
+- **Space filling, not a surface**: the renderer draws van der Waals spheres of real atoms. The UI calls this
+  "space filling" and says in as many words that it is not a computed molecular surface.
+- **Pathological donor site**: βVal6 of one tetramer. **Acceptor pocket**: βAla70, βPhe85 and βLeu88 of a β chain of a
+  *different* tetramer, with βThr84 and βAsp73 as a measured polar rim, plus a βThr4 ↔ βAsp73 secondary polar
+  interaction. Measured minimum heavy-atom distances: Ala70 3.83, Phe85 3.95, Leu88 4.18, Thr84 3.62, Asp73 3.10,
+  Thr4–Asp73 3.11 Å. These five residues are exactly the acceptor-chain residues within 4.5 Å of βVal6.
+- **Contact criterion and wording**: heavy-atom distance ≤ 4.5 Å, described as geometric proximity only. The module
+  never writes "distance < 4 Å = hydrophobic bond" and never uses the term "hydrophobic bond". It says βVal6 and the
+  three pocket residues are all nonpolar side chains within 4.18 Å of one another, which is why this is described as a
+  **hydrophobic contact**, and states that it is not a covalent bond. Bonds are inferred per molecule only, and the
+  analysis fails loudly if any bond were ever inferred across two molecules.
+- **Intermolecular identity**: two tetramers repeat the same chain IDs and residue numbers, so every residue/atom key
+  carries a **molecule instance** (`2HBS|M2|H:6:VAL`). βVal6 of one molecule is never treated as βVal6 of another.
+- **Not one contact**: βVal6–pocket is a crucial pathological contact inside a larger network. Measured over the
+  displayed segment there are 22 inter-molecule chain-pair interfaces — 10 lateral (between the two strands) and
+  12 axial (along one strand) — and only 5 involve βVal6. The UI shows these counts.
+- **Deoxygenation dependence**: polymerization is strongly favoured in the deoxy, polymer-compatible conformational
+  state, and 2HBS is a deoxy (T-like) structure. The module states that having the mutation does **not** mean polymer
+  always forms: HbS concentration, oxygenation, nucleation and the intracellular environment matter too, and none of
+  that kinetics is computed here. Liganded R-state HbS (e.g. PDB 5E6E) does not make this lateral contact — checked in
+  the literature as a negative control, deliberately not added as a third structure in the UI.
+- **Crystal symmetry**: the repeat uses only whole **unit-cell translations** read from the file's own CRYST1/SCALE
+  records (`src/protein/crystal.ts`, a generic utility). Lattice translations belong to every space group and have no
+  rotation component, so nothing inside a copy can change and no coordinate was fitted by hand to place Val6 in a pocket.
+- **Atomic vs schematic**: the 3D views are deposited coordinates and exact translations of them. The fiber
+  cross-section figure (7 double strands = 14 strands) is labelled **SCHEMATIC** in its caption and body, and the UI
+  separates the evidence levels: the crystal double strand is directly observed, while the 14-strand organisation is
+  inferred from electron-microscopy 3D reconstructions and X-ray fibre diffraction, in which the double strands are
+  twisted replicas of the crystal one. The crystal packing is never called the intracellular fiber.
+- **Deliberately not modelled**: polymerization kinetics, nucleation, diffusion or binding pathway, molecular dynamics,
+  polymer growth speed, water-mediated bridges in the contact region, and any red-blood-cell or clinical modelling.
+  There is no contact-formation animation, so no motion is implied. The consequence sentence about red cells is one
+  line and is marked as outside the module's scope.
+
+### Sources
+
+- Harrington DJ, Adachi K, Royer WE Jr (1997) J. Mol. Biol. 272:398–407 (PDB 2HBS; DOI 10.1006/jmbi.1997.1253,
+  PMID 9325099) — deoxyhemoglobin S at 2.05 Å; double strand stabilised by lateral contacts involving the mutant valine;
+  the lateral contact region contains hydrophobic, hydrophilic and water-mediated interactions.
+- Park S-Y, Yokoyama T, Shibayama N, Shiro Y, Tame JRH (2006) J. Mol. Biol. 360:690–701 (PDB 2DN2) — the HbA reference.
+- Adachi K et al. (1994) J. Biol. Chem. (PMID 8021253) — role of Leu-β88 in the hydrophobic acceptor pocket for Val-β6.
+- Safo MK, Abdulmalik O et al. (2016) J. Struct. Biol. (PDB 5E6E, PMID 27085422) — carbonmonoxy (R-state) HbS; the
+  βAla70/βPhe85/βLeu88 acceptor pocket named independently, and liganded HbS not entering the polymer.
+- Galamba N (2024) J. Phys. Chem. B 128:8662–8671 — pocket defined as Ala-β70, Phe-β85, Leu-β88 (hydrophobic) with
+  Thr-β84 and Asp-β73 peripheral; mutation-unrelated axial contacts also contribute to fiber growth.
+- Structural analysis of sickle hemoglobin polymers (EM 3D reconstruction and X-ray fibre diffraction literature) —
+  the 14-stranded fiber as seven double strands that are twisted replicas of the Wishner–Love crystal double strand.

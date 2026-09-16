@@ -12,6 +12,15 @@ export const applyRigid=({rotation:R,translation:t}:RigidTransform,p:Vec):Vec=>[
 
 export const determinant=(R:Mat3)=>R[0][0]*(R[1][1]*R[2][2]-R[1][2]*R[2][1])-R[0][1]*(R[1][0]*R[2][2]-R[1][2]*R[2][0])+R[0][2]*(R[1][0]*R[2][1]-R[1][1]*R[2][0]);
 
+/** Exact 3×3 inverse by cofactors; used to read the unit-cell vectors out of a PDB SCALE matrix. */
+export function inverseMat3(M:Mat3):Mat3{
+ const det=determinant(M);
+ if(Math.abs(det)<1e-12)throw new Error('Matrix is singular');
+ const minor=(i:number,j:number)=>{const r=[0,1,2].filter(x=>x!==i),c=[0,1,2].filter(x=>x!==j);return M[r[0]][c[0]]*M[r[1]][c[1]]-M[r[0]][c[1]]*M[r[1]][c[0]];};
+ // inverse = adjugate / det, and the adjugate is the transposed cofactor matrix.
+ return [0,1,2].map(i=>[0,1,2].map(j=>((i+j)%2?-1:1)*minor(j,i)/det) as Vec) as Mat3;
+}
+
 /** Symmetric-matrix eigen decomposition by cyclic Jacobi rotations (small, dependency-free). */
 export function jacobi(input:number[][]){
  const A=input.map(r=>[...r]),n=A.length,V=A.map((r,i)=>r.map((_,j):number=>i===j?1:0));

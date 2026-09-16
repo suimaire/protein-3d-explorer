@@ -37,21 +37,23 @@ export type InterfaceAnalysis={cutoff:number;
 /** Inter-chain contacts from the coordinates (polymer heavy atoms only; hetero groups and waters excluded). */
 export function interfaceContacts(structure:MultiChainStructure,cutoff=INTERFACE_CUTOFF):InterfaceAnalysis{
  const polymer=structure.residues.flatMap(r=>r.atoms),residueOf=residueOfAtoms(structure),near=grid(structure.atoms,polymer,cutoff),limit=cutoff*cutoff;
- const pairMap=new Map<string,{residues:[Set<number>,Set<number>];atomPairs:number}>(),partners=new Map<number,Set<string>>();
+ // The chain pair is carried as a tuple, never re-parsed out of the map key, so any chain ID is safe (a generated
+ // copy may be named `A_2` or `M1-a/A`).
+ const pairMap=new Map<string,{chains:[string,string];residues:[Set<number>,Set<number>];atomPairs:number}>(),partners=new Map<number,Set<string>>();
  for(const i of polymer){
   const a=structure.atoms[i];
   for(const j of near(a.position)){
    const b=structure.atoms[j];
    if(j<=i||a.chain===b.chain||d2(a.position,b.position)>limit)continue;
    const [first,second,ri,rj]=a.chain<b.chain?[a.chain,b.chain,residueOf[i],residueOf[j]]:[b.chain,a.chain,residueOf[j],residueOf[i]];
-   const key=`${first}-${second}`;let entry=pairMap.get(key);
-   if(!entry){entry={residues:[new Set(),new Set()],atomPairs:0};pairMap.set(key,entry);}
+   const key=JSON.stringify([first,second]);let entry=pairMap.get(key);
+   if(!entry){entry={chains:[first,second],residues:[new Set(),new Set()],atomPairs:0};pairMap.set(key,entry);}
    entry.residues[0].add(ri);entry.residues[1].add(rj);entry.atomPairs++;
    for(const [r,partner] of [[residueOf[i],b.chain],[residueOf[j],a.chain]] as const){let s=partners.get(r);if(!s)partners.set(r,s=new Set());s.add(partner);}
   }
  }
  const sort=(s:Set<number>)=>[...s].sort((x,y)=>x-y);
- const pairs=[...pairMap.entries()].sort(([x],[y])=>x<y?-1:x>y?1:0).map(([key,e]):ChainPairContact=>({chains:key.split('-') as [string,string],residues:[sort(e.residues[0]),sort(e.residues[1])],atomPairs:e.atomPairs}));
+ const pairs=[...pairMap.entries()].sort(([x],[y])=>x<y?-1:x>y?1:0).map(([,e]):ChainPairContact=>({chains:e.chains,residues:[sort(e.residues[0]),sort(e.residues[1])],atomPairs:e.atomPairs}));
  return {cutoff,partners:new Map([...partners.entries()].sort(([x],[y])=>x-y).map(([r,s])=>[r,[...s].sort()])),pairs};
 }
 export const pairBetween=(analysis:InterfaceAnalysis,a:string,b:string)=>analysis.pairs.find(p=>(p.chains[0]===a&&p.chains[1]===b)||(p.chains[0]===b&&p.chains[1]===a))??null;
@@ -94,29 +96,38 @@ export type AssemblyCopy={chain:string;source:string;operator:number};
 /** Chain ID of an operator copy: operator 1 keeps the deposited ID; operator k > 1 gives `A_k` (a generated symmetry copy of PDB chain A). */
 export const copyChainId=(source:string,operator:number)=>operator===1?source:`${source}_${operator}`;
 
+export type StructureCopy={
+ /** Identifier of this copy, reported back for every chain it produces. */ id:string;
+ /** Source chain IDs to copy; chains keep the file's own order. */ chains:string[];
+ /** Rigid transform applied to every atom of the copy. */ transform:AssemblyOperator;
+ /** Chain ID this copy gives a source chain; must be unique across all copies. */ chainId:(source:string)=>string;
+};
+export type CopiedChain={chain:string;copy:string;source:string};
+
 /**
- * Biological assembly from REMARK 350 BIOMT operators: every listed chain (polymer residues and its non-water hetero
- * groups) is copied once per operator, p' = R·p + t. Operator 1 = identity reproduces the deposited coordinates exactly.
- * Copies are rigid (a proper rotation and translation from the file); no coordinate is invented.
+ * General rigid copy builder: each requested copy takes the listed chains (polymer residues and their non-water hetero
+ * groups) and moves every atom by p' = R·p + t. An identity transform reproduces the deposited coordinates exactly
+ * (its atoms are reused unchanged). Copies are rigid, so no internal distance can change and no coordinate is invented.
+ * Used both for REMARK 350 biological assemblies and for crystal-lattice copies.
  */
-export function buildAssembly(structure:MultiChainStructure,chains:string[],operators:AssemblyOperator[]):{structure:MultiChainStructure;copies:AssemblyCopy[]}{
- const atoms:PdbAtom[]=[],residues:PdbResidue[]=[],hetero:PdbResidue[]=[],copies:AssemblyCopy[]=[];
+export function buildCopies(structure:MultiChainStructure,copies:StructureCopy[]):{structure:MultiChainStructure;chains:CopiedChain[]}{
+ const atoms:PdbAtom[]=[],residues:PdbResidue[]=[],hetero:PdbResidue[]=[],out:CopiedChain[]=[];
  const apply=({rotation:R,translation:t}:AssemblyOperator,p:Vec):Vec=>[0,1,2].map(i=>R[i][0]*p[0]+R[i][1]*p[1]+R[i][2]*p[2]+t[i]) as Vec;
  const identity=(op:AssemblyOperator)=>op.rotation.every((row,i)=>row.every((v,j)=>v===(i===j?1:0)))&&op.translation.every(v=>v===0);
- const polymerOrder:PdbAtom[][]=[],heteroOrder:{atoms:PdbAtom[];source:PdbResidue}[]=[];
- operators.forEach((op,k)=>{
-  const same=identity(op);
-  for(const source of structure.chains.filter(c=>chains.includes(c))){
-   const chain=copyChainId(source,k+1);copies.push({chain,source,operator:k+1});
-   const move=(a:PdbAtom):PdbAtom=>({...a,chain,position:same?a.position:apply(op,a.position)});
-   for(const r of structure.residues.filter(r=>r.chain===source))polymerOrder.push(r.atoms.map(i=>move(structure.atoms[i])));
+ const polymerOrder:{atoms:PdbAtom[];source:PdbResidue}[]=[],heteroOrder:{atoms:PdbAtom[];source:PdbResidue}[]=[];
+ for(const copy of copies){
+  const same=identity(copy.transform);
+  for(const source of structure.chains.filter(c=>copy.chains.includes(c))){
+   const chain=copy.chainId(source);
+   if(out.some(c=>c.chain===chain))throw new Error(`Duplicate copy chain ID ${chain}`);
+   out.push({chain,copy:copy.id,source});
+   const move=(a:PdbAtom):PdbAtom=>({...a,chain,position:same?a.position:apply(copy.transform,a.position)});
+   for(const r of structure.residues.filter(r=>r.chain===source))polymerOrder.push({atoms:r.atoms.map(i=>move(structure.atoms[i])),source:r});
    for(const g of structure.hetero.filter(g=>g.chain===source))heteroOrder.push({atoms:g.atoms.map(i=>move(structure.atoms[i])),source:g});
   }
- });
- for(const list of polymerOrder){
-  const r:PdbResidue={index:residues.length,resName:list[0].resName,resSeq:list[0].resSeq,insertionCode:list[0].insertionCode,chain:list[0].chain,atoms:[],occupancy:Math.min(...list.map(a=>a.occupancy)),secondary:'other'};
-  const src=structure.residues.find(x=>x.resSeq===r.resSeq&&x.insertionCode===r.insertionCode&&x.resName===r.resName&&copies.find(c=>c.chain===r.chain)!.source===x.chain)!;
-  r.secondary=src.secondary;
+ }
+ for(const {atoms:list,source} of polymerOrder){
+  const r:PdbResidue={...source,index:residues.length,chain:list[0].chain,atoms:[],occupancy:Math.min(...list.map(a=>a.occupancy))};
   for(const a of list){r.atoms.push(atoms.length);atoms.push(a);}
   residues.push(r);
  }
@@ -125,7 +136,17 @@ export function buildAssembly(structure:MultiChainStructure,chains:string[],oper
   for(const a of list){g.atoms.push(atoms.length);atoms.push(a);}
   hetero.push(g);
  }
- return {structure:{id:structure.id,chains:copies.map(c=>c.chain),atoms,residues,hetero,omitted:structure.omitted},copies};
+ return {structure:{id:structure.id,chains:out.map(c=>c.chain),atoms,residues,hetero,omitted:structure.omitted},chains:out};
+}
+
+/**
+ * Biological assembly from REMARK 350 BIOMT operators: every listed chain (polymer residues and its non-water hetero
+ * groups) is copied once per operator, p' = R·p + t. Operator 1 = identity reproduces the deposited coordinates exactly.
+ * Copies are rigid (a proper rotation and translation from the file); no coordinate is invented.
+ */
+export function buildAssembly(structure:MultiChainStructure,chains:string[],operators:AssemblyOperator[]):{structure:MultiChainStructure;copies:AssemblyCopy[]}{
+ const built=buildCopies(structure,operators.map((transform,k)=>({id:String(k+1),chains,transform,chainId:(source:string)=>copyChainId(source,k+1)})));
+ return {structure:built.structure,copies:built.chains.map(c=>({chain:c.chain,source:c.source,operator:Number(c.copy)}))};
 }
 
 /** Mean position of a set of atoms. */

@@ -1,5 +1,83 @@
 # Protein 3D Explorer — Current Status
 
+## Phase 4D — HbA → HbS → Polymerization, completed and verified (2026-09-16)
+
+## Completed
+
+- Chapter 1: **Peptide Geometry**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Soluble vs Membrane Protein**
+
+## Chapter 3 — From Structure to Function
+
+Completed:
+- **Hemoglobin Quaternary Structure**
+- **Hemoglobin T ↔ R Structural Transition**
+- **Hemoglobin Cooperativity & Allostery**
+- **HbA → HbS → Polymerization**
+
+HbA → HbS → Polymerization:
+
+- Structures: HbS = PDB **2HBS** (human deoxyhemoglobin S, X-ray 2.05 Å, P 1 21 1; Harrington, Adachi & Royer Jr 1997),
+  new asset, SHA-256 `b552883a…`, byte-identical to the RCSB download. HbA reference = PDB **2DN2**, unchanged and
+  analysed by the existing Phase 4A `analyzeHemoglobin()`. 2HBS's asymmetric unit holds **two complete α2βS2 tetramers**
+  (REMARK 350 biomolecules 1 = A–D and 2 = E–H, both identity operators), so the pathological contact is present in the
+  deposited coordinates with **no symmetry operation**. β6 = Val in all four βS chains (SEQRES, SEQADV, coordinates and
+  the RCSB entity record); β6 = Glu in both HbA β chains.
+- New code: `src/protein/crystal.ts` (generic CRYST1/SCALE lattice frame + unit-cell translations, no structure-specific
+  data), `src/protein/sickle.ts` (molecule instances, contact discovery, mutation comparison, packing and contact
+  network), `src/protein/sickleAssets.ts`, `src/rendering/SickleScene.ts`, `src/components/SickleViewer.tsx`,
+  `src/modules/HbsPolymerizationLab.tsx`, `src/modules/FiberSchematic.tsx`.
+  Shared-code changes: `quaternary.ts` gained a general `buildCopies()` (with `buildAssembly()` now a thin wrapper) and
+  `interfaceContacts()` carries its chain pair as a tuple instead of re-parsing a `-`-joined key, so chain IDs
+  containing `-` are safe;
+  `rigid.ts` gained `inverseMat3()`. Existing behaviour unchanged (all previous tests pass untouched).
+- Measured, from the coordinates only (donor/acceptor chains discovered, never hard-coded): donor **Molecule 2 chain H
+  βVal6** → acceptor **Molecule 1 chain B** pocket **Ala70 3.83 / Phe85 3.95 / Leu88 4.18 Å**, polar rim Thr84 3.62 /
+  Asp73 3.10 Å, secondary βThr4–βAsp73 3.11 Å. These five residues are exactly the acceptor-chain residues within 4.5 Å
+  of βVal6. In each tetramer only one of the two βVal6 donates here (chains D and H); B and F are acceptors.
+- Repeat: unit-cell translations along **a** (63.344 Å, identity rotation) give 6 tetramers with 5 βVal6 junctions,
+  reproducing the crystal's double strand. Closest approach between molecules 2.83 Å, atom pairs < 2.5 Å = **0**,
+  intermolecular inferred bonds = **0**. Contact network over the segment: 22 inter-molecule interfaces = 10 lateral +
+  12 axial, only **5** involving βVal6 — shown in the UI so the contact is never presented as the only one.
+- UI: four steps (Mutation → Surface → Contact → Repeat) with per-step defaults; Representation (Ribbon / Sticks /
+  Space filling), Highlight (Mutation site / Acceptor pocket / Both), Structure (HbA / HbS / Both) or Segment (2 / 4 / 6
+  tetramers), Show (Heme / Contact distances / Neighbour molecule), camera presets (Mutation site / Contact pocket /
+  Whole tetramer / Polymer segment / Fit / Reset). Molecules are labelled "Molecule 1 / Molecule 2" as well as coloured;
+  distances are dashed proximity guides with measured values, never bonds; prediction prompts come before explanations;
+  the fiber cross-section is tagged **SCHEMATIC** and the evidence levels are separated. A plain link opens the existing
+  T ↔ R module for "why deoxy matters"; no slider drives coordinates and no contact-formation animation exists.
+
+## Verified
+
+- Initial main / HEAD / origin/main `cb2f461`, clean, 0/0. Only this repository modified.
+- `npm run typecheck` passed. `npm test`: **320 passed = 282 preserved + 38 Phase 4D** (none deleted or skipped).
+- `npm run build` passed. Vite >500 kB advisory unchanged for the shared three.js chunk (518.42 kB); new lazy chunk
+  `HbsPolymerizationLab` ~60 kB. Opening the app requests no .pdb and creates no canvas; 2HBS + 2DN2 load only when the
+  module is opened.
+- `npm run test:browser`: all nine scripts pass (24 + 24 + 31 + 18 + 16 + 17 + 15 + 12 + 18 = 175 checks), console
+  errors 0, at 1440 / 768 / 390 / 320 px. Existing scripts changed only for the nine-module navigation (count / label
+  lists) and the Chapter 3 nav scope regex (no longer forbids HbS / sickle in the nav; each earlier module's own text
+  still must not mention them).
+- Screenshots: `phase4d-hba-glu6.png`, `phase4d-hbs-val6.png`, `phase4d-surface.png`, `phase4d-contact.png`,
+  `phase4d-pocket.png`, `phase4d-polymer.png`, `phase4d-mobile.png`; `phase4d-browser-results.json`; audit
+  `node scripts/hbs-polymerization-audit.mjs`. Details: `HBS_POLYMERIZATION_VALIDATION.md`.
+- Local commit only; **no push**.
+
+## Scientific simplifications
+
+- Two different crystals/resolutions are compared (2DN2 1.25 Å vs 2HBS 2.05 Å); residual differences after alignment are
+  not attributed to the mutation, and the UI says so.
+- Space filling = van der Waals spheres of real atoms; no molecular surface is computed and none is claimed.
+- Waters and the contact region's water-mediated bridges are not modelled; other lateral/axial contacts are counted but
+  not enumerated residue by residue in the UI.
+- Structure only: no polymerization kinetics, nucleation, concentration dependence, fiber growth, or RBC/clinical model.
+
+## Next recommended
+
+- No further module is planned in this session. Any next phase starts from a fresh session and this file.
+
+---
+
 ## Phase 4C — Hemoglobin Cooperativity & Allostery, completed and verified (2026-09-16)
 
 ## Completed

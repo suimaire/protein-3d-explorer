@@ -58,6 +58,19 @@ graph marker, fractional saturation Y, ensemble 평균 O₂ 수 4Y, T-like / R-l
 effective Hill coefficient(P50에서 2.85)와 해석 주의. "Inspect T-like / R-like structure"는 T ↔ R module의 실험 구조
 (PDB 2DN2 / 2DN1)를 그대로 보여 주며, slider에 따라 구조를 보간하지 않습니다. 상세: `HEMOGLOBIN_COOPERATIVITY_VALIDATION.md`.
 
+**HbA → HbS → Polymerization** — 두 실험 구조 PDB 2HBS (human deoxyhemoglobin S, X-ray 2.05 Å, space group P 1 21 1)와
+PDB 2DN2 (deoxy HbA)를 비교합니다. 2HBS의 asymmetric unit에는 완전한 α2βS2 tetramer가 두 개 들어 있고(REMARK 350
+biomolecule 1 = chains A–D, 2 = E–H, 둘 다 identity operator) βS chain 네 개 모두 β6 = Val입니다. 네 단계로 진행합니다:
+① Mutation — HbA β6 Glu와 HbS β6 Val을 matched Cα 146개 rigid-body 정렬(RMSD 0.55 Å, 다른 residue 차이 0개)로 같은
+방향에서 비교, ② Surface — β6 side chain 10 Å 이내 residue를 space filling(계산된 molecular surface가 아니라 van der
+Waals 구체)으로 그려 국소 표면 화학을 HbA/HbS 토글로 비교, ③ Contact — 대칭 조작 없이 deposited 좌표에서 Molecule 2
+chain H의 βVal6이 Molecule 1 chain B의 pocket(Ala70 3.83 · Phe85 3.95 · Leu88 4.18 Å, 극성 주변 Thr84 3.62 · Asp73
+3.10 Å, secondary βThr4–βAsp73 3.11 Å)에 들어간 intermolecular contact, ④ Repeat — 파일의 CRYST1/SCALE에서 읽은
+unit-cell 병진(a = 63.344 Å, 회전 없음)만으로 만든 2/4/6 tetramer 구간과 그 안의 βVal6 접촉 5곳. 두 분자는 색뿐 아니라
+"Molecule 1 / Molecule 2" label로 구분하고, 분자 사이 거리는 점선 보조선과 측정값으로만 표시하며 결합으로 그리지
+않습니다. 상위 fiber 구조(7 double strand = 14 strand)는 **SCHEMATIC**으로 표시해 원자 좌표와 구분합니다. 상세:
+`HBS_POLYMERIZATION_VALIDATION.md`.
+
 ## Local development
 
 Node.js 22.12 이상, npm을 사용합니다.
@@ -82,11 +95,10 @@ npm run test:browser
 프로젝트 내부 설치를 원하면 PowerShell에서 먼저
 `$env:PLAYWRIGHT_BROWSERS_PATH = "$PWD/.browser-cache"`를 설정합니다.
 검증 스크립트는 `.browser-cache`가 있으면 자동으로 사용합니다.
-`npm run test:browser`는 다섯 모듈의 검증을 모두 실행합니다 (24 + 24 + 31 + 18 + 16개).
 검증 스크립트는 `artifacts/`에 desktop/mobile 캡처와 보고서를 저장합니다.
 β-Sheet 캡처: `phase2b-beta-antiparallel.png`, `phase2b-beta-parallel.png`, `phase2b-beta-edge-view.png`, `phase2b-mobile-390.png`.
 `node scripts/beta-audit.mjs`로 전체 원자 좌표, torsion, H-bond, cap/clash 결과를 `artifacts/beta-audit.json`에 재생성할 수 있습니다.
-자동 테스트: 기존 172 + Soluble vs Membrane 26 = 198개. Typecheck와 production build를 함께 검증합니다.
+자동 테스트: 현재 320개 (Phase 4D에서 38개 추가). Typecheck와 production build를 함께 검증합니다.
 Hydrophobic Core 캡처: `phase3a-hydrophobic-core.png`, `phase3a-buried.png`, `phase3a-exposed.png`, `phase3a-cross-section.png`.
 `node scripts/core-audit.mjs`로 residue별 SASA·순위·그룹 구성을 `artifacts/core-audit.json`에 재생성합니다.
 `node scripts/membrane-audit.mjs`는 OmpX 방향·분류·조성을 `artifacts/membrane-audit.json`에 재생성합니다 (`--fit <OPM 1qj8.pdb>`로 OPM 변환을 재계산).
@@ -95,7 +107,9 @@ Soluble vs Membrane 캡처: `phase3b-soluble-vs-membrane.png`, `phase3b-lipid-fa
 α-Helix 캡처: `phase2a-alpha-helix.png`, `phase2a-alpha-helix-top.png`, `phase2a-mobile-390.png`.
 `node scripts/hemoglobin-transition-audit.mjs`는 T↔R 대응·정렬·회전·heme·contact·motion guide·chain RMSD 수치를 `artifacts/hemoglobin-transition-audit.json`에 재생성합니다.
 Hemoglobin T ↔ R 캡처: `phase4b-hb-t.png`, `phase4b-hb-r.png`, `phase4b-hb-overlay.png`, `phase4b-hb-moving-dimer.png`, `phase4b-hb-motion-guide.png`, `phase4b-hb-mobile.png`.
-`npm run test:browser`는 현재 일곱 모듈의 검증 스크립트 여섯 개와 T ↔ R 스크립트를 모두 실행합니다.
+`node scripts/hbs-polymerization-audit.mjs`는 HbS 구조·mutation 비교·접촉 거리·격자 병진·접촉 network 수치를 `artifacts/hbs-polymerization-audit.json`에 재생성합니다.
+HbA → HbS → Polymerization 캡처: `phase4d-hba-glu6.png`, `phase4d-hbs-val6.png`, `phase4d-surface.png`, `phase4d-contact.png`, `phase4d-pocket.png`, `phase4d-polymer.png`, `phase4d-mobile.png`.
+`npm run test:browser`는 현재 아홉 모듈의 검증 스크립트를 모두 실행합니다 (24 + 24 + 31 + 18 + 16 + 17 + 15 + 12 + 18 = 175개 검사).
 
 ## GitHub Pages
 
@@ -127,6 +141,9 @@ Vite base는 `/protein-3d-explorer/`로 설정했습니다. `dist/`가 정적 �
 - `HEMOGLOBIN_COOPERATIVITY_VALIDATION.md`: Phase 4C MWC 수식, parameter convention, P50 normalization, Hill coefficient, occupancy 분포
 - `src/protein/cooperativity.ts`, `src/components/SaturationPlot.tsx`: MWC model 계산(UI와 분리)과 SVG saturation graph
 - `src/protein/hemoglobin.ts`, `hemoglobinTransition.ts`, `quaternary.ts`; `src/rendering/AssemblyScene.ts`, `TransitionScene.ts`: hemoglobin 분석과 3D 화면
+- `src/protein/sickle.ts`, `crystal.ts`; `src/rendering/SickleScene.ts`, `src/modules/FiberSchematic.tsx`: HbS molecule instance·contact 분석, CRYST1/SCALE 격자 병진, 3D 화면과 fiber 도식
+- `src/data/structures/2HBS.pdb`: deoxy HbS 원본 구조 파일 (RCSB 다운로드 그대로)
+- `HBS_POLYMERIZATION_VALIDATION.md`: Phase 4D 구조 선택, 두 biomolecule, 접촉 거리, 격자 병진, 접촉 network, 근거 수준
 - `CURRENT_STATUS.md`: 최신 완료 상태와 후속 작업
 
 React/Vite/TypeScript/Vitest는 기존 carbohydrate explorer 패턴을 따릅니다. Three.js r170과

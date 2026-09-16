@@ -1,0 +1,216 @@
+{
+ "source": "RCSB Data API (data.rcsb.org/rest/v1/core entry, assembly, polymer_entity, nonpolymer_entity) and files.rcsb.org/download/2HBS.pdb, 2HBS.pdb1, 2HBS.pdb2, retrieved 2026-09-16",
+ "entry": {
+  "title": "THE HIGH RESOLUTION CRYSTAL STRUCTURE OF DEOXYHEMOGLOBIN S",
+  "resolution": 2.05,
+  "method": "X-RAY DIFFRACTION",
+  "crystalGrowth": "HBS WAS SUSPENDED IN 30 MM PHOSPHATE BUFFER, PH 7.0, DEOXYGENATED AND CONCENTRATED TO 120 MG/ML. PROTEIN WAS CRYSTALLIZED IN AN ANAEROBIC CHAMBER IN TUBE CONTAINING 10 UL PROTEIN SOLUTION, 5 UL CITRATE BUFFER (PH 4.0), AND 4UL OF 33% PEG 8K, crystallized in anaerobic chamber",
+  "crystalGrowthPh": 4,
+  "depositedModeledMonomers": 1148,
+  "depositedUnmodeledMonomers": 0,
+  "depositedAtoms": 9677,
+  "depositedSolventAtoms": 573,
+  "assemblyCount": 2,
+  "polymerEntityCount": 2
+ },
+ "citation": {
+  "title": "The high resolution crystal structure of deoxyhemoglobin S.",
+  "authors": [
+   "Harrington, D.J.",
+   "Adachi, K.",
+   "Royer Jr., W.E."
+  ],
+  "journal": "J.Mol.Biol.",
+  "volume": "272",
+  "pageFirst": "398",
+  "pageLast": "407",
+  "year": 1997,
+  "doi": "10.1006/jmbi.1997.1253",
+  "pubmed": 9325099
+ },
+ "symmetry": {
+  "spaceGroup": "P 1 21 1",
+  "intTablesNumber": 4,
+  "cell": {
+   "a": 63.344,
+   "b": 185.681,
+   "c": 52.933,
+   "alpha": 90,
+   "beta": 92.74,
+   "gamma": 90
+  },
+  "z": 8
+ },
+ "assemblies": [
+  {
+   "id": "1",
+   "details": "author_and_software_defined_assembly",
+   "method": "PISA",
+   "oligomericCount": 4,
+   "oligomericDetails": "tetrameric",
+   "operators": [
+    {
+     "id": "1",
+     "type": "identity operation",
+     "symmetry": "x,y,z",
+     "name": "1_555",
+     "matrix": [
+      [
+       1,
+       0,
+       0
+      ],
+      [
+       0,
+       1,
+       0
+      ],
+      [
+       0,
+       0,
+       1
+      ]
+     ],
+     "vector": [
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "operExpression": "1",
+   "polymerInstances": 4,
+   "modeledPolymerMonomers": 574,
+   "unmodeledPolymerMonomers": 0
+  },
+  {
+   "id": "2",
+   "details": "author_and_software_defined_assembly",
+   "method": "PISA",
+   "oligomericCount": 4,
+   "oligomericDetails": "tetrameric",
+   "operators": [
+    {
+     "id": "1",
+     "type": "identity operation",
+     "symmetry": "x,y,z",
+     "name": "1_555",
+     "matrix": [
+      [
+       1,
+       0,
+       0
+      ],
+      [
+       0,
+       1,
+       0
+      ],
+      [
+       0,
+       0,
+       1
+      ]
+     ],
+     "vector": [
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "operExpression": "1",
+   "polymerInstances": 4,
+   "modeledPolymerMonomers": 574,
+   "unmodeledPolymerMonomers": 0
+  }
+ ],
+ "assemblyFiles": [
+  {
+   "name": "2HBS.pdb1",
+   "sha256": "0e344e8cdd57a8181e110acf93090ad8f97461fea10853f75eba3983da7bce80",
+   "models": 1,
+   "coordinateRecords": 4827,
+   "chains": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "digestMethod": "sha256 of ATOM/HETATM lines, columns 18-66 (residue name onward; atom serials are renumbered in the assembly files), joined by \n",
+   "coordinateDigest": "fa55c51b407d3781f23567e7970db5e986b734ebfd608622e4a408188ae2d7a0"
+  },
+  {
+   "name": "2HBS.pdb2",
+   "sha256": "7606033d797c1b6113fc991722a90f1f04688551304e92a68cc6d29db2dcec62",
+   "models": 1,
+   "coordinateRecords": 4850,
+   "chains": [
+    "E",
+    "F",
+    "G",
+    "H"
+   ],
+   "digestMethod": "sha256 of ATOM/HETATM lines, columns 18-66 (residue name onward; atom serials are renumbered in the assembly files), joined by \n",
+   "coordinateDigest": "fd2cd126d41e1e4a875ef73b6939712b0575154c9604386c05839c03c4b065ce"
+  }
+ ],
+ "entities": [
+  {
+   "entity": 1,
+   "description": "HEMOGLOBIN S (DEOXY), ALPHA CHAIN",
+   "chains": [
+    "A",
+    "C",
+    "E",
+    "G"
+   ],
+   "uniprot": [
+    "P69905"
+   ],
+   "sequence": "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+   "sourceType": "natural",
+   "organism": "Homo sapiens",
+   "mutations": 0,
+   "mutation": null,
+   "molecules": 4
+  },
+  {
+   "entity": 2,
+   "description": "HEMOGLOBIN S (DEOXY), BETA CHAIN",
+   "chains": [
+    "B",
+    "D",
+    "F",
+    "H"
+   ],
+   "uniprot": [
+    "P68871"
+   ],
+   "sequence": "VHLTPVEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH",
+   "sourceType": "natural",
+   "organism": "Homo sapiens",
+   "mutations": 1,
+   "mutation": "E6V VARIANT",
+   "molecules": 4
+  }
+ ],
+ "nonpolymerEntities": [
+  {
+   "entity": 3,
+   "compId": "HEM",
+   "name": "PROTOPORPHYRIN IX CONTAINING FE",
+   "count": 8,
+   "chains": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H"
+   ]
+  }
+ ]
+}
