@@ -119,8 +119,17 @@ Minimum heavy-atom distances (Å), each verified against an independent exhausti
 | Thr84 | polar | pocket rim | 3.619 | Val6 CG1 … Thr84 O | 4.286 |
 | Asp73 | acidic | pocket rim | 3.102 | Val6 CB … Asp73 OD2 | 3.102 |
 
-Every acceptor-chain residue within 4.5 Å of the donor Val6 is exactly this set — Asp73 3.10, Thr84 3.62, Ala70 3.83,
-Phe85 3.95, Leu88 4.18 Å — so nothing was cherry-picked.
+**Two different kinds of statement.**
+
+- *Structural feature supported by the experimental HbS structure (and the literature):* βVal6 of one tetramer is the
+  donor site, and it sits in an acceptor pocket on a β chain of a neighbouring tetramer containing **Ala70 / Phe85 /
+  Leu88**. This is the characteristic pathological lateral contact of HbS polymerization. The pocket residues are
+  taken from the literature definition (`POCKET_CORE`, `POCKET_PERIPHERY`) and then measured in 2HBS.
+- *Operational analysis in this module:* with a **4.5 Å heavy-atom cutoff** (a threshold chosen for this analysis, not
+  a physical constant), the acceptor-chain residues detected around the donor Val6 are Asp73 3.10, Thr84 3.62,
+  Ala70 3.83, Phe85 3.95 and Leu88 4.18 Å — i.e. the same five residues as the literature-defined pocket and rim
+  (audit → `contacts.primary.neighboursWithinCutoff`). A different cutoff could detect a different set. The UI states
+  this next to the distance table (`cutoff-note`), listing the detected residues from the computed data.
 
 **Secondary interaction** (literature-supported and present here): donor **βThr4 OG1 … acceptor βAsp73 OD2 = 3.106 Å**,
 between the same two molecules. Shown in the contact table as a polar interaction, not as part of the nonpolar core.
@@ -172,11 +181,23 @@ was introduced by the repeat.
 
 # The contact network — βVal6 is one contact among several
 
-Measured with the shared interface criterion (any heavy atom ≤ 4.0 Å) over the whole segment, counting chain-pair
-contacts between **different molecules** only. This is computed by the app itself (`network` in `analyzeSickle`, ~80 ms)
-and shown to students as numbers, not as an assertion:
+**Scope of these numbers.** They are *visualization-specific measurements*, not a property of the physiological HbS
+fiber. They are computed for the **finite 6-tetramer crystal segment** this module builds (deposited unit + translations
+−a / +a), using this module's interface criterion (any heavy atom ≤ 4.0 Å, chain pairs between **different molecules**
+only). A longer or shorter segment, a different choice of copies (segment edges leave some partners absent) or a
+different cutoff would give different counts. There is no claim that a real HbS fiber has exactly 22 interfaces of
+which 5 involve βVal6.
 
-| | count |
+What *is* experimentally established — and stated separately in the UI (`network-established`) — is that βVal6 →
+the Ala70 / Phe85 / Leu88 hydrophobic pocket is the characteristic pathological lateral contact, and that the fiber is
+not stabilised by that contact alone: several other axial and lateral intermolecular interactions are present
+(Harrington et al. 1997; Galamba 2024). The counts below (`network-measured` in the UI) only illustrate that point in
+the displayed segment.
+
+The counts are computed by the app itself (`network` in `analyzeSickle`, ~80 ms) and shown to students as numbers
+explicitly labelled as calculated for this segment and criterion:
+
+| In the displayed 6-tetramer segment, ≤ 4.0 Å criterion | count |
 |---|---|
 | inter-molecule chain-pair interfaces | **22** |
 | **lateral** (between the two biomolecules = the two strands) | **10** |
@@ -184,7 +205,8 @@ and shown to students as numbers, not as an assertion:
 | involving βVal6 | **5** (all lateral) |
 
 The five βVal6 junctions are also the largest lateral interfaces (26–27 atom pairs each), consistent with their being
-the crucial pathological contact — but 17 of the 22 interfaces do **not** involve the mutation site at all. The axial
+the crucial pathological contact — but in this segment 17 of the 22 detected interfaces do **not** involve the mutation
+site at all. The axial
 contacts run along each strand between copies of the same biomolecule and are mutation-unrelated, exactly as the
 literature describes. Test 30 asserts that axial interfaces never involve the mutation, that all mutation interfaces
 are lateral, and that they are a strict subset of the network.

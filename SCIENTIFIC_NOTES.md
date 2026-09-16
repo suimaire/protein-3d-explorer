@@ -537,7 +537,7 @@ Chapter 3 — From Structure to Function (Phase 4D). Details, all numbers and te
 - **Pathological donor site**: βVal6 of one tetramer. **Acceptor pocket**: βAla70, βPhe85 and βLeu88 of a β chain of a
   *different* tetramer, with βThr84 and βAsp73 as a measured polar rim, plus a βThr4 ↔ βAsp73 secondary polar
   interaction. Measured minimum heavy-atom distances: Ala70 3.83, Phe85 3.95, Leu88 4.18, Thr84 3.62, Asp73 3.10,
-  Thr4–Asp73 3.11 Å. These five residues are exactly the acceptor-chain residues within 4.5 Å of βVal6.
+  Thr4–Asp73 3.11 Å. With the operational 4.5 Å cutoff, these five are the acceptor-chain residues detected around βVal6.
 - **Contact criterion and wording**: heavy-atom distance ≤ 4.5 Å, described as geometric proximity only. The module
   never writes "distance < 4 Å = hydrophobic bond" and never uses the term "hydrophobic bond". It says βVal6 and the
   three pocket residues are all nonpolar side chains within 4.18 Å of one another, which is why this is described as a
@@ -545,9 +545,12 @@ Chapter 3 — From Structure to Function (Phase 4D). Details, all numbers and te
   analysis fails loudly if any bond were ever inferred across two molecules.
 - **Intermolecular identity**: two tetramers repeat the same chain IDs and residue numbers, so every residue/atom key
   carries a **molecule instance** (`2HBS|M2|H:6:VAL`). βVal6 of one molecule is never treated as βVal6 of another.
-- **Not one contact**: βVal6–pocket is a crucial pathological contact inside a larger network. Measured over the
-  displayed segment there are 22 inter-molecule chain-pair interfaces — 10 lateral (between the two strands) and
-  12 axial (along one strand) — and only 5 involve βVal6. The UI shows these counts.
+- **Not one contact**: βVal6–pocket is the experimentally established, characteristic pathological lateral contact,
+  but the fiber is not stabilised by it alone; several axial and lateral intermolecular interactions are present.
+  Separately, as a visualization-specific measurement: in the displayed finite 6-tetramer crystal segment, with the
+  ≤ 4.0 Å interface criterion, there are 22 inter-molecule chain-pair interfaces — 10 lateral (between the two strands)
+  and 12 axial (along one strand) — of which 5 involve βVal6. The UI labels these counts as calculated for that segment
+  and criterion, not as a fixed number for a real HbS fiber.
 - **Deoxygenation dependence**: polymerization is strongly favoured in the deoxy, polymer-compatible conformational
   state, and 2HBS is a deoxy (T-like) structure. The module states that having the mutation does **not** mean polymer
   always forms: HbS concentration, oxygenation, nucleation and the intracellular environment matter too, and none of

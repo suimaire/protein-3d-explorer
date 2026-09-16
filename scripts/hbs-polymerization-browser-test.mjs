@@ -108,6 +108,11 @@ try{
  const caveat=await text('contact-caveat');
  assert.match(caveat,/거리만으로 상호작용의 종류가 정해지지는 않습니다/);
  assert.match(caveat,/모두 비극성 곁사슬이고.*hydrophobic contact로 설명됩니다\. 공유결합이 아닙니다/);
+ const cutoffNote=await text('cutoff-note');
+ const detected=P.neighboursWithinCutoff.map(n=>{const [r]=n.split(' ');return `${r[0]}${r.slice(1,3).toLowerCase()}${r.replace(/\D/g,'')}`;}).join(' · ');
+ assert.ok(cutoffNote.includes(`4.5 Å 거리 기준을 적용하면 이 acceptor chain에서 βVal6 주변에 검출되는 residue는 ${detected}입니다`),cutoffNote);
+ assert.match(cutoffNote,/분석을 위해 정한 operational cutoff/);
+ assert.doesNotMatch(caveat+cutoffNote,/cherry|exactly|정확히/);
  assert.match(await text('distance-note'),/근접을 표시하는 보조선이며 화학 결합이 아닙니다/);
  await preset('Contact pocket').click();await settle();
  await page.screenshot({path:'artifacts/phase4d-contact.png'});
@@ -170,18 +175,20 @@ try{
  assert.match(science,/deoxy 상태의 polymer-compatible한 conformation에서 크게 촉진됩니다/);
  assert.match(science,/HbS 농도, 산소화 정도, nucleation, 세포 내 환경 등에도 함께 좌우되며 이 모듈에서는 그 속도론을 계산하지 않습니다/);
  const net=audit.contacts.contactNetwork;
- assert.match(await text('network-note'),/여러 intermolecular contact network 안의 중요한 pathological contact/);
+ assert.match(await text('network-established'),/실험 구조로 잘 확립된, polymerization의 특징적인 pathological lateral contact/);
+ assert.match(await text('network-established'),/HbS fiber는 βVal6 접촉 하나만으로 안정화되지 않으며, 여러 axial · lateral intermolecular interaction이 함께 존재합니다/);
+ assert.match(await text('network-measured'),/6-tetramer crystal segment.*접촉 기준\(서로 다른 분자의 heavy atom ≤ 4\.0 Å\)으로 검출한/);
+ assert.match(await text('network-measured'),/이 시각화에서 계산한 값이며, 실제 HbS fiber에 고정된 접촉 개수가 아닙니다/);
  assert.equal(await tid('network-total').innerText(),`${net.lateral+net.axial}곳`);
  assert.match(await text('network-note'),new RegExp(`lateral 접촉이 ${net.lateral}곳, 같은 strand를 따라가는 axial 접촉이 ${net.axial}곳`));
- assert.match(await text('network-note'),new RegExp(`βVal6이 관여하는 것은 그중 ${net.involvingMutation}곳`));
- assert.match(await text('network-note'),/βVal6 접촉 하나만으로 fiber 전체가 만들어지는 것은 아닙니다/);
+ assert.match(await text('network-note'),new RegExp(`βVal6이 직접 관여하는 것은 그중 ${net.involvingMutation}곳`));
  assert.match(await text('rbc-note'),/적혈구 내부의 기계적 성질을 바꾸어.*구조 수준까지만 다루며 세포·임상 수준은 모델링하지 않습니다/);
  await tid('tr-link').click();await settle();
  await page.getByTestId('tr-viewer').locator('canvas').waitFor();
  assert.match(await page.locator('.module-heading').innerText(),/Hemoglobin T ↔ R Structural Transition/);
  await nav.getByRole('button',{name:/HbA → HbS → Polymerization/}).click();await viewer().locator('canvas').waitFor();await settle();
  assert.equal(await vdata('step'),'mutation','returning to the module starts again at step 1');
- check(`Science note: deoxy dependence without "deoxy = always polymer", explicit non-simulation list, measured contact network (${net.lateral} lateral + ${net.axial} axial interfaces, only ${net.involvingMutation} involving βVal6), short RBC consequence with a scope limit; the T ↔ R link opens the existing Phase 4B module and coming back resets to step 1`);
+ check(`Science note: deoxy dependence without "deoxy = always polymer", explicit non-simulation list, established βVal6 pocket contact kept separate from the contact network measured in the displayed 6-tetramer segment (${net.lateral} lateral + ${net.axial} axial interfaces, only ${net.involvingMutation} involving βVal6), short RBC consequence with a scope limit; the T ↔ R link opens the existing Phase 4B module and coming back resets to step 1`);
 
  await step('contact');await tid('hbs-observation').locator('summary').click();
  const obs=await text('hbs-observation');

@@ -157,13 +157,14 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
        <td>{fmt(primary.secondary.minDistance)} Å <small>{primary.secondary.donorAtom} ↔ {primary.secondary.acceptorAtom}</small></td></tr>}
      </tbody></table></div>
      <p className="small" data-testid="contact-caveat">거리는 좌표에서 직접 잰 값입니다. 거리만으로 상호작용의 종류가 정해지지는 않습니다. βVal{MUTATION_POSITION}과 {core.map(q=>residueLabel(q)).join(' · ')}는 모두 비극성 곁사슬이고 서로 {fmt(worstCore)} Å 이내에 있어 <strong>hydrophobic contact</strong>로 설명됩니다. 공유결합이 아닙니다.</p>
+     <p className="small" data-testid="cutoff-note">{fmt(CONTACT_CUTOFF,1)} Å 거리 기준을 적용하면 이 acceptor chain에서 βVal{MUTATION_POSITION} 주변에 검출되는 residue는 {primary.neighbours.map(q=>residueLabel(q)).join(' · ')}입니다. 이 기준은 분석을 위해 정한 operational cutoff이므로, 기준을 바꾸면 검출되는 residue도 달라질 수 있습니다.</p>
     </>:<>
      <div className="panel-heading"><h3>Repeating contact</h3><span className="badge">CRYSTAL LATTICE</span></div>
      <p className="hbs-prediction" data-testid="hbs-prediction">같은 접촉이 많은 HbS 분자에서 반복된다면 어떤 higher-order structure가 가능할까요?</p>
      <dl className="tr-values">
       <dt>화면의 분자</dt><dd data-testid="segment-count"><strong>{segmentInstances} tetramers</strong> <small>asymmetric unit 2개 + unit-cell 병진 복사본</small></dd>
       <dt>반복 방식</dt><dd data-testid="segment-operation"><strong>x ± a</strong> <small>unit cell a = {fmt(hbs.crystal.cell.a,3)} Å 병진 (회전 없음)</small></dd>
-      <dt>이 구간의 βVal{MUTATION_POSITION} 접촉</dt><dd data-testid="segment-contacts"><strong>{junctions}곳</strong> <small>모두 서로 다른 두 분자 사이</small></dd>
+      <dt>{hbs.instances.length}-tetramer 구간의 βVal{MUTATION_POSITION} 접촉</dt><dd data-testid="segment-contacts"><strong>{junctions}곳</strong> <small>모두 서로 다른 두 분자 사이</small></dd>
       <dt>분자 사이 최단 거리</dt><dd data-testid="segment-packing"><strong>{fmt(packing.closest)} Å</strong> <small>{packing.overlapCutoff} Å 미만으로 겹치는 원자쌍 {packing.overlaps}개</small></dd>
      </dl>
      <p className="small" data-testid="evidence-note"><strong>근거 수준이 다릅니다.</strong> 위 3D 화면은 deoxy HbS 결정({HBS_SOURCE.pdbId})에서 직접 관측된 원자 좌표와 그 격자 병진입니다. 아래 도식은 전자현미경 3차원 재구성과 X선 섬유 회절로 추론된 fiber의 상위 구조를 나타낸 <strong>schematic</strong>이며 원자 좌표가 아닙니다.</p>
@@ -175,7 +176,8 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
   <section className="helix-notes hbs-science" data-testid="hbs-science">
    <p><strong>Deoxygenation과의 연결.</strong> HbS mutation이 있다고 해서 항상 polymer가 만들어지는 것은 아닙니다. Polymerization은 특히 <strong>deoxy 상태의 polymer-compatible한 conformation</strong>에서 크게 촉진됩니다. 여기서 사용한 {HBS_SOURCE.pdbId}는 deoxy HbS 구조입니다. 실제 polymer 형성은 HbS 농도, 산소화 정도, nucleation, 세포 내 환경 등에도 함께 좌우되며 이 모듈에서는 그 속도론을 계산하지 않습니다.{' '}
     <button className="link-button" onClick={onTransition} data-testid="tr-link">왜 deoxy 상태가 중요한가? → T ↔ R 구조 보기</button></p>
-   <p data-testid="network-note"><strong>접촉은 하나가 아닙니다.</strong> βVal{MUTATION_POSITION}–pocket 상호작용은 polymer를 이루는 여러 intermolecular contact network 안의 중요한 pathological contact입니다. 이 구간에서 서로 다른 분자 사이의 chain 접촉면을 모두 세면 <strong data-testid="network-total">{network.lateral+network.axial}곳</strong>이며 (heavy atom ≤ {fmt(network.cutoff,1)} Å), 그중 두 strand 사이의 lateral 접촉이 {network.lateral}곳, 같은 strand를 따라가는 axial 접촉이 {network.axial}곳입니다. βVal{MUTATION_POSITION}이 관여하는 것은 그중 {network.involvingMutation}곳으로, mutation과 직접 관련이 없는 접촉도 함께 polymer를 안정화합니다. βVal{MUTATION_POSITION} 접촉 하나만으로 fiber 전체가 만들어지는 것은 아닙니다.</p>
+   <p data-testid="network-note"><strong>접촉은 하나가 아닙니다.</strong> <span data-testid="network-established">βVal{MUTATION_POSITION} → 다른 분자 β chain의 hydrophobic pocket({core.map(q=>residueLabel(q)).join(' · ')}) 접촉은 deoxy HbS 실험 구조로 잘 확립된, polymerization의 <strong>특징적인 pathological lateral contact</strong>입니다. 그러나 HbS fiber는 βVal{MUTATION_POSITION} 접촉 하나만으로 안정화되지 않으며, 여러 axial · lateral intermolecular interaction이 함께 존재합니다.</span>{' '}
+    <span data-testid="network-measured"><strong>이 모듈의 {hbs.instances.length}-tetramer crystal segment</strong>(Step 4에서 {hbs.instances.length} tetramers로 표시)에서 이 모듈의 접촉 기준(서로 다른 분자의 heavy atom ≤ {fmt(network.cutoff,1)} Å)으로 검출한 분자간 chain 접촉면은 <strong data-testid="network-total">{network.lateral+network.axial}곳</strong>이며, 그중 두 strand 사이의 lateral 접촉이 {network.lateral}곳, 같은 strand를 따라가는 axial 접촉이 {network.axial}곳입니다. βVal{MUTATION_POSITION}이 직접 관여하는 것은 그중 {network.involvingMutation}곳입니다. 이 숫자는 표시한 유한한 구간의 길이·가장자리와 접촉 기준에 따라 달라지는 <strong>이 시각화에서 계산한 값</strong>이며, 실제 HbS fiber에 고정된 접촉 개수가 아닙니다.</span></p>
    <p className="small" data-testid="rbc-note">긴 HbS polymer는 적혈구 내부의 기계적 성질을 바꾸어 세포의 변형성과 모양 변화에 기여합니다. 이 모듈은 구조 수준까지만 다루며 세포·임상 수준은 모델링하지 않습니다.</p>
   </section>
 

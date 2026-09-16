@@ -66,7 +66,7 @@ biomolecule 1 = chains A–D, 2 = E–H, 둘 다 identity operator) βS chain �
 Waals 구체)으로 그려 국소 표면 화학을 HbA/HbS 토글로 비교, ③ Contact — 대칭 조작 없이 deposited 좌표에서 Molecule 2
 chain H의 βVal6이 Molecule 1 chain B의 pocket(Ala70 3.83 · Phe85 3.95 · Leu88 4.18 Å, 극성 주변 Thr84 3.62 · Asp73
 3.10 Å, secondary βThr4–βAsp73 3.11 Å)에 들어간 intermolecular contact, ④ Repeat — 파일의 CRYST1/SCALE에서 읽은
-unit-cell 병진(a = 63.344 Å, 회전 없음)만으로 만든 2/4/6 tetramer 구간과 그 안의 βVal6 접촉 5곳. 두 분자는 색뿐 아니라
+unit-cell 병진(a = 63.344 Å, 회전 없음)만으로 만든 2/4/6 tetramer 구간과, 표시한 6 tetramer 구간에서 검출한 βVal6 접촉 5곳. 두 분자는 색뿐 아니라
 "Molecule 1 / Molecule 2" label로 구분하고, 분자 사이 거리는 점선 보조선과 측정값으로만 표시하며 결합으로 그리지
 않습니다. 상위 fiber 구조(7 double strand = 14 strand)는 **SCHEMATIC**으로 표시해 원자 좌표와 구분합니다. 상세:
 `HBS_POLYMERIZATION_VALIDATION.md`.

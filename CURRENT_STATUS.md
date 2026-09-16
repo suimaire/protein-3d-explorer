@@ -33,12 +33,14 @@ HbA → HbS → Polymerization:
   `rigid.ts` gained `inverseMat3()`. Existing behaviour unchanged (all previous tests pass untouched).
 - Measured, from the coordinates only (donor/acceptor chains discovered, never hard-coded): donor **Molecule 2 chain H
   βVal6** → acceptor **Molecule 1 chain B** pocket **Ala70 3.83 / Phe85 3.95 / Leu88 4.18 Å**, polar rim Thr84 3.62 /
-  Asp73 3.10 Å, secondary βThr4–βAsp73 3.11 Å. These five residues are exactly the acceptor-chain residues within 4.5 Å
-  of βVal6. In each tetramer only one of the two βVal6 donates here (chains D and H); B and F are acceptors.
+  Asp73 3.10 Å, secondary βThr4–βAsp73 3.11 Å. With the operational 4.5 Å cutoff, these five are the acceptor-chain
+  residues detected around βVal6. In each tetramer only one of the two βVal6 donates here (chains D and H); B and F are acceptors.
 - Repeat: unit-cell translations along **a** (63.344 Å, identity rotation) give 6 tetramers with 5 βVal6 junctions,
   reproducing the crystal's double strand. Closest approach between molecules 2.83 Å, atom pairs < 2.5 Å = **0**,
-  intermolecular inferred bonds = **0**. Contact network over the segment: 22 inter-molecule interfaces = 10 lateral +
-  12 axial, only **5** involving βVal6 — shown in the UI so the contact is never presented as the only one.
+  intermolecular inferred bonds = **0**. Contact network computed for the displayed 6-tetramer segment with the ≤ 4.0 Å
+  interface criterion: 22 inter-molecule interfaces = 10 lateral + 12 axial, **5** involving βVal6 — shown in the UI
+  as segment- and criterion-specific counts, separate from the experimentally established βVal6–pocket contact, so the
+  contact is never presented as the only one and the counts are not presented as fixed fiber properties.
 - UI: four steps (Mutation → Surface → Contact → Repeat) with per-step defaults; Representation (Ribbon / Sticks /
   Space filling), Highlight (Mutation site / Acceptor pocket / Both), Structure (HbA / HbS / Both) or Segment (2 / 4 / 6
   tetramers), Show (Heme / Contact distances / Neighbour molecule), camera presets (Mutation site / Contact pocket /
