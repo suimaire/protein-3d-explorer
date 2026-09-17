@@ -35,3 +35,4 @@
 @media(max-width:850px){.sickle-viewer{height:460px}.hbs-steps li{flex:1 1 140px}}
 @media(max-width:520px){.sickle-viewer{height:380px}.hbs-steps{flex-direction:column}.hbs-panel .table-wrap,.hbs-panel .small,.hbs-panel .hbs-prediction{margin-left:0;margin-right:0}.hbs-panel .tr-values{margin:10px 0}.fiber-schematic svg{width:170px}.molecule-label{font-size:10px}.distance-label{font-size:10px}}
 .footer-brand{display:grid;line-height:1.45}.footer-brand b{color:#34444b}.footer-brand span{font-size:11px}
+.control-hint .hint-touch{display:none}@media(pointer:coarse){.control-hint .hint-mouse{display:none}.control-hint .hint-touch{display:inline}}.clash-focus{font-weight:bold;font-size:14px;min-height:40px;padding:5px 12px;border-color:#b75a6d;text-align:left;display:inline-flex;flex-wrap:wrap;align-items:center;gap:0 8px;max-width:100%}.clash-focus-hint{font-weight:400;font-size:13px;color:#9a3f53}.clash-focus-hint::after{content:' →'}

@@ -1,5 +1,15 @@
 # Protein 3D Explorer — Current Status
 
+## Peptide Geometry UX patch (2026-09-17)
+
+- Peptide Geometry viewer supports pan (opt-in, Peptide viewer only): right-drag or Shift + left-drag on
+  desktop, two-finger drag on touch/iPad (OrbitControls `TOUCH.DOLLY_PAN`). Left-drag rotate, wheel/pinch
+  zoom and 시점 초기화 unchanged. Pan moves camera + controls target only; coordinates are not modified.
+  α-Helix and β-Sheet share `PeptideScene` but keep pan disabled.
+- "심한 비결합 겹침 N쌍" is a button when N > 0: it turns on Show steric clashes and centres the camera on the
+  detector's largest-overlap pair (midpoint target, pair viewed side-on, both atoms in frame). Detector
+  thresholds, exclusions and H-bond logic are unchanged.
+
 ## Phase 4D — HbA → HbS → Polymerization, completed and verified (2026-09-16)
 
 ## Completed

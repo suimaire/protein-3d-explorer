@@ -17,6 +17,7 @@ try{
   const nav=page.getByRole('navigation',{name:'학습 모듈'});
   assert.equal(await nav.getByRole('button').count(),9);
   await nav.getByRole('button',{name:/α-Helix/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Only six completed modules; alpha helix WebGL loads');
+  assert.equal(await viewer().getAttribute('data-pan-enabled'),'false');{const before=await viewer().getAttribute('data-camera-target'),b=await canvas().boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down({button:'right'});await page.mouse.move(b.x+b.width/2+100,b.y+b.height/2+50,{steps:8});await page.mouse.up({button:'right'});assert.equal(await viewer().getAttribute('data-camera-target'),before);}check('Shared PeptideScene: helix viewer keeps pan disabled (right-drag does not move target)');
   assert.equal(await page.getByTestId('hbond-count').innerText(),'8 / 8 표시');assert.equal(await viewer().getAttribute('data-hbond-pairs'),'1-5,2-6,3-7,4-8,5-9,6-10,7-11,8-12');check('Displayed count and rendered pair mapping agree');
   await page.getByText('대표 수치와 모델 검증 보기',{exact:true}).click();
   assert.match(await page.getByTestId('helix-clashes').innerText(),/심한 불리한 입체 충돌: 0쌍/);
