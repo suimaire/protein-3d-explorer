@@ -20,10 +20,10 @@ const numbers=list=>list.map(s=>Number(s.replace(/^[A-Za-z]+/,''))).sort((a,b)=>
 
 const select=page.getByRole('combobox',{name:'Select residue'});
 try{
- await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
+ await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  assert.equal(requests.some(u=>/SolubleMembraneLab|ubiquitin/.test(u)),false,'membrane module must not load initially');
- const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),9);
- assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['Chapter 1 · Amino Acid & Peptide\nPeptide Geometry','Chapter 2 · From Sequence to Structure\nα-Helix','Chapter 2 · From Sequence to Structure\nβ-Sheet','Chapter 2 · From Sequence to Structure\nHydrophobic Core','Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),10);
+ assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['Chapter 1 · Amino Acid & Peptide\nPeptide Geometry','Chapter 2 · From Sequence to Structure\nα-Helix','Chapter 2 · From Sequence to Structure\nβ-Sheet','Chapter 2 · From Sequence to Structure\nHydrophobic Core','Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
  check('Initial Peptide Geometry load does not request the membrane module chunk (lazy); six completed modules');
  await nav.getByRole('button',{name:/Soluble vs Membrane/}).click();await mv().locator('canvas').waitFor();await sv().locator('canvas').waitFor();await settle();
  assert.ok(requests.some(u=>/SolubleMembraneLab/.test(u)),'chunk loaded on demand');assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('canvas').count(),2);

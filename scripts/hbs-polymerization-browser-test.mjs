@@ -24,13 +24,13 @@ const P=audit.contacts.primary,pocket=Object.fromEntries(P.pocket.map(q=>[q.resi
 const fx=(v,n=2)=>v.toFixed(n);
 
 try{
- await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
+ await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
- assert.equal(await nav.getByRole('button').count(),9);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-4),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.equal(await nav.getByRole('button').count(),10);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
  assert.doesNotMatch(await nav.innerText(),/Bohr|2,3-BPG|AlphaFold|vaso|anemia|빈혈/i);
  assert.equal(requests.some(u=>/HbsPolymerizationLab|2HBS/.test(u)),false,'the module chunk and 2HBS must not load at start');
- check('Nine completed modules; Chapter 3 ends with HbA → HbS → Polymerization; no Bohr / 2,3-BPG / clinical wording in the nav; module chunk and 2HBS not requested at start');
+ check('Ten completed modules; Chapter 3 ends with HbA → HbS → Polymerization; no Bohr / 2,3-BPG / clinical wording in the nav; module chunk and 2HBS not requested at start');
 
  await nav.getByRole('button',{name:/HbA → HbS → Polymerization/}).click();
  await viewer().locator('canvas').waitFor();await settle();

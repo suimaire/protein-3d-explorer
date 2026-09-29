@@ -12,7 +12,9 @@ const checks=[];
 const check=(name)=>checks.push(name);
 const marker=()=>page.getByTestId('rama-marker');
 const canvas=()=>page.locator('canvas');
-const shot=()=>canvas().screenshot();
+// Always capture the full canvas at the same viewport alignment. Auto-scroll can leave
+// its fractional top edge clipped after the navigation wraps onto an extra row.
+const shot=async()=>{await canvas().evaluate(e=>e.scrollIntoView({block:'center',inline:'nearest'}));return canvas().screenshot();};
 const changed=(a,b)=>assert.notDeepEqual(a,b,'Rendered model should change');
 const viewer=()=>page.getByTestId('viewer');
 const nums=async name=>(await viewer().getAttribute(name)).split(',').map(Number);
@@ -20,7 +22,7 @@ const near=(a,b,tol=1e-6)=>a.length===b.length&&a.every((v,i)=>Math.abs(v-b[i])<
 const geometry=async()=>({measured:await page.getByTestId('measured').innerText(),phi:await marker().getAttribute('data-phi'),psi:await marker().getAttribute('data-psi'),clashes:await page.getByTestId('clash-count').innerText()});
 const drag=async(dx,dy,opts={})=>{const box=await canvas().boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;if(opts.shift)await page.keyboard.down('Shift');await page.mouse.move(x,y);await page.mouse.down({button:opts.button??'left'});await page.mouse.move(x+dx,y+dy,{steps:10});await page.mouse.up({button:opts.button??'left'});if(opts.shift)await page.keyboard.up('Shift');};
 try{
-  await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
+  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
   await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Production base path loads; WebGL ready');
   assert.equal(await page.getByTestId('clash-count').innerText(),'0');assert.equal(await page.getByTestId('clash-focus').count(),0);check('0 clashes: no clickable clash focus control');
   await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).check();
@@ -93,7 +95,7 @@ try{
   {
     const ctx=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});const mobile=await ctx.newPage();
     mobile.on('pageerror',e=>errors.push(e.message));mobile.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-    await mobile.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});const mv=mobile.getByTestId('viewer'),mc=mobile.locator('canvas');await mc.waitFor();
+    await mobile.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});const mv=mobile.getByTestId('viewer'),mc=mobile.locator('canvas');await mc.waitFor();
     assert.equal(await mobile.locator('.hint-touch').isVisible(),true);assert.equal(await mobile.locator('.hint-mouse').isVisible(),false);assert.equal(await mobile.locator('.hint-touch').innerText(),'한 손가락 회전 · 두 손가락 이동/확대');check('Touch emulation shows touch hint');
     const mnums=async n=>(await mv.getAttribute(n)).split(',').map(Number),cdp=await ctx.newCDPSession(mobile);await mc.scrollIntoViewIfNeeded();const box=await mc.boundingBox(),cx=box.x+box.width/2,cy=box.y+box.height/2;
     const touch=async(type,pts)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:pts.map(([x,y],id)=>({x,y,id}))});

@@ -18,10 +18,10 @@ const camera=async()=>({direction:await data('camera-direction'),distance:await 
 const motion=async value=>{await page.locator('#motion-guide').fill(String(value));await settle();};
 
 try{
- await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
+ await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
- assert.equal(await nav.getByRole('button').count(),9);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-4),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.equal(await nav.getByRole('button').count(),10);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
  assert.doesNotMatch(await nav.innerText(),/Bohr|Hill|2,3-BPG|AlphaFold/i);
  assert.equal(requests.some(u=>/HemoglobinTransitionLab|2DN1|2DN2/.test(u)),false,'T↔R chunk and structures must not load at start');
  check('Seven completed modules; Chapter 3 lists Quaternary Structure and T ↔ R; the T↔R chunk, 2DN2 and 2DN1 are not requested at start');
@@ -29,7 +29,7 @@ try{
  await nav.getByRole('button',{name:/T ↔ R Structural Transition/}).click();await tv().locator('canvas').waitFor();await settle();
  const loaded=requests.filter(u=>/HemoglobinTransitionLab|2DN1|2DN2/.test(u));
  assert.ok(loaded.some(u=>/HemoglobinTransitionLab/.test(u))&&loaded.some(u=>/2DN2.*\.pdb/.test(u))&&loaded.some(u=>/2DN1.*\.pdb/.test(u)),'chunk + both assets on demand');
- assert.ok(loaded.every(u=>u.startsWith('http://127.0.0.1:4173/')));assert.equal(requests.some(u=>/rcsb|wwpdb|ebi\.ac\.uk/i.test(u)),false);
+ assert.ok(loaded.every(u=>u.startsWith(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/'))));assert.equal(requests.some(u=>/rcsb|wwpdb|ebi\.ac\.uk/i.test(u)),false);
  assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('canvas').count(),1);
  for(const [k,v] of [['state','overlay'],['layers','T,R'],['highlight','all'],['heme','on'],['ligand','on'],['interface','off'],['guide','off'],['camera-preset','tetramer']])assert.equal(await data(k),v,k);
  assert.equal(await page.getByTestId('reference-rmsd').locator('strong').innerText(),`${audit.reference.rmsd.toFixed(2)} Å`);

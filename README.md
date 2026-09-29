@@ -154,3 +154,15 @@ React/Vite/TypeScript/Vitest는 기존 carbohydrate explorer 패턴을 따릅니
 
 **매 개발 세션 종료 시 `CURRENT_STATUS.md`를 갱신합니다.** 과학 모델을 바꾸면
 `SCIENTIFIC_NOTES.md`와 관련 검증도 갱신합니다. 현재 범위 밖의 모듈·학습지·로그인 기능은 추가하지 않습니다.
+
+## Mutation Tolerance (Chapter 3)
+
+HbS 앞의 단계별 탐구: WT TEM-1 → M182T 적용 → 구조 비교 → 실험 결과 → A36D 반례 → HbS.
+로컬 PDB 1BTL/1JWP 및 Jacquier et al. Table 2를 사용합니다. **두 PDB는 182 외에 84/184에서도
+서열 기록이 다르므로 단일 변이만의 구조적 효과를 분리하는 비교는 아닙니다.** 이 제한은 화면에도 표시됩니다.
+상세한 원자료 검증, RMSD, 번호 대응 및 테스트 결과: [MUTATION_TOLERANCE_VALIDATION.md](MUTATION_TOLERANCE_VALIDATION.md).
+
+브라우저 검증은 실행 중인 production preview를 사용합니다. 기본 포트는 4173이며,
+다른 포트를 쓸 때 PowerShell에서 `$env:PROTEIN_PREVIEW_ORIGIN='http://127.0.0.1:4175'`를 설정합니다.
+`npm run test:mutation`으로 새 모듈의 좌표 감사와 브라우저 검증을 실행할 수 있습니다.
+Mutation Tolerance 2차 확장: M182T 결과 공개 후 효소 활성 / MIC / 열안정성 카드를 눌러 중앙의 관찰·실험 개념도를 전환합니다. 세 결과를 확인하면 측정 수준 통합과 중립성 질문이 열립니다. 추가 검증: `npm run test:mutation:explanations` (기본 preview origin: 127.0.0.1:5174). [2차 확장 과학·검증 보고서](MUTATION_TOLERANCE_PHASE2_VALIDATION.md).

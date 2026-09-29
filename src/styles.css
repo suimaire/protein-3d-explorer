@@ -36,3 +36,67 @@
 @media(max-width:520px){.sickle-viewer{height:380px}.hbs-steps{flex-direction:column}.hbs-panel .table-wrap,.hbs-panel .small,.hbs-panel .hbs-prediction{margin-left:0;margin-right:0}.hbs-panel .tr-values{margin:10px 0}.fiber-schematic svg{width:170px}.molecule-label{font-size:10px}.distance-label{font-size:10px}}
 .footer-brand{display:grid;line-height:1.45}.footer-brand b{color:#34444b}.footer-brand span{font-size:11px}
 .control-hint .hint-touch{display:none}@media(pointer:coarse){.control-hint .hint-mouse{display:none}.control-hint .hint-touch{display:inline}}.clash-focus{font-weight:bold;font-size:14px;min-height:40px;padding:5px 12px;border-color:#b75a6d;text-align:left;display:inline-flex;flex-wrap:wrap;align-items:center;gap:0 8px;max-width:100%}.clash-focus-hint{font-weight:400;font-size:13px;color:#9a3f53}.clash-focus-hint::after{content:' →'}
+
+/* Mutation Tolerance: cause → observation → result, in DOM and visual order. */
+.mutation-workspace{display:grid;grid-template-columns:minmax(220px,.96fr) minmax(0,2fr) minmax(240px,1.04fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.mutation-workspace>section{min-width:0}.mutation-observation{border-inline:1px solid var(--line)}.mutation-panel-body{padding:20px 18px}
+.mutation-current{margin:18px 0 16px}.mutation-current>span{display:block;color:var(--soft);font-size:13px}.mutation-current>strong{display:block;font-size:25px;line-height:1.4;margin-top:4px}
+.mutation-question{font-size:15px;font-weight:bold;line-height:1.8;margin:22px 0}.mutation-prediction{margin:20px 0}.mutation-prediction label{display:flex;gap:9px;align-items:center;min-height:42px;font-size:14px;cursor:pointer}.mutation-prediction input{width:17px;height:17px;accent-color:var(--accent)}
+.mutation-lab button:disabled{opacity:1;background:#edf0f2;color:#687782;border-color:#d6dee2;cursor:not-allowed}
+.mutation-primary{width:100%;min-height:84px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;background:var(--accent);border-color:var(--accent);color:white;margin-top:8px}
+.mutation-primary:hover{background:#10496c}.mutation-primary strong{font-size:21px}.mutation-primary span{font-size:14px;font-weight:bold}
+.mutation-reveal{width:100%;min-height:54px;background:#e8f1f7;color:#10496c;border-color:#83a9c0;font-weight:bold;font-size:14px}.mutation-reveal:hover{background:#d9e9f3}
+.mutation-reset{width:100%;margin:15px 0}.mutation-note{font-size:12px;color:var(--soft);line-height:1.8;margin:12px 0}.mutation-chemistry{display:grid;grid-template-columns:1fr;gap:8px;margin:24px 0}.mutation-chemistry small{display:block;color:var(--soft);font-size:13px}
+.mutation-viewer,.mutation-loading{height:460px}.mutation-loading{display:grid;align-content:center;text-align:center;padding:20px;background:#f7f9fb}
+.mutation-label{transform:none;border-bottom:2px solid;font-size:11px}.mutation-workspace .camera-presets{padding:10px 12px;gap:5px}.mutation-workspace .camera-presets button{padding:6px 9px}
+.mutation-legend{display:flex;flex-wrap:wrap;gap:5px 15px;padding:12px 16px 6px;font-size:12px;color:#485963}
+.mutation-structure-note,.mutation-change{padding:12px 16px;margin:6px 0 0;background:#edf4f8;font-size:13px}.mutation-change h4{margin:0 0 5px;font-size:13px}.mutation-change p{margin:0 0 6px}.mutation-change p span{padding:0 6px}.mutation-change small{color:var(--soft);font-size:11px;line-height:1.6;display:block}
+.mutation-alignment{padding:8px 16px;font-size:12px;color:var(--soft)}.mutation-alignment summary{font-size:12px}.mutation-alignment p{margin:0 0 6px}
+.mutation-hidden-results{margin:24px 0 28px}.mutation-hidden-results>div{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:12px 0;gap:12px}.mutation-hidden-results dt{font-size:14px}.mutation-hidden-results dd{font-size:26px;color:#778b98;margin:0}
+.mutation-summary{display:grid;gap:10px;margin-bottom:24px}.mutation-summary strong{font-size:16px;line-height:1.5;color:#174a66}
+.mutation-values{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;table-layout:fixed}.mutation-values caption{text-align:left;font-weight:bold;font-size:14px;margin-bottom:10px}.mutation-values th,.mutation-values td{padding:10px 3px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}.mutation-values th:first-child{width:40%}.mutation-values small{display:block;font-size:10px;color:var(--soft);font-weight:normal;margin-top:4px}.mutation-values thead th{color:var(--soft);font-size:11px}.mutation-source{font-size:12px}.mutation-status{font-size:12px;color:var(--soft);margin:18px 0 0}
+.mutation-conclusion{margin:22px 0 0;padding:24px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:5px;background:#f7f9fb}.mutation-conclusion h3{font-size:20px;margin:5px 0 14px}.mutation-conclusion p:not(.eyebrow){max-width:960px}.mutation-takeaway{display:block;font-size:23px;color:#174a66;margin:20px 0;line-height:1.5}.mutation-next{border-top:1px solid var(--line);margin-top:20px;padding-top:8px}.mutation-next button{font-weight:bold;border-color:#83a9c0;color:#10496c;max-width:100%}
+@media(max-width:1120px) and (min-width:701px){.mutation-workspace{grid-template-columns:minmax(220px,1fr) minmax(0,2fr)}.mutation-observation{border-right:0}.mutation-result-panel{grid-column:1/-1;border-top:1px solid var(--line)}.mutation-result-panel .mutation-panel-body{max-width:700px}.mutation-values{font-size:14px}}
+@media(max-width:700px){.mutation-workspace{grid-template-columns:minmax(0,1fr)}.mutation-observation{border-inline:0;border-block:1px solid var(--line)}.mutation-viewer,.mutation-loading{height:400px}.mutation-panel-body{padding:18px 16px}.mutation-current{margin:12px 0}.mutation-question{margin:14px 0}.mutation-chemistry{grid-template-columns:1fr auto 1fr;font-size:14px}.mutation-conclusion{padding:18px 16px}.mutation-takeaway{font-size:20px}.mutation-values{font-size:14px}.mutation-primary{min-height:78px}}
+@media(prefers-reduced-motion:reduce){.mutation-lab *{scroll-behavior:auto;transition:none;animation:none}}
+
+/* Mutation Tolerance: interactive result explanations */
+.mutation-mode-title{display:block;color:var(--accent);font-size:18px;line-height:1.5;margin-top:7px}
+.mutation-scene-region[hidden]{display:none}
+.mutation-result-cards{display:grid;gap:14px}.mutation-result-cards>.mutation-note{margin:0}
+.mutation-result-card{border:1px solid var(--line);border-radius:7px;padding:15px;background:#fff}
+.mutation-result-card[data-active=true]{border-color:#15618f;box-shadow:inset 4px 0 #15618f;background:#f3f8fb}
+.mutation-card-heading{display:flex;align-items:start;justify-content:space-between;gap:6px}.mutation-card-heading h4{margin:0;font-size:16px}.mutation-card-heading span{color:var(--accent);font-size:11px;white-space:nowrap}
+.mutation-result-card dl{margin:12px 0 3px;display:grid;gap:5px}.mutation-result-card dl>div{display:flex;justify-content:space-between;gap:8px}.mutation-result-card dt{font-size:12px;color:var(--soft)}.mutation-result-card dd{margin:0;font-weight:bold;font-size:17px;font-variant-numeric:tabular-nums}
+.mutation-result-card>small{font-size:11px;color:var(--soft)}.mutation-card-result{display:block;font-size:17px;color:#174a66;margin-top:10px}.mutation-result-card p{font-size:13px;line-height:1.6;margin:6px 0 12px}.mutation-result-card button{width:100%;text-align:left;font-size:13px;font-weight:bold;min-height:46px}
+.mutation-explanation-controls:empty{display:none}.mutation-summary-return{margin:8px 16px;font-size:12px}.mutation-explanation-controls .camera-presets{flex-wrap:wrap}.mutation-interaction-button{font-weight:bold}
+.mutation-explanation-body{padding:20px 22px;border-top:1px solid var(--line);font-size:14px;overflow-wrap:anywhere}.mutation-explanation-body p{line-height:1.8}.mutation-explanation-body h4{font-size:16px;margin:0 0 12px}.mutation-level{color:var(--accent);font-weight:bold;font-size:12px;margin:0!important;letter-spacing:.4px}
+.mutation-concept{font-size:12px;background:#edf3f7;border-left:3px solid #8eacbd;padding:9px 12px;color:#425d6d}.mutation-metric{background:#f4f7f9;padding:10px 12px;border-radius:5px}.mutation-metric strong{font-size:18px;white-space:nowrap}
+.mutation-assay{border:1px solid var(--line);border-radius:5px;padding:12px;margin:18px 0}.mutation-assay summary{cursor:pointer;min-height:44px;display:list-item;align-content:center;font-size:14px;font-weight:bold}.mutation-assay summary:focus-visible{outline:3px solid #167bba;outline-offset:3px}.mutation-assay svg{display:block;width:100%;max-width:470px;margin:auto;background:white}.mutation-assay svg text{font-family:inherit;font-size:14px}
+.mutation-flow,.mutation-cause-chain{list-style:none;padding:0;display:grid;gap:8px}.mutation-flow li,.mutation-cause-chain li{padding:10px 12px;border:1px solid var(--line);background:#fafcfd;border-radius:4px}.mutation-flow li+li:before,.mutation-cause-chain li+li:before{content:'↓';display:block;color:var(--accent);font-weight:bold;margin-bottom:4px}
+.mutation-slider-label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:bold;margin:20px 0 0}.mutation-slider-label strong{font-size:24px;color:var(--accent);font-variant-numeric:tabular-nums}
+.mutation-explanation-body input[type=range]{display:block;width:100%;min-width:0;height:48px;margin:4px 0;accent-color:#15618f;touch-action:pan-y;cursor:pointer}
+.mutation-concentration-steps,.mutation-temperature-steps{display:flex;flex-wrap:wrap;gap:6px}.mutation-concentration-steps button,.mutation-temperature-steps button{min-width:48px;min-height:44px;padding:5px 9px;font-size:12px}.mutation-mic>small{display:block;color:var(--soft);margin:8px 0}
+.mutation-agar-rows{margin:20px 0}.mutation-agar-row{display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--line)}.mutation-agar{border:3px double #8da8b8;border-radius:50%;width:78px;height:78px;display:grid;place-items:center;background:#e5edf2;color:#477c9b;flex-shrink:0;font-size:14px}.mutation-agar-row[data-growth=inhibited] .mutation-agar{background:#f4f5f6;color:#74848f}.mutation-agar-row span,.mutation-agar-row small{display:block}.mutation-agar-row small{color:var(--soft);font-size:12px}.mutation-endpoint{background:#edf4f7;padding:12px;font-weight:bold;border-radius:5px}
+.mutation-check-question{border:1px solid #9bb5c4;padding:16px;margin:24px 0 16px;border-radius:5px;min-width:0}.mutation-check-question legend{font-weight:bold;line-height:1.8;padding:0 5px}.mutation-check-question button{margin:4px 6px 4px 0;max-width:100%;font-size:13px}.mutation-feedback{padding:16px;background:#edf5f7;border-radius:5px;font-size:14px}.mutation-factor-chain{text-align:center;line-height:2!important}
+.mutation-contact-evidence{padding:16px;background:#fbf7ed;border-left:3px solid #b08b3a}.mutation-contact-evidence p{margin:8px 0}.mutation-cause-chain{text-align:center}
+.mutation-heating{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}.mutation-tm-rows{display:grid;gap:10px;margin-top:16px}.mutation-tm-rows>div{padding:12px;border:1px solid var(--line);border-radius:5px}.mutation-tm-rows span{display:block;font-size:13px}.mutation-tm-rows [data-position=midpoint]{background:#f9f2de;border-color:#b38b30}
+.mutation-integrated{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}.mutation-integrated h4{font-size:19px;margin:0}.mutation-measurement-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}.mutation-measurement-levels p{font-size:22px;font-weight:bold;padding:16px;background:white;border:1px solid var(--line);border-radius:5px;margin:0}.mutation-measurement-levels small{display:block;font-size:13px;font-weight:normal;color:var(--soft)}.mutation-exploration-progress{font-size:13px;color:var(--soft);border-top:1px solid var(--line);padding-top:16px}
+.mutation-lab[data-explanation=thermal] .mutation-chemistry>div:last-child{background:#f8edf4;border-radius:4px;padding:5px}
+@media(max-width:1120px){
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-workspace{grid-template-columns:minmax(0,1fr)}
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-cause{grid-row:1}
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-result-panel{grid-row:2;border-block:1px solid var(--line)}
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-observation{grid-row:3;border:0}
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-result-panel .mutation-panel-body{max-width:none}
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-result-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .mutation-result-cards>.mutation-note,.mutation-result-cards>.mutation-source{grid-column:1/-1}
+}
+@media(max-width:700px){
+ .mutation-lab[data-stage=M182_RESULTS_REVEALED] .mutation-result-cards{grid-template-columns:minmax(0,1fr)}
+ .mutation-explanation-body{padding:18px 16px}.mutation-mode-title{font-size:17px}.mutation-slider-label strong{font-size:22px}
+ .mutation-measurement-levels{grid-template-columns:minmax(0,1fr)}.mutation-measurement-levels p{font-size:19px}
+ .mutation-agar-row{gap:12px}.mutation-agar{width:64px;height:64px}.mutation-contact-evidence{padding:12px}
+}
+
+.mutation-label-leader{position:absolute;height:1px;background:#657a8999;transform-origin:0 0;pointer-events:none;z-index:2}.mutation-label-leader[hidden]{display:none}

@@ -582,3 +582,19 @@ Chapter 3 — From Structure to Function (Phase 4D). Details, all numbers and te
   Thr-β84 and Asp-β73 peripheral; mutation-unrelated axial contacts also contribute to fiber growth.
 - Structural analysis of sickle hemoglobin polymers (EM 3D reconstruction and X-ray fibre diffraction literature) —
   the 14-stranded fiber as seven double strands that are twisted replicas of the Wishner–Love crystal double strand.
+
+## Mutation Tolerance · TEM-1
+
+The 1BTL / 1JWP comparison uses 263 author-ID-matched Cα pairs and the existing proper quaternion rigid fit.
+Calculated RMSD: 0.5248679777370812 Å. The deposited sequences differ at ILE/VAL 84, MET/THR 182 and VAL/ALA 184;
+the app explicitly discloses this, so the structural comparison does not isolate M182T's causal effect.
+Conventional/auth numbers 36, 70 and 182 correspond to mmCIF label sequence IDs 11, 45 and 157, respectively.
+A36D uses only the WT Ala36 location, without a modeled mutant or unverified active-site distance.
+Jacquier et al. (2013), [Table 2](https://pmc.ncbi.nlm.nih.gov/articles/PMC3740883/#t02), supplies the independently
+measured activity, MIC and Tm readouts. Assay similarity is not evidence of complete evolutionary neutrality.
+See [Mutation Tolerance validation](MUTATION_TOLERANCE_VALIDATION.md) for source hashes, mappings and limitations.
+### Mutation Tolerance result explanations (2026-09-29)
+
+[Jacquier et al. 2013](https://pmc.ncbi.nlm.nih.gov/articles/PMC3740883/) Table 2 / Methods를 다시 검증하여 실제 MIC series (0,12.5,25,50,100,250,500,1000,2000,4000 mg/L), nitrocefin 32 μM / 486 nm, thermal intrinsic fluorescence 295/340 nm를 반영했다. 모든 assay 그림은 raw trace가 아닌 개념도이다.
+
+[Zimmerman et al. 2017](https://doi.org/10.1021/acscentsci.7b00465)의 N-cap / alternate state 해석을 사용하되 단일 접촉의 인과적 충분성을 주장하지 않는다. 1JWP Thr182 OG1···Ala185 N = 2.9197549554714364 Å; 점선은 H 없는 구조의 O···N 거리 가이드다. Glu63/64 O와의 거리는 각각 5.1047927479967345 / 4.960920277529165 Å이므로 이 접촉은 그리지 않는다. 기존 84/184 sequence difference 한계 유지. [선택 정의, source 검증 및 구현 제한](MUTATION_TOLERANCE_PHASE2_VALIDATION.md).

@@ -11,16 +11,16 @@ const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use
 const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
 const errors=[],checks=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('request',r=>requests.push(r.url()));
 const check=n=>{checks.push(n);console.log('✓',n);},button=name=>page.getByRole('button',{name,exact:true}),settle=()=>page.waitForTimeout(150);
-const hv=()=>page.getByTestId('hb-viewer'),shot=()=>hv().locator('canvas').screenshot(),data=key=>hv().getAttribute(`data-${key}`);
+const hv=()=>page.getByTestId('hb-viewer'),shot=async()=>{const c=hv().locator('canvas');await c.evaluate(e=>e.scrollIntoView({block:'center',inline:'nearest'}));return c.screenshot();},data=key=>hv().getAttribute(`data-${key}`);
 const main=()=>page.locator('main'),checkbox=name=>page.getByRole('checkbox',{name,exact:true});
 const byLabel=label=>audit.subunits.find(s=>s.label===label);
 const pairFor=(a,b)=>audit.interfaces.pairs.find(p=>p.chains===`${a}-${b}`||p.chains===`${b}-${a}`);
 
 try{
- await page.goto('http://127.0.0.1:4173/protein-3d-explorer/',{waitUntil:'networkidle'});
+ await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
- assert.equal(await nav.getByRole('button').count(),9);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-4),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.equal(await nav.getByRole('button').count(),10);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
  assert.equal(requests.some(u=>/HemoglobinQuaternaryLab|2DN2/.test(u)),false,'hemoglobin chunk and structure must not load initially');
  assert.doesNotMatch(await nav.innerText(),/Bohr|Hill|2,3-BPG|AlphaFold/i);
  check('Seven completed modules with Chapter 3 · Hemoglobin Quaternary Structure; its chunk and 2DN2 asset are not requested at start');
@@ -29,7 +29,7 @@ try{
  const loaded=requests.filter(u=>/HemoglobinQuaternaryLab|2DN2/.test(u));
  assert.ok(loaded.some(u=>/HemoglobinQuaternaryLab/.test(u))&&loaded.some(u=>/2DN2.*\.pdb/.test(u)),'chunk + asset on demand');
  assert.equal(requests.some(u=>/rcsb|wwpdb|ebi\.ac\.uk/i.test(u)),false,'no external structure server');
- assert.ok(loaded.every(u=>u.startsWith('http://127.0.0.1:4173/')));
+ assert.ok(loaded.every(u=>u.startsWith(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/'))));
  assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('canvas').count(),1);
  for(const [k,v] of [['representation','ribbon'],['color','default'],['focus','all'],['heme','on'],['visible-hemes','4'],['interfaces','off'],['exploded','off'],['camera-preset','reset']])assert.equal(await data(k),v,k);
  assert.match(await page.locator('.module-heading').innerText(),/이 단백질은 몇 개의 polypeptide chain으로 이루어져 있을까\?/);

@@ -1,5 +1,19 @@
 # Protein 3D Explorer — Current Status
 
+## Mutation Tolerance — result explanations and visual refinement (2026-09-29)
+
+- Chapter 3 now includes the TEM-1 WT / M182T structural comparison, experimental results,
+  activity / MIC / thermal explanation modes, A36D counterexample, and HbS navigation.
+- Result CTAs use "활성 중심과 함께 해석 →" and "안정화 구조 모델 확인 →"; MIC wording is unchanged.
+  The thermal title invites inspection of the proposed stabilization model without claiming causal proof.
+- The conceptual nitrocefin lines share one starting point and differ only slightly in slope.
+  WT solid / M182T dashed styles, labels, existing colors, and the raw-time-series limitation remain.
+- Verification: `npm test` 395 passed across 14 files; `npm run typecheck` and `npm run build` passed.
+  Mutation explanation browser regression: 12 checks passed, no page errors, including common-origin
+  graph geometry, MIC 250→500, measured 2.920 Å contact, keyboard/touch, reduced motion, and 320 px layout.
+- Publication uses the existing GitHub Pages workflow triggered by a push to `main`; no deployment settings changed.
+- Scientific scope and evidence: `MUTATION_TOLERANCE_VALIDATION.md` and `MUTATION_TOLERANCE_PHASE2_VALIDATION.md`.
+
 ## Peptide Geometry UX patch (2026-09-17)
 
 - Peptide Geometry viewer supports pan (opt-in, Peptide viewer only): right-drag or Shift + left-drag on

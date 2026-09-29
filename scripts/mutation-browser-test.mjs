@@ -1,0 +1,91 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
+import {resolve} from 'node:path';
+if(existsSync('.browser-cache'))process.env.PLAYWRIGHT_BROWSERS_PATH=resolve('.browser-cache');
+const {chromium}=await import('@playwright/test');
+await mkdir('artifacts',{recursive:true});
+const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
+const checks=[],errors=[],requests=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
+const check=s=>{checks.push(s);console.log('✓ '+s);};
+const nav=()=>page.getByRole('navigation',{name:'학습 모듈'}),main=()=>page.locator('main'),viewer=()=>page.getByTestId('mutation-viewer'),canvas=()=>viewer().locator('canvas');
+const button=name=>main().getByRole('button',{name,exact:true});
+const settle=()=>page.waitForTimeout(520);
+const snapshot=()=>viewer().evaluate(e=>({direction:e.dataset.cameraDirection,distance:e.dataset.cameraDistance,target:e.dataset.cameraTarget}));
+const apply=()=>main().getByRole('button',{name:/M182T 변이 적용/});
+const reveal=()=>button('실제 실험 결과 확인 →');
+const noResults=async()=>assert.equal(await page.getByTestId('mutation-results').count(),0);
+const start=async()=>{await nav().getByRole('button',{name:/Mutation Tolerance/}).click();await canvas().waitFor();await settle();};
+try{
+ await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
+ const names=await nav().getByRole('button').allInnerTexts();assert.equal(names.length,10);
+ assert.match(names.at(-2),/Mutation Tolerance/);assert.match(names.at(-1),/HbA → HbS/);
+ assert.equal(requests.some(u=>/1BTL|1JWP|MutationToleranceLab/.test(u)),false);check('Chapter 3 placement and lazy assets');
+ await start();assert.equal(await main().getAttribute('data-stage'),'M182_WT');await noResults();assert.equal(await reveal().isDisabled(),true);
+ assert.equal(await canvas().count(),1);assert.match(await viewer().getAttribute('data-comparison-layers'),/^wt,met,ser-wt$/);
+ await page.screenshot({path:'artifacts/mutation-desktop-wt.png',fullPage:true});check('WT only; results hidden; reveal disabled; residue labels and one canvas');
+ const columns=await main().locator('.mutation-workspace>section').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width};}));
+ assert.ok(columns[0].x<columns[1].x&&columns[1].x<columns[2].x&&columns[1].w>columns[0].w&&columns[1].w>columns[2].w);check('Desktop cause → largest viewer → results layout');
+ await page.getByRole('radio',{name:'비슷할 것이다'}).focus();await page.keyboard.press('Space');assert.equal(await page.getByRole('radio',{name:'비슷할 것이다'}).isChecked(),true);
+ const before=await snapshot();await apply().focus();await page.keyboard.press('Enter');await settle();
+ assert.equal(await main().getAttribute('data-stage'),'M182_MUTANT_APPLIED');await noResults();assert.equal(await reveal().isEnabled(),true);
+ const after=await snapshot();assert.equal(after.direction,before.direction);assert.notEqual(after.target,before.target);
+ assert.match(await viewer().getAttribute('data-comparison-layers'),/mutant,met-ghost,thr,ser-mutant/);
+ assert.equal(await button('WT로 되돌리기').evaluate(e=>e===document.activeElement),true);
+ assert.match(await main().innerText(),/84\(Ile\/Val\), 184\(Val\/Ala\)/);
+ await page.screenshot({path:'artifacts/mutation-desktop-applied.png',fullPage:true});check('Keyboard prediction and primary CTA; focused site; WT ghost + Thr; additional sequence differences disclosed');
+ const retained=await canvas().evaluate(e=>{e.dataset.identity='original';return true;});assert.equal(retained,true);
+ await canvas().focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('+');const manipulated=await snapshot();assert.notDeepEqual(manipulated,after);
+ await button('WT/M182T 중첩').click();assert.match(await viewer().getAttribute('data-comparison-layers'),/wt-overlay/);assert.deepEqual(await snapshot(),manipulated);
+ await button('WT/M182T 중첩').click();assert.doesNotMatch(await viewer().getAttribute('data-comparison-layers'),/wt-overlay/);assert.deepEqual(await snapshot(),manipulated);check('Keyboard rotation/zoom and overlay exit preserve camera');
+ const box=await canvas().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+40,box.y+box.height/2+20,{steps:6});await page.mouse.up();
+ assert.notEqual((await snapshot()).direction,manipulated.direction);const rotated=await snapshot();
+ await page.keyboard.down('Shift');await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+30,box.y+box.height/2,{steps:6});await page.mouse.up();await page.keyboard.up('Shift');
+ assert.notEqual((await snapshot()).target,rotated.target);check('Pointer drag and pan work');
+ const preserved=await snapshot();await button('WT로 되돌리기').click();await noResults();assert.equal(await reveal().isDisabled(),true);assert.deepEqual(await snapshot(),preserved);
+ await apply().click();await settle();assert.deepEqual(await snapshot(),preserved);assert.equal(await canvas().getAttribute('data-identity'),'original');check('WT reset/reapply retains orientation, zoom, pan and canvas');
+ await reveal().click();assert.equal(await main().getAttribute('data-stage'),'M182_RESULTS_REVEALED');
+ const result=await page.getByTestId('mutation-results').innerText();
+ for(const text of ['142 ± 2','145 ± 15','500','49.5','57','+7.5°C','≈ 유사','= 동일','↑ 증가'])assert.ok(result.includes(text),text);
+ assert.match(await main().innerText(),/진화적으로 완전히 중립인 변이라고 단정할 수는 없습니다/);
+ assert.deepEqual(await snapshot(),preserved);await page.screenshot({path:'artifacts/mutation-desktop-results.png',fullPage:true});check('Separate result reveal with exact Table 2 values and conditional conclusion');
+ await button('전체 구조').click();assert.ok(Number((await snapshot()).distance)>Number(preserved.distance));await button('변이 위치').click();await settle();
+ await button('A36D 반례 확인 →').click();await settle();await noResults();assert.equal(await main().getAttribute('data-stage'),'A36_CASE');
+ assert.equal(await viewer().getAttribute('data-comparison-layers'),'wt,ala,ser-wt');assert.equal(await button('WT/M182T 중첩').count(),0);
+ assert.match(await main().innerText(),/이 화면은 A36D mutant의 실험 구조를 의미하지 않습니다/);check('A36 replaces workspace with WT Ala36 marker, without synthetic mutant');
+ await button('A36D 실험 결과 확인 →').click();const aresult=await page.getByTestId('mutation-results').innerText();
+ for(const text of ['0.14 ± 0.01','12.5','142 ± 2','500','↓ 큰 감소'])assert.ok(aresult.includes(text),text);
+ assert.match(await main().innerText(),/active site 밖 ≠ 반드시 영향이 작음/);
+ await page.screenshot({path:'artifacts/mutation-desktop-a36.png',fullPage:true});
+ const url=page.url();await button('HbA → HbS → Polymerization 보기 →').click();await page.getByTestId('hbs-viewer').locator('canvas').waitFor();
+ assert.equal(page.url(),url);assert.equal(await viewer().count(),0);assert.equal(await page.locator('canvas').count(),1);check('A36 measurements and internal HbS handoff; mutation canvas disposed');
+ await start();await page.emulateMedia({reducedMotion:'reduce'});await apply().click();
+ assert.equal(await viewer().getAttribute('data-camera-animating'),'false');assert.equal(await main().getAttribute('data-stage'),'M182_MUTANT_APPLIED');check('Reduced motion: immediate focus, no camera animation');
+ for(const width of [1024,768,390,320]){
+  await page.setViewportSize({width,height:900});await settle();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width);
+  assert.ok((await canvas().boundingBox()).height>=390);
+  if(width<=700){
+   const y=await main().locator('.mutation-workspace>section').evaluateAll(es=>es.map(e=>e.getBoundingClientRect().y));
+   assert.ok(y[0]<y[1]&&y[1]<y[2]);await page.screenshot({path:'artifacts/mutation-mobile-'+width+'.png',fullPage:true});
+  }
+ }
+ check('Tablet/mobile at 1024/768/390/320: no horizontal overflow; logical order; usable viewer');
+ await button('WT로 되돌리기').click();assert.ok((await apply().boundingBox()).height>=78);await apply().click();await reveal().click();await button('A36D 반례 확인 →').click();await button('A36D 실험 결과 확인 →').click();
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ await button('M182T 처음부터 탐구').click();await noResults();assert.equal(await main().getAttribute('data-stage'),'M182_WT');check('Mobile primary CTA, both cases and explicit restart');
+ await nav().getByRole('button',{name:/Peptide Geometry/}).click();assert.equal(await viewer().count(),0);
+ // Delayed asset response followed by unmount must not resurrect the old viewer.
+ const fresh=await browser.newPage();fresh.on('pageerror',e=>errors.push(e.message));
+ await fresh.route(/1BTL.*\.pdb/,async route=>{await new Promise(r=>setTimeout(r,350));await route.continue();});
+ await fresh.goto(url);await fresh.getByRole('navigation').getByRole('button',{name:/Mutation Tolerance/}).click();
+ await fresh.getByRole('navigation').getByRole('button',{name:/Peptide Geometry/}).click();await fresh.waitForTimeout(650);
+ assert.equal(await fresh.getByTestId('mutation-viewer').count(),0);await fresh.close();check('Stale async load cannot overwrite a newly selected module');
+ for(let i=0;i<3;i++){await start();await nav().getByRole('button',{name:/α-Helix/}).click();}
+ assert.equal(await page.locator('canvas').count(),1);check('Repeated mount/unmount cleans canvases and labels');
+ assert.equal(requests.some(u=>/^https?:/.test(u)&&new URL(u).origin!==(process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')),false);
+ assert.deepEqual(errors,[]);check('No runtime external network or browser exceptions');
+ await writeFile('artifacts/mutation-browser-results.json',JSON.stringify({checks,errors},null,2));
+}finally{await browser.close();}

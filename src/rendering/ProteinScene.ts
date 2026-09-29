@@ -6,6 +6,8 @@ import {SASA_RADII} from '../protein/sasa';
 import {atomColor,DIMMED,hex,type ColorScheme} from '../protein/colors';
 import type {MembraneSlab} from '../protein/membrane';
 import {ribbonGeometry} from './ribbon';
+import {ProteinComparison,type ComparisonLayer} from './proteinComparison';
+import {configureViewerControls} from './viewerControls';
 
 export type Representation='ribbon'|'atoms'|'spacefill';
 export type ProteinView={representation:Representation;color:ColorScheme;highlighted:Set<number>;filtered:boolean;selected:number|null;clip:number|null;membrane?:boolean};
@@ -13,6 +15,8 @@ export type CameraPreset='reset'|'fit'|'side'|'top';
 export type SceneOptions={
  /** Membrane frame (normal +z). When given, the scene shows z vertically and can draw the slab. */ membrane?:MembraneSlab|null;
  ariaLabel?:string;
+ /** Opt-in comparison behavior; existing viewers keep their default resize/pan behavior. */
+ preserveCameraOnResize?:boolean;pan?:boolean;
 };
 const vector=(p:number[])=>new T.Vector3(p[0],p[1],p[2]);
 /** Display-only proper rotation (x, y, z) → (x, z, −y): the membrane normal becomes screen-up (three.js +y). */
@@ -21,6 +25,8 @@ const SELECT=0xb0327c,SLAB_FILL=0x8fb3c9,SLAB_EDGE=0x4f7890;
 
 /** Three.js view of an experimental protein chain. Coordinates are never modified; clipping is visual only. */
 export class ProteinScene{
+ private comparison:ProteinComparison|null=null;
+ private focusFrame:number|null=null;
  private renderer:T.WebGLRenderer;
  private scene=new T.Scene();
  private camera=new T.PerspectiveCamera(36,1,0.5,600);
@@ -58,13 +64,13 @@ export class ProteinScene{
   const box=new T.Box3().setFromPoints(this.positions);box.getCenter(this.center);
   this.radius=Math.max(...this.positions.map(p=>p.distanceTo(this.center)))+2;
   if(this.membrane)this.buildSlab(this.membrane);
-  this.controls=new OrbitControls(this.camera,canvas);this.controls.enablePan=false;this.controls.minDistance=12;this.controls.maxDistance=220;
-  this.controls.addEventListener('change',this.render);
+  this.controls=new OrbitControls(this.camera,canvas);configureViewerControls(this.controls,{pan:options.pan});this.controls.minDistance=12;this.controls.maxDistance=220;
+  this.controls.addEventListener('change',this.render);this.controls.addEventListener('start',this.cancelFocus);
   canvas.addEventListener('keydown',this.keyboard);
   canvas.addEventListener('pointerdown',this.down);
   canvas.addEventListener('pointerup',this.up);
   this.camera.aspect=Math.max(host.clientWidth,1)/Math.max(host.clientHeight,1);this.camera.updateProjectionMatrix();
-  this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(Math.abs(old-this.camera.aspect)>0.01)this.cameraView('fit');this.render();});
+  this.resize=new ResizeObserver(()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);const old=this.camera.aspect;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(!options.preserveCameraOnResize&&Math.abs(old-this.camera.aspect)>0.01)this.cameraView('fit');this.render();});
   this.resize.observe(host);
   this.cameraView('reset');
  }
@@ -92,6 +98,7 @@ export class ProteinScene{
   addLabel('Side B (−z) · aqueous',slab.center-slab.halfThickness-4);
  }
  private keyboard=(e:KeyboardEvent)=>{
+  this.cancelFocus();
   const offset=this.camera.position.clone().sub(this.controls.target),s=new T.Spherical().setFromVector3(offset);
   if(e.key==='ArrowLeft')s.theta-=0.12;else if(e.key==='ArrowRight')s.theta+=0.12;
   else if(e.key==='ArrowUp')s.phi-=0.12;else if(e.key==='ArrowDown')s.phi+=0.12;
@@ -207,7 +214,27 @@ export class ProteinScene{
   const mesh=new T.Mesh(geometry,material);this.group.add(mesh);
   if(!ghost)this.pickables.push({object:mesh,residueOf:hit=>vertexResidue[hit.face!.a]});
  }
+ /** Build comparison geometry once, then toggle visibility independently of camera state. */
+ setComparison(layers:ComparisonLayer[]){
+  if(this.comparison){this.scene.remove(this.comparison.root);this.comparison.dispose();}
+  this.comparison=new ProteinComparison(this.host,layers);this.scene.add(this.comparison.root);
+ }
+ showComparison(ids:string[],hiddenLabelIds:string[]=[]){this.comparison?.show(ids,hiddenLabelIds);this.host.dataset.comparisonLayers=ids.join(',');this.render();}
+ private cancelFocus=()=>{if(this.focusFrame!==null)cancelAnimationFrame(this.focusFrame);this.focusFrame=null;this.host.dataset.cameraAnimating='false';};
+ stopCameraFocus(){this.cancelFocus();}
+ focusResidue(index:number,framing=28){
+  this.cancelFocus();const r=this.structure.residues[index],ca=r.atoms.find(i=>this.structure.atoms[i].name==='CA');if(ca===undefined)return;
+  const fromTarget=this.controls.target.clone(),fromPosition=this.camera.position.clone(),target=this.positions[ca].clone();
+  const direction=fromPosition.clone().sub(fromTarget).normalize(),distance=framing/Math.min(1,this.camera.aspect);
+  const position=target.clone().addScaledVector(direction,distance);
+  const apply=(t:number)=>{this.controls.target.copy(fromTarget).lerp(target,t);this.camera.position.copy(fromPosition).lerp(position,t);this.controls.update();this.render();};
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){apply(1);return;}
+  const start=performance.now();this.host.dataset.cameraAnimating='true';
+  const frame=(now:number)=>{const t=Math.min(1,(now-start)/420);apply(t*t*(3-2*t));if(t<1)this.focusFrame=requestAnimationFrame(frame);else this.cancelFocus();};
+  this.focusFrame=requestAnimationFrame(frame);
+ }
  cameraView(view:CameraPreset){
+  this.cancelFocus();
   // Membrane scenes: Reset = Side view (normal vertical on screen); Top looks down the normal from side A.
   const preset=view==='reset'&&this.membrane?'side':view;
   const direction=preset==='fit'?this.camera.position.clone().sub(this.controls.target).normalize():preset==='side'?new T.Vector3(0.35,0,1).normalize():preset==='top'?new T.Vector3(0,1,0.001).normalize():new T.Vector3(0.35,0.2,1).normalize();
@@ -226,6 +253,7 @@ export class ProteinScene{
   const d=this.host.dataset;
   d.cameraDirection=direction.toArray().map(v=>v.toFixed(6)).join(',');d.cameraDistance=this.camera.position.distanceTo(this.controls.target).toFixed(4);
   this.renderer.render(this.scene,this.camera);
+  this.comparison?.render(this.camera);d.cameraTarget=this.controls.target.toArray().map(v=>v.toFixed(6)).join(',');
   if(this.labelAt){
    const p=this.labelAt.clone().project(this.camera),w=this.label.offsetWidth,h=this.label.offsetHeight;
    this.label.hidden=Math.abs(p.z)>1||(clip!==null&&this.clipPlane.distanceToPoint(this.labelAt)<0);
@@ -248,6 +276,7 @@ export class ProteinScene{
   return {x:rect.left+(p.x+1)*rect.width/2,y:rect.top+(1-p.y)*rect.height/2};
  }
  dispose(){
+  this.cancelFocus();this.comparison?.dispose();this.controls.removeEventListener('start',this.cancelFocus);
   this.resize.disconnect();this.controls.dispose();const c=this.renderer.domElement;
   c.removeEventListener('keydown',this.keyboard);c.removeEventListener('pointerdown',this.down);c.removeEventListener('pointerup',this.up);
   this.clear();this.sphere.dispose();this.cylinder.dispose();
