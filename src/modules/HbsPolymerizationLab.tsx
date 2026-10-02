@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {SickleViewer} from '../components/SickleViewer';
 import {Segmented} from '../components/Segmented';
+import {Workbench} from '../components/Workbench';
 import {FiberSchematic} from './FiberSchematic';
 import {SICKLE_COLORS,type SickleCamera,type SickleHighlight,type SickleRepresentation,type SickleStep,type SickleStructure} from '../rendering/SickleScene';
 import {sickleSceneModel,CONTACT_CUTOFF,HBA_SOURCE,HBS_SOURCE,MUTATION_POSITION,NEIGHBOURHOOD_RADIUS,residueLabel,type SickleModel} from '../protein/sickle';
@@ -59,49 +60,53 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
   ? `3단계 · 분자 사이의 새 접촉 — ${donorMolecule.label}의 βVal${MUTATION_POSITION}이 ${acceptorMolecule.label}의 β chain pocket에 들어가 있습니다. 두 tetramer는 서로 다른 분자입니다 (intramolecular 접촉이 아닙니다). 접촉 부위는 접촉 pocket 버튼으로 확대할 수 있습니다.`
   : `4단계 · 반복되는 접촉 — 같은 접촉이 unit cell 병진(${hbs.crystal.spaceGroup})으로 반복됩니다. 화면의 ${segmentInstances}개 tetramer는 결정 안의 배열이며, 세포 안 fiber 전체의 원자 모델이 아닙니다.`;
 
- return <main className="helix-lab core-lab hb-lab tr-lab hbs-lab" data-step={step}>
+ return <main className="helix-lab core-lab hb-lab tr-lab hbs-lab workbench-lab" data-step={step}>
   <section className="module-heading"><div><p className="eyebrow">3장 · 구조에서 기능으로</p><h2>HbA → HbS → 중합</h2>
    <p>β-globin의 amino acid 하나가 바뀌면, 그 단백질 표면은 어떻게 달라지고 다른 hemoglobin 분자와 어떤 새로운 접촉이 가능해질까?</p></div>
    <span className="model-tag">PDB {HBS_SOURCE.pdbId} (deoxy HbS, {HBS_SOURCE.resolution} Å) · PDB {HBA_SOURCE.pdbId} (deoxy HbA, {HBA_SOURCE.resolution} Å)<strong>X선 결정 구조 2개 (실험)</strong></span></section>
 
-  <ol className="hbs-steps" data-testid="hbs-steps" aria-label="학습 단계">
-   {([['mutation','1','변이','β6 Glu → Val'],['surface','2','표면','국소 표면 화학'],
-      ['contact','3','접촉','분자 사이 새 접촉'],['polymer','4','반복','접촉의 반복']] as const).map(([id,n,title,sub])=>
-    <li key={id}><button aria-pressed={step===id} onClick={()=>goTo(id)} data-testid={`step-${id}`}><b>{n}</b><span>{title}<small>{sub}</small></span></button></li>)}
-  </ol>
+  <Workbench className="hbs-workbench">
+   <ol className="hbs-steps" data-testid="hbs-steps" aria-label="학습 단계">
+    {([['mutation','1','변이','β6 Glu → Val'],['surface','2','표면','국소 표면 화학'],
+       ['contact','3','접촉','분자 사이 새 접촉'],['polymer','4','반복','접촉의 반복']] as const).map(([id,n,title,sub])=>
+     <li key={id}><button aria-pressed={step===id} onClick={()=>goTo(id)} data-testid={`step-${id}`}><b>{n}</b><span>{title}<small>{sub}</small></span></button></li>)}
+   </ol>
 
-  <section className="controls core-controls compare-controls hb-controls tr-controls hbs-controls" aria-label="HbS polymerization controls">
-   <Segmented label="표현 방식" value={representation} onChange={setRepresentation}
-    options={[['ribbon','리본'],['sticks','막대'],['spacefill','공간 채움']] as const}/>
-   <Segmented label="강조" value={highlight} onChange={setHighlight}
-    options={[['mutation','변이 자리'],['pocket','받는 쪽 pocket'],['both','둘 다']] as const}/>
-   {local
-    ? <Segmented label="구조" value={structure} onChange={setStructure} options={[['hba','HbA'],['hbs','HbS'],['both','둘 다']] as const}/>
-    : <Segmented label="Segment" value={String(segment)} onChange={v=>{setSegment(Number(v));if(step==='polymer')bump('segment');else goTo('polymer');}}
-       options={[['2','2 tetramers'],['4','4 tetramers'],['6','6 tetramers']] as const}/>}
-   <fieldset className="hb-toggles"><legend>표시</legend>
-    <div className="toggles">
-     <label><input type="checkbox" checked={showHeme} onChange={e=>setShowHeme(e.target.checked)}/>Heme</label>
-     <label><input type="checkbox" checked={showDistances} onChange={e=>setShowDistances(e.target.checked)}/>접촉 거리</label>
-     <label><input type="checkbox" checked={showNeighbour} disabled={local||step==='polymer'} onChange={e=>setShowNeighbour(e.target.checked)}/>이웃 분자</label>
-    </div>
-    <button onClick={reset}>전체 초기화</button>
-   </fieldset>
-  </section>
+   <section className="controls core-controls compare-controls hb-controls tr-controls hbs-controls workbench-rail" aria-label="HbS polymerization controls">
+    <Segmented label="표현 방식" value={representation} onChange={setRepresentation}
+     options={[['ribbon','리본'],['sticks','막대'],['spacefill','공간 채움']] as const}/>
+    <Segmented label="강조" value={highlight} onChange={setHighlight}
+     options={[['mutation','변이 자리'],['pocket','받는 쪽 pocket'],['both','둘 다']] as const}/>
+    {local
+     ? <Segmented label="구조" value={structure} onChange={setStructure} options={[['hba','HbA'],['hbs','HbS'],['both','둘 다']] as const}/>
+     : <Segmented label="Segment" value={String(segment)} onChange={v=>{setSegment(Number(v));if(step==='polymer')bump('segment');else goTo('polymer');}}
+        options={[['2','2 tetramers'],['4','4 tetramers'],['6','6 tetramers']] as const}/>}
+    <fieldset className="hb-toggles"><legend>표시</legend>
+     <div className="toggles">
+      <label><input type="checkbox" checked={showHeme} onChange={e=>setShowHeme(e.target.checked)}/>Heme</label>
+      <label><input type="checkbox" checked={showDistances} onChange={e=>setShowDistances(e.target.checked)}/>접촉 거리</label>
+      <label><input type="checkbox" checked={showNeighbour} disabled={local||step==='polymer'} onChange={e=>setShowNeighbour(e.target.checked)}/>이웃 분자</label>
+     </div>
+    </fieldset>
+    <fieldset className="rail-camera"><legend>시점</legend>
+     <div className="camera-presets">
+      <button onClick={()=>bump('mutation')}>변이 자리</button><button onClick={()=>bump('pocket')}>접촉 pocket</button>
+      <button onClick={()=>bump('tetramer')}>tetramer 전체</button><button onClick={()=>bump('segment')}>중합체 일부</button>
+      <button onClick={()=>bump('fit')}>화면에 맞추기</button></div>
+    </fieldset>
+    <button className="rail-reset" onClick={reset}>전체 초기화</button>
+   </section>
 
-  <div className="helix-tip compare-tip" data-testid="hbs-tip">{tip}
-   {showDistances&&!local&&<span className="tip-extra" data-testid="distance-note"> 점선 = 측정한 heavy-atom 최단 거리(≤ {fmt(CONTACT_CUTOFF,1)} Å)입니다. 근접을 표시하는 보조선이며 화학 결합이 아닙니다.</span>}
-   {local&&<span className="tip-extra"> 색: {glu.label}({glu.korean}) / {val.label}({val.korean}) 등 side-chain 화학 분류. 붉은 강조 = β{MUTATION_POSITION} residue.</span>}
-  </div>
-
-  <div className="lab-grid helix-grid hb-grid">
-   <section className="viewer-panel" aria-label="3D HbS structure">
+   <div className="workbench-about">
     <div className="panel-heading"><h3>{local?`β chain · β${MUTATION_POSITION} site`:step==='contact'?'Two HbS molecules · lateral contact':`HbS segment · ${segmentInstances} tetramers`}</h3>
      <span className="badge" data-testid="hbs-badge">{local?`실험 구조 · β chain 정렬`:step==='contact'?`실험 구조 · ${HBS_SOURCE.pdbId} 비대칭 단위`:`실험 구조 + 격자 평행이동`}</span></div>
-    <div className="camera-presets">
-     <button onClick={()=>bump('mutation')}>변이 자리</button><button onClick={()=>bump('pocket')}>접촉 pocket</button>
-     <button onClick={()=>bump('tetramer')}>tetramer 전체</button><button onClick={()=>bump('segment')}>중합체 일부</button>
-     <button onClick={()=>bump('fit')}>화면에 맞추기</button><button onClick={reset}>초기화</button></div>
+    <div className="helix-tip compare-tip" data-testid="hbs-tip">{tip}
+     {showDistances&&!local&&<span className="tip-extra" data-testid="distance-note"> 점선 = 측정한 heavy-atom 최단 거리(≤ {fmt(CONTACT_CUTOFF,1)} Å)입니다. 근접을 표시하는 보조선이며 화학 결합이 아닙니다.</span>}
+     {local&&<span className="tip-extra"> 색: {glu.label}({glu.korean}) / {val.label}({val.korean}) 등 side-chain 화학 분류. 붉은 강조 = β{MUTATION_POSITION} residue.</span>}
+    </div>
+   </div>
+
+   <section className="viewer-panel workbench-stage" aria-label="3D HbS structure">
     <SickleViewer testId="hbs-viewer" model={scene} view={view} camera={camera}
      ariaLabel={`HbA와 HbS 구조 비교 및 HbS 분자 사이 접촉 3D 화면 (PDB ${HBS_SOURCE.pdbId}, ${HBA_SOURCE.pdbId}). 드래그로 회전, 휠로 확대, 방향키로 회전, 더하기와 빼기로 확대 축소.`}/>
     <div className="viewer-footer"><span>drag 회전 · 휠 확대 · 방향키 / + − · step을 바꿔도 좌표는 그대로입니다</span></div>
@@ -120,10 +125,9 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
       {showHeme&&<><span><i style={{background:SICKLE_COLORS.heme.css,borderRadius:2}}/>Heme</span><span><i style={{background:SICKLE_COLORS.ironCss}}/>Fe</span></>}
      </>}
     </div>
-    {step==='polymer'&&<FiberSchematic doubleStrands={7}/>}
    </section>
 
-   <aside className="plot-panel residue-panel hb-panel tr-panel hbs-panel" aria-label="Measured values">
+   <aside className="plot-panel residue-panel hb-panel tr-panel hbs-panel workbench-side" aria-label="Measured values">
     {local?<>
      <div className="panel-heading"><h3>β{MUTATION_POSITION} side chain</h3><span className="badge">화학적 성질</span></div>
      <p className="hbs-prediction" data-testid="hbs-prediction">Glu를 Val로 바꾸면 이 자리의 단백질 <strong>표면</strong>에서 어떤 물리화학적 성질이 달라질까요? 먼저 예상해 보고 3D에서 확인하세요.</p>
@@ -167,11 +171,12 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
       <dt>{hbs.instances.length}-tetramer 구간의 βVal{MUTATION_POSITION} 접촉</dt><dd data-testid="segment-contacts"><strong>{junctions}곳</strong> <small>모두 서로 다른 두 분자 사이</small></dd>
       <dt>분자 사이 최단 거리</dt><dd data-testid="segment-packing"><strong>{fmt(packing.closest)} Å</strong> <small>{packing.overlapCutoff} Å 미만으로 겹치는 원자쌍 {packing.overlaps}개</small></dd>
      </dl>
-     <p className="small" data-testid="evidence-note"><strong>근거 수준이 다릅니다.</strong> 위 3D 화면은 deoxy HbS 결정({HBS_SOURCE.pdbId})에서 직접 관측된 원자 좌표와 그 격자 병진입니다. 아래 도식은 전자현미경 3차원 재구성과 X선 섬유 회절로 추론된 fiber의 상위 구조를 나타낸 <strong>schematic</strong>이며 원자 좌표가 아닙니다.</p>
+     <p className="small" data-testid="evidence-note"><strong>근거 수준이 다릅니다.</strong> 3D 화면은 deoxy HbS 결정({HBS_SOURCE.pdbId})에서 직접 관측된 원자 좌표와 그 격자 병진입니다. 아래 도식은 전자현미경 3차원 재구성과 X선 섬유 회절로 추론된 fiber의 상위 구조를 나타낸 <strong>schematic</strong>이며 원자 좌표가 아닙니다.</p>
      <p className="small">결정 안의 배열을 적혈구 안의 fiber와 같다고 단정하지 않습니다. 다만 이 결정의 double strand는 fiber 모델의 기본 구성 요소로 알려져 있습니다.</p>
+     <FiberSchematic doubleStrands={7}/>
     </>}
    </aside>
-  </div>
+  </Workbench>
 
   <section className="helix-notes hbs-science" data-testid="hbs-science">
    <p><strong>Deoxygenation과의 연결.</strong> HbS mutation이 있다고 해서 항상 polymer가 만들어지는 것은 아닙니다. Polymerization은 특히 <strong>deoxy 상태의 polymer-compatible한 conformation</strong>에서 크게 촉진됩니다. 여기서 사용한 {HBS_SOURCE.pdbId}는 deoxy HbS 구조입니다. 실제 polymer 형성은 HbS 농도, 산소화 정도, nucleation, 세포 내 환경 등에도 함께 좌우되며 이 모듈에서는 그 속도론을 계산하지 않습니다.{' '}

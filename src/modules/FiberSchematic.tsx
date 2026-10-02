@@ -2,7 +2,7 @@
  * Schematic of the higher-order HbS fiber, drawn as a diagram and labelled as one everywhere it appears.
  * It is NOT atomic coordinates and NOT derived from the crystal file: the fiber's 14 strands, arranged as seven
  * double strands, come from electron-microscopy 3D reconstructions and X-ray fibre diffraction, a different and
- * lower-resolution kind of evidence than the deposited crystal structure shown in the 3D view above.
+ * lower-resolution kind of evidence than the deposited crystal structure shown in the 3D view.
  */
 export function FiberSchematic({doubleStrands=7}:{doubleStrands?:number}){
  const cx=86,cy=74,r=46,pair=9.5;

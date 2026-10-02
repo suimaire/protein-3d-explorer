@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {TransitionViewer} from '../components/TransitionViewer';
 import {Segmented} from '../components/Segmented';
+import {Workbench} from '../components/Workbench';
 import {COMPARISON_COLORS,GUIDE_RADIUS,type TransitionCamera,type TransitionHighlight,type TransitionState} from '../rendering/TransitionScene';
 import {transitionSceneModel,MOVING_DIMER,REFERENCE_DIMER,R_SOURCE,T_SOURCE,type TransitionModel} from '../protein/hemoglobinTransition';
 import {loadTransition} from '../protein/transitionAssets';
@@ -37,32 +38,36 @@ function TransitionExplorer({model}:{model:TransitionModel}){
  const selectedHeme=hemeFocus===null?null:{t:hemes.t.find(h=>h.number===hemeFocus)!,r:hemes.r.find(h=>h.number===hemeFocus)!};
  const tCount=contacts.t.length,rCount=contacts.r.length;
 
- return <main className="helix-lab core-lab hb-lab tr-lab" data-state={state}>
+ return <main className="helix-lab core-lab hb-lab tr-lab workbench-lab" data-state={state}>
   <section className="module-heading"><div><p className="eyebrow">3장 · 구조에서 기능으로</p><h2>헤모글로빈 T ↔ R 구조 전환</h2><p>O₂가 결합한 hemoglobin은 같은 구조에 O₂만 더해진 것일까, 아니면 subunit들의 상대적 배열도 달라질까?</p></div>
    <span className="model-tag">PDB {T_SOURCE.pdbId} (T-like, deoxy) · PDB {R_SOURCE.pdbId} (R-like, O₂)<strong>X선 결정 구조 2개 (실험) · 각 {T_SOURCE.resolution} Å</strong></span></section>
-  <section className="controls core-controls compare-controls hb-controls tr-controls" aria-label="T R comparison controls">
-   <Segmented label="상태" value={state} onChange={setState} options={[['T','T 상태'],['overlay','겹쳐 보기'],['R','R 상태'],['motion','움직임 안내']] as const}/>
-   <Segmented label="강조" value={highlight} onChange={setHighlight} options={[['all','tetramer 전체'],['reference','기준 αβ dimer'],['moving','움직이는 αβ dimer']] as const}/>
-   <fieldset className="hb-toggles"><legend>표시</legend>
-    <div className="toggles">
-     <label><input type="checkbox" checked={showHeme} onChange={e=>{setShowHeme(e.target.checked);if(!e.target.checked)setHemeFocus(null);}}/>Heme</label>
-     <label><input type="checkbox" checked={showLigand} onChange={e=>setShowLigand(e.target.checked)}/>리간드 (O₂)</label>
-     <label><input type="checkbox" checked={showInterface} onChange={e=>setShowInterface(e.target.checked)}/>접촉면</label>
-     <label><input type="checkbox" checked={showGuide} onChange={e=>setShowGuide(e.target.checked)}/>재배열 안내선</label>
-    </div>
-    <button onClick={reset}>전체 초기화</button>
-   </fieldset>
-  </section>
-  <div className="helix-tip compare-tip" data-testid="tr-tip">{tip}
-   {showGuide&&<span className="tip-extra" data-testid="guide-note"> Guide: relative structural difference after alignment — {mov}의 best-fit 회전축(점선), 회전각 {fmt(moving.screw.angle,1)}°를 나타내는 부채꼴(보이도록 반지름만 {GUIDE_RADIUS} Å로 키움), 중심 이동 {fmt(moving.centroidDisplacement,1)} Å(짧은 막대). 원자 궤적이 아닙니다.</span>}
-   {showInterface&&<span className="tip-extra"> Interface: 진한 색 = 두 αβ dimer 사이 접촉 residue (heavy atom ≤ {contacts.cutoff.toFixed(1)} Å, 양쪽 구조에 공통인 원자로 계산). 상호작용 종류는 구분하지 않습니다.</span>}
-   {showLigand&&(state==='T'||state==='motion')&&<span className="tip-extra"> T 구조(deoxy)에는 deposited O₂가 없으므로 ligand를 그리지 않습니다.</span>}
-  </div>
-  <div className="lab-grid helix-grid hb-grid">
-   <section className="viewer-panel" aria-label="3D T R comparison">
+  <Workbench className="tr-workbench">
+   <section className="controls core-controls compare-controls hb-controls tr-controls workbench-rail" aria-label="T R comparison controls">
+    <Segmented label="상태" value={state} onChange={setState} options={[['T','T 상태'],['overlay','겹쳐 보기'],['R','R 상태'],['motion','움직임 안내']] as const}/>
+    <Segmented label="강조" value={highlight} onChange={setHighlight} options={[['all','tetramer 전체'],['reference','기준 αβ dimer'],['moving','움직이는 αβ dimer']] as const}/>
+    <fieldset className="hb-toggles"><legend>표시</legend>
+     <div className="toggles">
+      <label><input type="checkbox" checked={showHeme} onChange={e=>{setShowHeme(e.target.checked);if(!e.target.checked)setHemeFocus(null);}}/>Heme</label>
+      <label><input type="checkbox" checked={showLigand} onChange={e=>setShowLigand(e.target.checked)}/>리간드 (O₂)</label>
+      <label><input type="checkbox" checked={showInterface} onChange={e=>setShowInterface(e.target.checked)}/>접촉면</label>
+      <label><input type="checkbox" checked={showGuide} onChange={e=>setShowGuide(e.target.checked)}/>재배열 안내선</label>
+     </div>
+    </fieldset>
+    <fieldset className="rail-camera"><legend>시점</legend>
+     <div className="camera-presets"><button onClick={()=>{setHemeFocus(null);bump('tetramer');}}>tetramer 전체 보기</button><button onClick={()=>{setHemeFocus(null);bump('dimer');}}>dimer 비교 보기</button>
+      <button onClick={()=>focusHeme(hemeFocus??1)}>heme 확대</button><button onClick={()=>bump('fit')}>화면에 맞추기</button></div>
+    </fieldset>
+    <button className="rail-reset" onClick={reset}>전체 초기화</button>
+   </section>
+   <div className="workbench-about">
     <div className="panel-heading"><h3>Hemoglobin A · T ↔ R</h3><span className="badge" data-testid="state-badge">{state==='T'?`T · ${T_SOURCE.pdbId}`:state==='R'?`R · ${R_SOURCE.pdbId} (정렬)`:state==='overlay'?`겹쳐 보기 · ${ref} 정렬`:`움직임 안내 ${percent}%`}</span></div>
-    <div className="camera-presets"><button onClick={()=>{setHemeFocus(null);bump('tetramer');}}>tetramer 전체 보기</button><button onClick={()=>{setHemeFocus(null);bump('dimer');}}>dimer 비교 보기</button>
-     <button onClick={()=>focusHeme(hemeFocus??1)}>heme 확대</button><button onClick={()=>bump('fit')}>화면에 맞추기</button><button onClick={reset}>초기화</button></div>
+    <div className="helix-tip compare-tip" data-testid="tr-tip">{tip}
+     {showGuide&&<span className="tip-extra" data-testid="guide-note"> Guide: relative structural difference after alignment — {mov}의 best-fit 회전축(점선), 회전각 {fmt(moving.screw.angle,1)}°를 나타내는 부채꼴(보이도록 반지름만 {GUIDE_RADIUS} Å로 키움), 중심 이동 {fmt(moving.centroidDisplacement,1)} Å(짧은 막대). 원자 궤적이 아닙니다.</span>}
+     {showInterface&&<span className="tip-extra"> Interface: 진한 색 = 두 αβ dimer 사이 접촉 residue (heavy atom ≤ {contacts.cutoff.toFixed(1)} Å, 양쪽 구조에 공통인 원자로 계산). 상호작용 종류는 구분하지 않습니다.</span>}
+     {showLigand&&(state==='T'||state==='motion')&&<span className="tip-extra"> T 구조(deoxy)에는 deposited O₂가 없으므로 ligand를 그리지 않습니다.</span>}
+    </div>
+   </div>
+   <section className="viewer-panel workbench-stage" aria-label="3D T R comparison">
     <TransitionViewer testId="tr-viewer" model={scene} view={view} camera={camera}
      ariaLabel="Hemoglobin T R 비교 3D 구조 (PDB 2DN2, 2DN1). 드래그로 회전, 휠로 확대, 방향키로 회전, 더하기와 빼기로 확대 축소."/>
     <div className="viewer-footer"><span>drag 회전 · 휠 확대 · 방향키 / + − · state를 바꿔도 카메라 방향은 유지됩니다</span></div>
@@ -81,7 +86,7 @@ function TransitionExplorer({model}:{model:TransitionModel}){
      <p className="motion-warning" data-testid="motion-warning">계산된 {mov}의 상대 회전·이동만 시각화한 가이드입니다. 실제 분자 전이 경로나 R 구조 자체가 아닙니다. <span className="small-inline">100%도 {R_SOURCE.pdbId} 실험 좌표가 아닙니다 (R에는 작은 tertiary 차이도 있음). 실험 구조는 T 상태 / R 상태 버튼으로 보세요.</span></p>
     </div>
    </section>
-   <aside className="plot-panel residue-panel hb-panel tr-panel" aria-label="Comparison values">
+   <aside className="plot-panel residue-panel hb-panel tr-panel workbench-side" aria-label="Comparison values">
     <div className="panel-heading"><h3>비교 값</h3><span className="badge">계산값</span></div>
     <dl className="tr-values">
      <dt>Reference dimer RMSD</dt><dd data-testid="reference-rmsd"><strong>{fmt(reference.rmsd)} Å</strong> <small>{ref} Cα {reference.matched}개, T와 R을 맞춘 뒤</small></dd>
@@ -101,7 +106,7 @@ function TransitionExplorer({model}:{model:TransitionModel}){
      <p className="small">Plane = 24개 porphyrin 고리 원자의 최소제곱 평면, + = proximal His 쪽. Heme 주변의 국소 변화와 tetramer 전체 배열 변화는 함께 관찰되지만, 이 두 구조만으로 하나의 단순한 인과 사슬을 증명할 수는 없습니다.</p>
     </div>}
    </aside>
-  </div>
+  </Workbench>
   <section className="helix-notes tr-science" data-testid="science-note">
    <p><strong>Scientific note.</strong> T와 R은 hemoglobin의 주요 quaternary conformational states를 설명하는 유용한 모델입니다. 실제 hemoglobin은 열운동과 ligand 상태에 따라 여러 conformational states를 점유할 수 있습니다.</p>
    <p>여기서는 구조 비교만 다룹니다. T-like 구조가 O₂를 전혀 결합하지 못한다거나, R-like 구조가 항상 완전히 산소로 포화되어 있다는 뜻이 아닙니다.</p>
