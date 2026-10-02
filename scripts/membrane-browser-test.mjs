@@ -22,8 +22,8 @@ const select=page.getByRole('combobox',{name:'잔기 선택'});
 try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  assert.equal(requests.some(u=>/SolubleMembraneLab|ubiquitin/.test(u)),false,'membrane module must not load initially');
- const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['펩타이드 결합과 φ·ψ 회전\nPeptide Geometry','α-나선\nα-Helix','β-병풍\nβ-Sheet','소수성 중심부\nHydrophobic Core','수용성 단백질과 막단백질\nSoluble vs Membrane Protein','헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),11);
+ assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['펩타이드 결합과 φ·ψ 회전\nPeptide Geometry','α-나선\nα-Helix','β-병풍\nβ-Sheet','소수성 중심부\nHydrophobic Core','이황화 결합과 변성\nDisulfide Bonds & Denaturation','수용성 단백질과 막단백질\nSoluble vs Membrane Protein','헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  check('Initial Peptide Geometry load does not request the membrane module chunk (lazy); six completed modules');
  await nav.getByRole('button',{name:/Soluble vs Membrane/}).click();await mv().locator('canvas').waitFor();await sv().locator('canvas').waitFor();await settle();
  assert.ok(requests.some(u=>/SolubleMembraneLab/.test(u)),'chunk loaded on demand');assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('canvas').count(),2);

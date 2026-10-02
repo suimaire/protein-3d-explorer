@@ -1,5 +1,5 @@
 import pdbText from '../data/structures/1UBQ.pdb?raw';
-import {parsePdb} from './pdb';
+import {parsePdb,parsePdbHeader} from './pdb';
 import {analyzeExposure,inferBonds,type ExposureAnalysis} from './exposure';
 
 /** RCSB entry 1UBQ (Vijay-Kumar, Bugg & Cook 1987), human ubiquitin, X-ray diffraction, chain A. */
@@ -9,3 +9,5 @@ export const ubiquitin=parsePdb(pdbText,'A');
 export const ubiquitinBonds=inferBonds(ubiquitin);
 let cached:ExposureAnalysis|null=null;
 export const ubiquitinExposure=()=>cached??=analyzeExposure(ubiquitin);
+
+export const ubiquitinSequence=parsePdbHeader(pdbText).seqres;

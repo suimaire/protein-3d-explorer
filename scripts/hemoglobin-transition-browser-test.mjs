@@ -20,7 +20,7 @@ const motion=async value=>{await page.locator('#motion-guide').fill(String(value
 try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
- assert.equal(await nav.getByRole('button').count(),10);
+ assert.equal(await nav.getByRole('button').count(),11);
  assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  assert.doesNotMatch(await nav.innerText(),/Bohr|Hill|2,3-BPG|AlphaFold/i);
  assert.equal(requests.some(u=>/HemoglobinTransitionLab|2DN1|2DN2/.test(u)),false,'T↔R chunk and structures must not load at start');

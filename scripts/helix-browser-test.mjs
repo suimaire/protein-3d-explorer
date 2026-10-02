@@ -15,8 +15,8 @@ const changed=(a,b)=>assert.notDeepEqual(a,b);
 try{
   await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
   const nav=page.getByRole('navigation',{name:'학습 모듈'});
-  assert.equal(await nav.getByRole('button').count(),10);
-  await nav.getByRole('button',{name:/α-Helix/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Ten completed modules; alpha helix WebGL loads');
+  assert.equal(await nav.getByRole('button').count(),11);
+  await nav.getByRole('button',{name:/α-Helix/}).click();await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Eleven completed modules; alpha helix WebGL loads');
   assert.equal(await viewer().getAttribute('data-pan-enabled'),'false');{const before=await viewer().getAttribute('data-camera-target'),b=await canvas().boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down({button:'right'});await page.mouse.move(b.x+b.width/2+100,b.y+b.height/2+50,{steps:8});await page.mouse.up({button:'right'});assert.equal(await viewer().getAttribute('data-camera-target'),before);}check('Shared PeptideScene: helix viewer keeps pan disabled (right-drag does not move target)');
   assert.equal(await page.getByTestId('hbond-count').innerText(),'8 / 8 표시');assert.equal(await viewer().getAttribute('data-hbond-pairs'),'1-5,2-6,3-7,4-8,5-9,6-10,7-11,8-12');check('Displayed count and rendered pair mapping agree');
   await page.getByText('대표 수치와 모델 검증 보기',{exact:true}).click();

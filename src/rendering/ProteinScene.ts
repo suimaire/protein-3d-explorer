@@ -7,11 +7,12 @@ import {atomColor,DIMMED,hex,type ColorScheme} from '../protein/colors';
 import type {MembraneSlab} from '../protein/membrane';
 import {ribbonGeometry} from './ribbon';
 import {ProteinComparison,type ComparisonLayer} from './proteinComparison';
-import {configureViewerControls} from './viewerControls';
+import {configureViewerControls,pairFocusFrame} from './viewerControls';
+import {ProteinAnnotations,type AtomGuide,type ResidueMark} from './ProteinAnnotations';
 
 export type Representation='ribbon'|'atoms'|'spacefill';
-export type ProteinView={representation:Representation;color:ColorScheme;highlighted:Set<number>;filtered:boolean;selected:number|null;clip:number|null;membrane?:boolean};
-export type CameraPreset='reset'|'fit'|'side'|'top';
+export type ProteinView={representation:Representation;color:ColorScheme;highlighted:Set<number>;filtered:boolean;selected:number|null;clip:number|null;membrane?:boolean;guides?:AtomGuide[];marks?:ResidueMark[];sideChains?:Set<number>};
+export type CameraPreset='reset'|'fit'|'side'|'top'|'focus';
 export type SceneOptions={
  /** Membrane frame (normal +z). When given, the scene shows z vertically and can draw the slab. */ membrane?:MembraneSlab|null;
  ariaLabel?:string;
@@ -25,6 +26,7 @@ const SELECT=0xb0327c,SLAB_FILL=0x8fb3c9,SLAB_EDGE=0x4f7890;
 
 /** Three.js view of an experimental protein chain. Coordinates are never modified; clipping is visual only. */
 export class ProteinScene{
+ private annotations:ProteinAnnotations;
  private comparison:ProteinComparison|null=null;
  private focusFrame:number|null=null;
  private renderer:T.WebGLRenderer;
@@ -61,6 +63,7 @@ export class ProteinScene{
   const light=new T.DirectionalLight(0xffffff,2.6);light.position.set(5,10,12);this.camera.add(light);this.scene.add(this.camera);
   this.scene.add(this.group);
   this.positions=structure.atoms.map(a=>this.membrane?membraneDisplay(a.position):vector(a.position));
+  this.annotations=new ProteinAnnotations(host,structure,this.positions,this.clipPlane);this.scene.add(this.annotations.root);
   const box=new T.Box3().setFromPoints(this.positions);box.getCenter(this.center);
   this.radius=Math.max(...this.positions.map(p=>p.distanceTo(this.center)))+2;
   if(this.membrane)this.buildSlab(this.membrane);
@@ -159,8 +162,8 @@ export class ProteinScene{
    this.ribbon(view,false);
    // Side chains (from Cα) of highlighted residues as sticks, for chemistry inspection.
    const side=(i:number)=>!['N','C','O','OXT'].includes(structure.atoms[i].name);
-   const atoms=atomList(i=>side(i)&&shown(residueOfAtom[i]));
-   const bonds=this.bonds.filter(([a,b])=>side(a)&&side(b)&&shown(residueOfAtom[a])&&residueOfAtom[a]===residueOfAtom[b]);
+   const atoms=atomList(i=>side(i)&&shown(residueOfAtom[i])&&(!view.sideChains||view.sideChains.has(residueOfAtom[i])));
+   const bonds=this.bonds.filter(([a,b])=>side(a)&&side(b)&&(!view.sideChains||view.sideChains.has(residueOfAtom[a]))&&shown(residueOfAtom[a])&&residueOfAtom[a]===residueOfAtom[b]);
    this.sticks(atoms,bonds,0.2,0.2,view,residueOfAtom);
   }else{
    if(view.filtered)this.ribbon(view,true);
@@ -185,7 +188,10 @@ export class ProteinScene{
    this.label.textContent=`${name} ${residue.resSeq}`;
    sampleColors.push(hex(this.residueColor(view.selected,atoms.find(i=>!['N','CA','C','O','OXT'].includes(structure.atoms[i].name))??ca,view)));
   }
+  this.annotations.update(view.guides??[],view.marks??[]);
+  if(view.marks?.length)this.labelAt=null;
   const d=this.host.dataset;
+  d.guideAtoms=(view.guides??[]).map(g=>g.a+','+g.b).join(';');
   d.representation=view.representation;d.color=view.color;
   d.highlighted=[...view.highlighted].sort((a,b)=>a-b).map(i=>structure.residues[i].resSeq).join(',');
   d.selectedResidue=view.selected===null?'':String(structure.residues[view.selected].resSeq);
@@ -233,6 +239,13 @@ export class ProteinScene{
   const frame=(now:number)=>{const t=Math.min(1,(now-start)/420);apply(t*t*(3-2*t));if(t<1)this.focusFrame=requestAnimationFrame(frame);else this.cancelFocus();};
   this.focusFrame=requestAnimationFrame(frame);
  }
+ focusAtoms(indices:number[]){
+  if(!indices.length)return;this.cancelFocus();
+  const ps=indices.map(i=>this.positions[i]),box=new T.Box3().setFromPoints(ps),target=box.getCenter(new T.Vector3());
+  const frame=pairFocusFrame(ps[0],ps[ps.length-1],this.camera.position.clone().sub(this.controls.target),this.camera.up,this.camera.fov,this.camera.aspect,this.controls.minDistance,this.controls.maxDistance);
+  const radius=Math.max(...ps.map(p=>p.distanceTo(target)))+2.5,tan=Math.tan(T.MathUtils.degToRad(this.camera.fov/2));
+  this.controls.target.copy(target);this.camera.position.copy(target).addScaledVector(frame.direction,Math.max(frame.distance,radius/(tan*Math.min(1,this.camera.aspect))));this.controls.update();this.render();
+ }
  cameraView(view:CameraPreset){
   this.cancelFocus();
   // Membrane scenes: Reset = Side view (normal vertical on screen); Top looks down the normal from side A.
@@ -252,7 +265,7 @@ export class ProteinScene{
   this.clipPlane.normal.copy(direction).negate();this.clipPlane.constant=this.center.dot(direction)+offset;
   const d=this.host.dataset;
   d.cameraDirection=direction.toArray().map(v=>v.toFixed(6)).join(',');d.cameraDistance=this.camera.position.distanceTo(this.controls.target).toFixed(4);
-  this.renderer.render(this.scene,this.camera);
+  this.renderer.render(this.scene,this.camera);this.annotations.render(this.camera);
   this.comparison?.render(this.camera);d.cameraTarget=this.controls.target.toArray().map(v=>v.toFixed(6)).join(',');
   if(this.labelAt){
    const p=this.labelAt.clone().project(this.camera),w=this.label.offsetWidth,h=this.label.offsetHeight;
@@ -276,7 +289,7 @@ export class ProteinScene{
   return {x:rect.left+(p.x+1)*rect.width/2,y:rect.top+(1-p.y)*rect.height/2};
  }
  dispose(){
-  this.cancelFocus();this.comparison?.dispose();this.controls.removeEventListener('start',this.cancelFocus);
+  this.cancelFocus();this.annotations.dispose();this.comparison?.dispose();this.controls.removeEventListener('start',this.cancelFocus);
   this.resize.disconnect();this.controls.dispose();const c=this.renderer.domElement;
   c.removeEventListener('keydown',this.keyboard);c.removeEventListener('pointerdown',this.down);c.removeEventListener('pointerup',this.up);
   this.clear();this.sphere.dispose();this.cylinder.dispose();

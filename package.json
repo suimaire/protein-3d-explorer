@@ -11,7 +11,9 @@
     "preview": "vite preview --host 127.0.0.1",
     "test:browser": "node scripts/browser-test.mjs && node scripts/helix-browser-test.mjs && node scripts/beta-browser-test.mjs && node scripts/core-browser-test.mjs && node scripts/membrane-browser-test.mjs && node scripts/hemoglobin-browser-test.mjs && node scripts/hemoglobin-transition-browser-test.mjs && node scripts/hemoglobin-cooperativity-browser-test.mjs && node scripts/hbs-polymerization-browser-test.mjs && node scripts/mutation-browser-test.mjs",
     "test:mutation": "node scripts/mutation-audit.mjs && node scripts/mutation-browser-test.mjs",
-    "test:mutation:explanations": "node scripts/mutation-explanation-audit.mjs && node scripts/mutation-explanation-browser-test.mjs"
+    "test:mutation:explanations": "node scripts/mutation-explanation-audit.mjs && node scripts/mutation-explanation-browser-test.mjs",
+    "test:browser:additions": "node scripts/sequence-space-browser-test.mjs && node scripts/rnase-browser-test.mjs && node scripts/aquaporin-browser-test.mjs && node scripts/additions-input-lifecycle-browser-test.mjs",
+    "test:additions:audit": "node scripts/sequence-space-audit.mjs && node scripts/rnase-audit.mjs && node scripts/aquaporin-audit.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

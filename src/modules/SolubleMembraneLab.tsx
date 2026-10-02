@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {lazy,Suspense,useMemo,useState,type ReactNode} from 'react';
 import {ProteinViewer,type ProteinCamera} from '../components/ProteinViewer';
 import {Segmented} from '../components/Segmented';
 import type {Representation} from '../rendering/ProteinScene';
@@ -32,7 +32,7 @@ const ZONE={membrane:'막 hydrophobic region 안','sideA':'막 hydrophobic regio
 const defaults={representation:'ribbon' as Representation,color:'default' as ColorScheme,highlight:'all' as Highlight,membrane:false,selected:null as {protein:Protein;index:number}|null};
 const pct=Math.round(SURFACE_THRESHOLD*100);
 
-export function SolubleMembraneLab(){
+function SurfaceComparison({tabs}:{tabs:ReactNode}){
  const {soluble,residues,membrane,examples,compositions}=cached??=analyze();
  const [representation,setRepresentation]=useState(defaults.representation),[color,setColor]=useState(defaults.color),[highlight,setHighlight]=useState(defaults.highlight);
  const [showMembrane,setShowMembrane]=useState(defaults.membrane),[selected,setSelected]=useState(defaults.selected);
@@ -54,6 +54,7 @@ export function SolubleMembraneLab(){
  return <main className="helix-lab core-lab membrane-lab" data-highlight={highlight}>
   <section className="module-heading"><div><p className="eyebrow">2장 · 서열에서 구조로</p><h2>수용성 단백질과 막단백질</h2><p>왜 두 단백질의 표면 chemistry가 다를까? 같은 색 기준으로 두 실험 구조를 비교해 보세요.</p></div>
    <span className="model-tag">PDB {UBIQUITIN_SOURCE.pdbId} · PDB {OMPX_SOURCE.pdbId}<strong>X선 결정 구조 (실험) · 같은 색 기준</strong></span></section>
+  {tabs}
   <section className="controls core-controls compare-controls" aria-label="Comparison display controls">
    <Segmented label="표현 방식 (두 구조 공통)" value={representation} onChange={setRepresentation} options={[['ribbon','리본'],['atoms','원자 / 막대'],['spacefill','공간 채움']] as const}/>
    <Segmented label="색 (두 구조 공통)" value={color} onChange={setColor} options={[['default','기본 색'],['chemistry','화학적 성질']] as const}/>
@@ -145,4 +146,12 @@ export function SolubleMembraneLab(){
    </details>
   </section>
  </main>;
+}
+
+const AquaporinLab=lazy(()=>import('./AquaporinLab').then(m=>({default:m.AquaporinLab})));
+export function SolubleMembraneLab(){
+ const [tab,setTab]=useState<'surface'|'aquaporin'>('surface');
+ const tabs=<div className="membrane-tabs"><Segmented label="막단백질 탐구" value={tab} onChange={setTab} options={[["surface","표면 성질 비교"],["aquaporin","아쿠아포린의 물 통로"]] as const}/></div>;
+ if(tab==='surface')return <SurfaceComparison tabs={tabs}/>;
+ return <main className="helix-lab core-lab membrane-lab"><section className="module-heading"><div><p className="eyebrow">2장 · 서열에서 구조로</p><h2>수용성 단백질과 막단백질</h2><p>막 바깥을 향한 표면과 소단위 안의 물 통로를 비교해 보세요.</p></div><span className="model-tag">AQP1 · PDB 1J4N<strong>실험 구조 + 교육용 통로 탐구</strong></span></section>{tabs}<Suspense fallback={<p role="status">아쿠아포린 탐구를 준비하고 있습니다…</p>}><AquaporinLab/></Suspense></main>;
 }

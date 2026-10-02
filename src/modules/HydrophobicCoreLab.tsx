@@ -1,4 +1,6 @@
 import {useMemo,useState} from 'react';
+import {SequenceSpaceExplorer,coreSequencePositions} from '../components/SequenceSpaceExplorer';
+import {measureResidues,selectPair,atomIdentifier,type PairSelection} from '../protein/sequenceSpace';
 import {ProteinViewer,type ProteinCamera} from '../components/ProteinViewer';
 import {Segmented} from '../components/Segmented';
 import type {Representation} from '../rendering/ProteinScene';
@@ -23,10 +25,16 @@ export function HydrophobicCoreLab(){
  const {residues,groups,exceptions,compositions}=cached??=analyze(),total=residues.length,groupSize=Math.round(total*GROUP_FRACTION);
  const residueName=(i:number)=>`${titleCase(residues[i].resName)} ${residues[i].resSeq}`;
  const [representation,setRepresentation]=useState(defaults.representation),[color,setColor]=useState(defaults.color),[group,setGroup]=useState(defaults.group);
- const [selected,setSelected]=useState<number|null>(defaults.selected),[clip,setClip]=useState<number|null>(defaults.clip),[camera,setCamera]=useState<ProteinCamera>({view:'reset',token:0});
- const view=useMemo(()=>({representation,color,highlighted:groups[group],filtered:group!=='all',selected,clip}),[representation,color,group,selected,clip,groups]);
+ const [pair,setPair]=useState<PairSelection>({a:null,b:null}),[compareOpen,setCompareOpen]=useState(false),[target,setTarget]=useState<'a'|'b'>('a');
+ const selected=pair.a,setSelected=(i:number|null)=>setPair(p=>selectPair(p,'a',i));
+ const pickResidue=(i:number)=>setPair(p=>selectPair(p,compareOpen?target:'a',i));
+ const measured=useMemo(()=>pair.a!==null&&pair.b!==null?measureResidues(ubiquitin,pair.a,pair.b,coreSequencePositions):null,[pair]);
+ const guides=useMemo(()=>compareOpen&&measured?[{a:measured.atomA,b:measured.atomB,labelA:'A · '+atomIdentifier(ubiquitin,measured.atomA),labelB:'B · '+atomIdentifier(ubiquitin,measured.atomB),text:'측정선 '+measured.distance.toFixed(2)+' Å',kind:'measurement' as const}]:[],[compareOpen,measured]);
+ const marks=useMemo(()=>compareOpen?[...(pair.a!==null?[{residue:pair.a,label:'A'}]:[]),...(pair.b!==null?[{residue:pair.b,label:'B'}]:[])]:[],[compareOpen,pair]);
+ const [clip,setClip]=useState<number|null>(defaults.clip),[camera,setCamera]=useState<ProteinCamera>({view:'reset',token:0});
+ const view=useMemo(()=>({representation,color,highlighted:groups[group],filtered:group!=='all',selected,clip,guides,marks}),[representation,color,group,selected,clip,groups,guides,marks]);
  const changeCamera=(v:ProteinCamera['view'])=>setCamera(c=>({view:v,token:c.token+1}));
- const reset=()=>{setRepresentation(defaults.representation);setColor(defaults.color);setGroup(defaults.group);setSelected(null);setClip(null);changeCamera('reset');};
+ const reset=()=>{setRepresentation(defaults.representation);setColor(defaults.color);setGroup(defaults.group);setPair({a:null,b:null});setCompareOpen(false);setTarget('a');setClip(null);changeCamera('reset');};
  const explore=(index:number,g:ExposureGroup)=>{setGroup(g);setColor('chemistry');setSelected(index);};
  const r=selected===null?null:residues[selected],pdbResidue=selected===null?null:ubiquitin.residues[selected];
  const contacts=selected===null?[]:polarContacts(ubiquitin,selected).slice(0,3);
@@ -37,12 +45,15 @@ export function HydrophobicCoreLab(){
    <section className="viewer-panel" aria-label="3D ubiquitin structure">
     <div className="panel-heading"><h3>Ubiquitin ({UBIQUITIN_SOURCE.pdbId})</h3><span className="badge">{group==='all'?`전체 residue ${total}개`:group==='buried'?`더 묻힌 residue ${groupSize}개`:`더 노출된 residue ${groupSize}개`}</span></div>
     <div className="camera-presets"><button onClick={()=>changeCamera('reset')}>시점 초기화</button><button onClick={()=>changeCamera('fit')}>화면에 맞추기</button></div>
-    <ProteinViewer structure={ubiquitin} bonds={ubiquitinBonds} exposure={residues} view={view} camera={camera} onPick={setSelected}/>
+    <ProteinViewer structure={ubiquitin} bonds={ubiquitinBonds} exposure={residues} view={view} camera={camera} onPick={pickResidue}/>
     <div className="viewer-footer"><span>드래그 회전 · 휠 확대 · 클릭으로 residue 선택 · 방향키 / + −</span><span className="select-key">자주색 halo = 선택 residue</span></div>
     <div className="legend" data-testid="color-legend">{color==='chemistry'?<>{CLASS_ORDER.map(c=><span key={c}><i style={{background:CLASS_INFO[c].css}}/>{CLASS_INFO[c].symbol} {CLASS_INFO[c].label}</span>)}<span>backbone = 회색</span></>
      :color==='exposure'?<span className="exposure-legend">more buried <b style={{background:`linear-gradient(90deg,${EXPOSURE_STOPS.map(hex).join(',')})`}}/> more exposed <small>(relative SASA 0 → ≥100%)</small></span>
      :<><span><i className="carbon"/>C</span><span><i className="nitrogen"/>N</span><span><i className="oxygen"/>O</span><span><i style={{background:'#d8b21d'}}/>S</span><span>리본 = backbone 접힘</span></>}</div>
     <div className="helix-tip">{group==='buried'?`solvent exposure가 가장 낮은 ${groupSize}개 residue만 강조했습니다. 어떤 chemistry가 많이 보이나요?`:group==='exposed'?`solvent exposure가 가장 높은 ${groupSize}개 residue만 강조했습니다. 표면에 어떤 chemistry가 섞여 있나요?`:'Ribbon에서 α-helix와 β-sheet를 찾은 뒤, Color by chemistry와 Exposure 필터로 내부와 표면을 비교해 보세요.'}</div>
+    <details className="sequence-exploration-details" data-testid="sequence-exploration" open={compareOpen} onToggle={e=>setCompareOpen(e.currentTarget.open)}><summary>서열과 공간에서 비교하기</summary>
+     {compareOpen&&<SequenceSpaceExplorer pair={pair} target={target} onTarget={setTarget} onPick={pickResidue} onPair={setPair} onFocus={()=>{if(measured)setCamera(c=>({view:'focus',token:c.token+1,atoms:[...ubiquitin.residues[measured.a].atoms,...ubiquitin.residues[measured.b].atoms]}));}}/>}
+    </details>
    </section>
    <aside className="plot-panel residue-panel" aria-label="Selected residue">
     <div className="panel-heading"><h3>선택한 residue</h3><span className="badge">좌표에서 측정</span></div>

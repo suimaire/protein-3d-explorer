@@ -20,7 +20,7 @@ const noResults=async()=>assert.equal(await page.getByTestId('mutation-results')
 const start=async()=>{await nav().getByRole('button',{name:/Mutation Tolerance/}).click();await canvas().waitFor();await settle();};
 try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
- const names=await nav().getByRole('button').allInnerTexts();assert.equal(names.length,10);
+ const names=await nav().getByRole('button').allInnerTexts();assert.equal(names.length,11);
  assert.match(names.at(-2),/Mutation Tolerance/);assert.match(names.at(-1),/HbA → HbS/);
  assert.equal(requests.some(u=>/1BTL|1JWP|MutationToleranceLab/.test(u)),false);check('Chapter 3 placement and lazy assets');
  await start();assert.equal(await main().getAttribute('data-stage'),'M182_WT');await noResults();assert.equal(await reveal().isDisabled(),true);

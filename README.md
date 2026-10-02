@@ -1,6 +1,6 @@
 # Protein 3D Explorer
 
-고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure, Hemoglobin T ↔ R Structural Transition, Hemoglobin Cooperativity & Allostery를 제공합니다.
+고등학교 심화 생화학 수업용 3D 탐색기. 현재 Peptide Geometry, α-Helix Lab, β-Sheet Lab, Hydrophobic Core, Disulfide Bonds & Denaturation, Soluble vs Membrane Protein, Hemoglobin Quaternary Structure, Hemoglobin T ↔ R Structural Transition, Hemoglobin Cooperativity & Allostery를 제공합니다.
 Ac–(L-Ala)₅–NHMe의 Ala 3에서 φ/ψ를 조작하고 peptide plane, schematic Ramachandran map,
 0.40 Å를 넘는 심한 비결합 원자 겹침을 함께 관찰합니다. 실제 에너지 계산이나 protein folding simulation은 아닙니다.
 
@@ -30,10 +30,16 @@ Ribbon / Atoms / Space filling, Color by chemistry(nonpolar · polar uncharged �
 Solvent exposure는 Shrake–Rupley SASA(probe 1.4 Å, Bondi radii)와 Tien et al. (2013) 최대값으로 정규화한
 relative SASA입니다. 통계적 경향과 실제 예외(Leu8, Gln41)를 함께 보여줍니다. 상세: `HYDROPHOBIC_CORE_VALIDATION.md`.
 
+Hydrophobic Core의 canvas 아래 ‘서열과 공간에서 비교하기’를 펼치면 실제 서열 위치 차이, 최소 비수소 원자 거리와 A/B 잔기를 연결해서 탐구할 수 있습니다.
+
+**Disulfide Bonds & Denaturation** — 소 RNase A (7RSA)의 천연 S–S 네 쌍을 확인하고 변성·환원·재산화와 이황화 교환 조건을 비교합니다. 천연 실험 좌표, 단위 없는 모식도, 천연 기준 좌표의 재사용을 명시적으로 구분합니다.
+
 **Soluble vs Membrane Protein** — 수용성 ubiquitin(1UBQ)과 외막 β-barrel 단백질 OmpX(PDB 1QJ8, X-ray 1.9 Å, monomer)를
 같은 chemistry 색으로 나란히 비교합니다. OPM 1qj8 방향(막 법선 z, hydrophobic 경계 ±11.8 Å)을 rigid transform으로 적용하고
 반투명 slab로 막 hydrophobic region을 표시합니다. Surface / Buried / Lipid-facing / Aqueous-facing 강조, Side/Top view,
 residue별 surface accessibility·membrane depth·lipid-facing candidate 판정. 상세: `SOLUBLE_MEMBRANE_VALIDATION.md`.
+
+내부 ‘아쿠아포린의 물 통로’ 탭은 소 AQP1 (1J4N)의 저자 지정 4량체, 소단위별 통로, NPA/ar/R, 막 위치와 단면을 탐구합니다. 원본 물과 기본 정지 상태의 설명용 입자를 구분합니다. 기본 ‘표면 성질 비교’는 기존 Ubiquitin–OmpX 화면입니다. 세 확장의 좌표·출처·브라우저 검증: [Protein additions validation](docs/PROTEIN_ADDITIONS_VALIDATION.md).
 
 ### Chapter 3 — From Structure to Function
 
@@ -98,7 +104,7 @@ npm run test:browser
 검증 스크립트는 `artifacts/`에 desktop/mobile 캡처와 보고서를 저장합니다.
 β-Sheet 캡처: `phase2b-beta-antiparallel.png`, `phase2b-beta-parallel.png`, `phase2b-beta-edge-view.png`, `phase2b-mobile-390.png`.
 `node scripts/beta-audit.mjs`로 전체 원자 좌표, torsion, H-bond, cap/clash 결과를 `artifacts/beta-audit.json`에 재생성할 수 있습니다.
-자동 테스트: 현재 320개 (Phase 4D에서 38개 추가). Typecheck와 production build를 함께 검증합니다.
+자동 테스트: 현재 427개 / 17파일 (2026-10-03). Typecheck와 production build를 함께 검증합니다.
 Hydrophobic Core 캡처: `phase3a-hydrophobic-core.png`, `phase3a-buried.png`, `phase3a-exposed.png`, `phase3a-cross-section.png`.
 `node scripts/core-audit.mjs`로 residue별 SASA·순위·그룹 구성을 `artifacts/core-audit.json`에 재생성합니다.
 `node scripts/membrane-audit.mjs`는 OmpX 방향·분류·조성을 `artifacts/membrane-audit.json`에 재생성합니다 (`--fit <OPM 1qj8.pdb>`로 OPM 변환을 재계산).

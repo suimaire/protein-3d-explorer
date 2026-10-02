@@ -1,5 +1,15 @@
 # Protein 3D Explorer — Current Status
 
+## Sequence, disulfide and aquaporin additions (2026-10-03)
+
+- A: Hydrophobic Core → collapsed ‘서열과 공간에서 비교하기’; synchronized A/B, actual SEQRES separation and minimum heavy-atom pair, three measured examples and explicit pair focus.
+- B: the only new top-level module, ‘이황화 결합과 변성’, after Core and before Membrane. Local 7RSA native S–S pairs and separate qualitative condition states, explicitly experimental / schematic / reference reuse.
+- C: Soluble vs Membrane → lazy ‘아쿠아포린의 물 통로’ internal tab. Original comparison remains default. Verified bovine 1J4N assembly 1, independent OPM frame, four pores, NPA/ar/R, clipping, distinct original water and paused illustrative particles.
+- Verification: typecheck and production build passed; 427 tests / 17 files; all ten original browser scripts; 40 new browser checks across A/B/C and input/lifecycle. 1440/1024/768/390 layouts, touch/keyboard, reduced motion, actual four-subunit picking, delayed assets and detached-scene cleanup checked. Physical iPad/Safari was not tested.
+- No dependency, GitHub Pages base, deployment, existing scientific calculation or header/footer change. Publication was authorized by the subsequent user request on 2026-10-03; use the existing main → GitHub Pages workflow.
+- [Implementation plan](docs/PROTEIN_ADDITIONS_PLAN.md) · [scientific and UI validation](docs/PROTEIN_ADDITIONS_VALIDATION.md). Screenshots and audit data: ignored artifacts/protein-additions/.
+
+
 ## Mutation Tolerance — result explanations and visual refinement (2026-09-29)
 
 - Chapter 3 now includes the TEM-1 WT / M182T structural comparison, experimental results,
@@ -29,7 +39,7 @@
 ## Completed
 
 - Chapter 1: **Peptide Geometry**
-- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Soluble vs Membrane Protein**
+- Chapter 2: **α-Helix**, **β-Sheet**, **Hydrophobic Core**, **Disulfide Bonds & Denaturation**, **Soluble vs Membrane Protein**
 
 ## Chapter 3 — From Structure to Function
 

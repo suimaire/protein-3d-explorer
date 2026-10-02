@@ -17,12 +17,12 @@ const pct=r=>r.relative>=1?'≥100%':`${Math.round(r.relative*100)}%`;
 const numbers=g=>audit.groups[g].residues.map(s=>Number(s.replace(/^[A-Z]+/,''))).sort((a,b)=>a-b).join(',');
 try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
- const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['펩타이드 결합과 φ·ψ 회전\nPeptide Geometry','α-나선\nα-Helix','β-병풍\nβ-Sheet','소수성 중심부\nHydrophobic Core','수용성 단백질과 막단백질\nSoluble vs Membrane Protein','헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
+ const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),11);
+ assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['펩타이드 결합과 φ·ψ 회전\nPeptide Geometry','α-나선\nα-Helix','β-병풍\nβ-Sheet','소수성 중심부\nHydrophobic Core','이황화 결합과 변성\nDisulfide Bonds & Denaturation','수용성 단백질과 막단백질\nSoluble vs Membrane Protein','헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  await nav.getByRole('button',{name:/Hydrophobic Core/}).click();await canvas().waitFor();await settle();assert.equal(await page.getByRole('alert').count(),0);
  assert.equal(await data('representation'),'ribbon');assert.equal(await data('color'),'default');assert.equal(await data('clip'),'off');assert.equal((await data('highlighted')).split(',').length,76);
  assert.match(await page.getByTestId('structure-source').textContent(),/1UBQ, X-ray diffraction, 1\.8 Å, chain A, 602 heavy atoms/);
- check('Ten completed modules; Hydrophobic Core loads 1UBQ chain A in WebGL (ribbon, default, all 76)');
+ check('Eleven completed modules; Hydrophobic Core loads 1UBQ chain A in WebGL (ribbon, default, all 76)');
  const initial=await shot();
  await page.getByText('관찰 후 확인하기 · 이 구조에서 관찰된 분포').waitFor();assert.equal(await page.getByTestId('composition').evaluate(e=>e.open),false);check('Observed composition is collapsed until the student opens it');
 
