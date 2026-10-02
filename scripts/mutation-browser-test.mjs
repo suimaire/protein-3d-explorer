@@ -59,7 +59,7 @@ try{
  for(const text of ['0.14 ± 0.01','12.5','142 ± 2','500','↓ 큰 감소'])assert.ok(aresult.includes(text),text);
  assert.match(await main().innerText(),/active site 밖 ≠ 반드시 영향이 작음/);
  await page.screenshot({path:'artifacts/mutation-desktop-a36.png',fullPage:true});
- const url=page.url();await button('HbA → HbS → Polymerization 보기 →').click();await page.getByTestId('hbs-viewer').locator('canvas').waitFor();
+ const url=page.url();await button('HbS 중합 모듈에서 이어 보기 →').click();await page.getByTestId('hbs-viewer').locator('canvas').waitFor();
  assert.equal(page.url(),url);assert.equal(await viewer().count(),0);assert.equal(await page.locator('canvas').count(),1);check('A36 measurements and internal HbS handoff; mutation canvas disposed');
  await start();await page.emulateMedia({reducedMotion:'reduce'});await apply().click();
  assert.equal(await viewer().getAttribute('data-camera-animating'),'false');assert.equal(await main().getAttribute('data-stage'),'M182_MUTANT_APPLIED');check('Reduced motion: immediate focus, no camera animation');

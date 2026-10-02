@@ -13,7 +13,7 @@ export function FiberSchematic({doubleStrands=7}:{doubleStrands?:number}){
   return {x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r,angle:a};
  });
  return <figure className="fiber-schematic" data-testid="fiber-schematic">
-  <figcaption><span className="schematic-tag">SCHEMATIC</span> Higher-order fiber organisation — 원자 좌표가 아닙니다</figcaption>
+  <figcaption><span className="schematic-tag">모식도</span> Higher-order fiber organisation — 원자 좌표가 아닙니다</figcaption>
   <div className="schematic-body">
    <svg viewBox="0 0 172 150" role="img" aria-label={`HbS fiber 단면 도식: ${doubleStrands}개의 double strand가 모여 14개 strand를 이룹니다. 원자 모델이 아닌 개념도입니다.`}>
     <defs><marker id="fiber-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">

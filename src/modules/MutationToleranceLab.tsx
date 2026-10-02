@@ -50,12 +50,12 @@ export function MutationToleranceLab({onHbs}:{onHbs:()=>void}){
   if(state.stage==='M182_RESULTS_REVEALED'||state.stage==='A36_RESULTS_REVEALED')resultTitle.current?.focus({preventScroll:true});
  },[state.stage]);
  return <main className="mutation-lab" data-stage={state.stage} data-explanation={mode}>
-  <section className="module-heading"><div><p className="eyebrow">CHAPTER 3 · FROM STRUCTURE TO FUNCTION</p><h2>Mutation Tolerance</h2><p>아미노산 하나가 바뀌면 단백질 기능도 반드시 바뀔까?</p></div><div className="model-tag">WT · PDB 1BTL<br/>M182T · PDB 1JWP</div></section>
+  <section className="module-heading"><div><p className="eyebrow">3장 · 구조에서 기능으로</p><h2>돌연변이 허용성</h2><p>아미노산 하나가 바뀌면 단백질 기능도 반드시 바뀔까?</p></div><div className="model-tag">WT · PDB 1BTL<br/>M182T · PDB 1JWP</div></section>
   <div className="mutation-workspace">
    <section className="mutation-cause" aria-labelledby="mutation-cause-title">
     <div className="panel-heading"><h3 id="mutation-cause-title" tabIndex={-1} ref={caseTitle}>① {a36?'반례 탐구':'변이시키기'}</h3></div>
     <div className="mutation-panel-body">
-     <p className="eyebrow">CASE {a36?'2 · A36D':'1 · M182T'}</p>
+     <p className="eyebrow">사례 {a36?'2 · A36D':'1 · M182T'}</p>
      <div className="mutation-current" aria-live="polite"><span>{a36?'WT에서 위치 관찰':applied?'✓ M182T 적용됨':'현재'}</span><strong>{a36?'Ala36 → Asp':applied?'Met → Thr':'WT TEM-1'}</strong></div>
      {a36?<><p>Alanine → Aspartate</p><p className="mutation-question">촉매 잔기 자체가 아닌 위치의 변이는 기능에 어떤 영향을 줄까요?</p><p className="mutation-note">Ala36 위치와 Ser70의 공간적 맥락을 관찰한 뒤 실험 결과를 열어 보세요.</p><button onClick={()=>dispatch({type:'restart'})}>M182T 처음부터 탐구</button></>:<>
       {applied?<><div className="mutation-chemistry"><div><strong>Methionine</strong><small>비극성 · S 포함</small></div><span aria-hidden="true">→</span><div><strong>Threonine</strong><small>극성 · –OH 포함</small></div></div><button ref={nextControl} className="mutation-reset" onClick={()=>dispatch({type:'reset'})}>WT로 되돌리기</button><p className="mutation-note">WT와 M182T를 반복해서 비교할 수 있습니다.</p></>:<>
@@ -101,8 +101,8 @@ export function MutationToleranceLab({onHbs}:{onHbs:()=>void}){
    </section>
   </div>
   {revealed&&<section className="mutation-conclusion" aria-labelledby="mutation-conclusion-title">
-   <p className="eyebrow">OBSERVE → CONNECT</p><h3 id="mutation-conclusion-title">무엇을 알 수 있을까?</h3>
-   {a36?<><p>촉매 residue 자체가 아닌 위치의 변이라도 단백질 전체의 구조적·물리화학적 맥락에 따라 기능에 큰 영향을 줄 수 있다.</p><strong className="mutation-takeaway">active site 밖 ≠ 반드시 영향이 작음</strong><p>아미노산 치환의 효과는 위치, 치환되는 잔기의 물리화학적 성질, 주변 상호작용, 단백질 안정성, 기능적 네트워크 등에 따라 달라질 수 있다.</p><div className="mutation-next"><p>한 아미노산 변화가 더 큰 구조적 결과를 만드는 사례도 살펴볼까요?</p><button onClick={onHbs}>HbA → HbS → Polymerization 보기 →</button></div></>:<>
+   <p className="eyebrow">관찰한 것을 연결하기</p><h3 id="mutation-conclusion-title">무엇을 알 수 있을까?</h3>
+   {a36?<><p>촉매 residue 자체가 아닌 위치의 변이라도 단백질 전체의 구조적·물리화학적 맥락에 따라 기능에 큰 영향을 줄 수 있다.</p><strong className="mutation-takeaway">active site 밖 ≠ 반드시 영향이 작음</strong><p>아미노산 치환의 효과는 위치, 치환되는 잔기의 물리화학적 성질, 주변 상호작용, 단백질 안정성, 기능적 네트워크 등에 따라 달라질 수 있다.</p><div className="mutation-next"><p>한 아미노산 변화가 더 큰 구조적 결과를 만드는 사례도 살펴볼까요?</p><button onClick={onHbs}>HbS 중합 모듈에서 이어 보기 →</button></div></>:<>
     <p>아미노산이 바뀌었다고 해서 단백질의 모든 기능적 특성이 반드시 크게 변하는 것은 아니다.</p><p>M182T에서는 이 조건에서 측정된 효소 활성과 amoxicillin MIC는 WT와 유사했지만, 열안정성은 증가했다.</p><strong className="mutation-takeaway">서열 변화 ≠ 반드시 기능 소실</strong><p className="mutation-note">한 가지 기능 측정에서 차이가 작다는 사실만으로 진화적으로 완전히 중립인 변이라고 단정할 수는 없습니다.</p><div className="mutation-next"><p>그렇다면 촉매 부위가 아닌 곳의 변이는 대체로 기능에 영향을 주지 않을까?</p><button onClick={()=>dispatch({type:'a36'})}>A36D 반례 확인 →</button></div>
    </>}
    {!a36&&<IntegratedInterpretation state={state} dispatch={dispatch}/>}

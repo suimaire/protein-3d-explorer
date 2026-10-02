@@ -100,3 +100,42 @@
 }
 
 .mutation-label-leader{position:absolute;height:1px;background:#657a8999;transform-origin:0 0;pointer-events:none;z-index:2}.mutation-label-leader[hidden]{display:none}
+
+/* ==========================================================================
+   학습자 중심 정리 (2026-10)
+   - 로고 타일 대신 포털 위치와 한글 제목
+   - 10개 모듈을 '장'별로 묶은 내비게이션 (한글 이름 + 영어 원어)
+   - 영문 대문자·넓은 자간 라벨 제거
+   ========================================================================== */
+:root{font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color:#1d2a33}
+body{word-break:keep-all;overflow-wrap:break-word}
+.site-header{padding-top:14px;padding-bottom:14px}
+.site-header h1{font-size:22px;letter-spacing:-.3px}
+.site-header p{font-size:14.5px;color:#4a5b66}
+.breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:2px 7px;margin-bottom:3px;font-size:13.5px;color:#5a6b76}
+.breadcrumb a{color:#4a5b66;text-decoration:none;padding:2px 0}
+.breadcrumb a:hover{color:var(--accent);text-decoration:underline}
+
+.module-nav{display:grid;gap:8px;padding:14px 24px 4px}
+.module-nav__chapter{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;gap:12px}
+.module-nav__title{margin:0;font-size:13.5px;font-weight:600;color:#4a5b66}
+.module-nav__items{display:flex;flex-wrap:wrap;gap:6px}
+.module-nav button{min-height:44px;padding:6px 13px;font-size:14.5px;font-weight:600;line-height:1.3;width:auto}
+.module-nav small{display:block;margin-top:1px;font-size:11.5px;font-weight:400;color:#5f707b}
+.module-nav button[aria-pressed=true] small{color:#2c5872}
+
+.eyebrow{font-size:13.5px;letter-spacing:0;font-weight:600}
+.badge{letter-spacing:0;font-size:12px;border-radius:3px}
+h2{letter-spacing:-.3px}
+.loading-note{color:var(--soft);padding:40px 0}
+footer{font-size:12.5px;color:#5a6b76;align-items:center}
+footer .footer-brand{display:block;color:#34444b;white-space:nowrap}
+
+@media(max-width:850px){
+ .module-nav__chapter{grid-template-columns:1fr;gap:4px}
+}
+@media(max-width:520px){
+ .module-nav{padding:12px 14px 0}
+ .module-nav button{flex:1 1 calc(50% - 6px);width:auto;font-size:14px}
+ .module-nav small{font-size:11px}
+}

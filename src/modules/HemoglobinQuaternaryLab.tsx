@@ -43,26 +43,26 @@ function HemoglobinExplorer({model}:{model:HemoglobinModel}){
  const pick=selected?.kind==='residue'?structure.residues[selected.index]:null,pickedHeme=selected?.kind==='heme'?hemes.find(h=>h.group===selected.index)!:null;
  const tip=exploded?'Subunits are visually separated for explanation. This is not an experimentally observed conformation. — 설명을 위해 subunit을 화면에서만 떼어 놓았습니다. 실험으로 관찰된 구조 상태가 아닙니다.'
   :showInterfaces?`Interface = 다른 chain의 heavy atom과 ${interfaces.cutoff.toFixed(1)} Å 이내에 있는 residue (좌표로 계산한 기하학적 접촉). 수소결합 하나로 연결되었다는 뜻이 아니며, 소수성 접촉·수소결합·이온 상호작용·van der Waals 접촉 등 여러 비공유 상호작용이 섞여 있을 수 있습니다.`
-  :color==='default'?'구조를 돌려 본 뒤 Color를 By subunit으로 바꾸어 polypeptide chain이 몇 개인지 세어 보세요.'
+  :color==='default'?'구조를 돌려 본 뒤 Color를 subunit별으로 바꾸어 polypeptide chain이 몇 개인지 세어 보세요.'
   :color==='subunit'?'색 하나 = polypeptide chain 하나입니다. 빨간 stick(heme)은 polypeptide가 아니므로 subunit 수에 넣지 않습니다.'
   :'같은 색 = 같은 종류의 globin chain입니다. α와 β는 서로 다른 sequence를 가진 polypeptide입니다.';
  const legend=color==='subunit'?subunits.map(s=><span key={s.chain} data-testid={`legend-${s.chain}`}><i style={{background:SUBUNIT_COLORS[s.label].css}}/>{s.label} — Chain {s.chain}</span>)
   :color==='type'?(['alpha','beta'] as const).map(t=><span key={t}><i style={{background:TYPE_COLORS[t].css}}/>{GLOBIN_INFO[t].symbol} chains — {subunits.filter(s=>s.type===t).map(s=>`${s.label} (Chain ${s.chain})`).join(', ')}</span>)
-  :[<span key="c"><i className="carbon"/>C</span>,<span key="n"><i className="nitrogen"/>N</span>,<span key="o"><i className="oxygen"/>O</span>,<span key="s"><i style={{background:'#d8b21d'}}/>S</span>,<span key="r">Ribbon = backbone fold</span>];
+  :[<span key="c"><i className="carbon"/>C</span>,<span key="n"><i className="nitrogen"/>N</span>,<span key="o"><i className="oxygen"/>O</span>,<span key="s"><i style={{background:'#d8b21d'}}/>S</span>,<span key="r">리본 = backbone 접힘</span>];
  const alphaCount=subunits.filter(s=>s.type==='alpha').length,betaCount=subunits.filter(s=>s.type==='beta').length;
 
  return <main className="helix-lab core-lab hb-lab" data-color={color} data-focus={focused?.label??'all'}>
-  <section className="module-heading"><div><p className="eyebrow">CHAPTER 3 · FROM STRUCTURE TO FUNCTION</p><h2>Hemoglobin Quaternary Structure</h2><p>이 단백질은 몇 개의 polypeptide chain으로 이루어져 있을까?</p></div>
-   <span className="model-tag">PDB {HEMOGLOBIN_SOURCE.pdbId} · human hemoglobin A<strong>Experimental X-ray structure · {HEMOGLOBIN_SOURCE.resolution} Å · deoxy state</strong></span></section>
+  <section className="module-heading"><div><p className="eyebrow">3장 · 구조에서 기능으로</p><h2>헤모글로빈의 4차 구조</h2><p>이 단백질은 몇 개의 polypeptide chain으로 이루어져 있을까?</p></div>
+   <span className="model-tag">PDB {HEMOGLOBIN_SOURCE.pdbId} · human hemoglobin A<strong>X선 결정 구조 (실험) · {HEMOGLOBIN_SOURCE.resolution} Å · deoxy 상태</strong></span></section>
   <section className="controls core-controls compare-controls hb-controls" aria-label="Hemoglobin display controls">
-   <Segmented label="Representation" value={representation} onChange={setRepresentation} options={[['ribbon','Ribbon'],['atoms','Atoms / sticks'],['spacefill','Space filling']] as const}/>
-   <Segmented label="Color" value={color} onChange={setColor} options={[['default','Default'],['subunit','By subunit'],['type','By chain type']] as const}/>
-   <Segmented label="View" value={focus??'all'} onChange={v=>{setFocus(v==='all'?null:v);setSelected(null);}} options={[['all','Whole tetramer'],...subunits.map(s=>[s.chain,s.label] as const)] as const}/>
-   <fieldset className="hb-toggles"><legend>Show</legend>
+   <Segmented label="표현 방식" value={representation} onChange={setRepresentation} options={[['ribbon','리본'],['atoms','원자 / 막대'],['spacefill','공간 채움']] as const}/>
+   <Segmented label="색" value={color} onChange={setColor} options={[['default','기본 색'],['subunit','subunit별'],['type','chain 종류별']] as const}/>
+   <Segmented label="보기 범위" value={focus??'all'} onChange={v=>{setFocus(v==='all'?null:v);setSelected(null);}} options={[['all','tetramer 전체'],...subunits.map(s=>[s.chain,s.label] as const)] as const}/>
+   <fieldset className="hb-toggles"><legend>표시</legend>
     <div className="toggles">
      <label><input type="checkbox" checked={showHeme} onChange={e=>{setShowHeme(e.target.checked);if(!e.target.checked&&selected?.kind==='heme')setSelected(null);}}/>Heme</label>
-     <label><input type="checkbox" checked={showInterfaces} onChange={e=>setShowInterfaces(e.target.checked)}/>Interfaces</label>
-     <label><input type="checkbox" checked={exploded} onChange={e=>setExploded(e.target.checked)}/>Separate subunits</label>
+     <label><input type="checkbox" checked={showInterfaces} onChange={e=>setShowInterfaces(e.target.checked)}/>접촉면</label>
+     <label><input type="checkbox" checked={exploded} onChange={e=>setExploded(e.target.checked)}/>subunit 떼어 보기</label>
     </div>
     <button onClick={reset}>전체 초기화</button>
    </fieldset>
@@ -70,23 +70,23 @@ function HemoglobinExplorer({model}:{model:HemoglobinModel}){
   <div className={`helix-tip compare-tip${exploded?' exploded-note':''}`} data-testid="hb-tip">{tip}</div>
   <div className="lab-grid helix-grid hb-grid">
    <section className="viewer-panel" aria-label="3D hemoglobin tetramer">
-    <div className="panel-heading"><h3>Hemoglobin A ({HEMOGLOBIN_SOURCE.pdbId})</h3><span className="badge" data-testid="view-badge">{focused?`${focused.label} · CHAIN ${focused.chain}`:'WHOLE TETRAMER'}</span></div>
-    <div className="camera-presets"><button onClick={()=>bump('reset')}>Reset camera</button><button onClick={()=>bump('fit')}>Fit structure</button>
+    <div className="panel-heading"><h3>Hemoglobin A ({HEMOGLOBIN_SOURCE.pdbId})</h3><span className="badge" data-testid="view-badge">{focused?`${focused.label} · chain ${focused.chain}`:'tetramer 전체'}</span></div>
+    <div className="camera-presets"><button onClick={()=>bump('reset')}>시점 초기화</button><button onClick={()=>bump('fit')}>화면에 맞추기</button>
      <button onClick={()=>focused&&focusHeme(focused.chain)} disabled={!focused} title={focused?undefined:'View에서 subunit 하나를 먼저 고르세요'}>Focus heme</button></div>
     <AssemblyViewer testId="hb-viewer" model={scene} view={view} camera={camera} onPick={p=>{setSelected(p);}}
      ariaLabel="Hemoglobin tetramer 3D 구조 (PDB 2DN2). 드래그로 회전, 휠로 확대, 클릭으로 residue 또는 heme 선택. 방향키로 회전, 더하기와 빼기로 확대 축소."/>
-    <div className="viewer-footer"><span>{exploded?`Separate subunits: 각 chain을 중심에서 바깥으로 ${EXPLODED_DISTANCE} Å 평행이동한 설명용 화면`:'drag 회전 · 휠 확대 · 클릭 선택 · 방향키 / + −'}</span><span className="select-key">자주색 halo = 선택</span></div>
+    <div className="viewer-footer"><span>{exploded?`subunit 떼어 보기: 각 chain을 중심에서 바깥으로 ${EXPLODED_DISTANCE} Å 평행이동한 설명용 화면`:'drag 회전 · 휠 확대 · 클릭 선택 · 방향키 / + −'}</span><span className="select-key">자주색 halo = 선택</span></div>
     <div className="legend" data-testid="color-legend">{legend}
      {showHeme&&<><span><i style={{background:HEME_COLORS.css,borderRadius:2}}/>Heme (non-protein prosthetic group)</span><span><i style={{background:HEME_COLORS.ironCss}}/>Fe</span></>}</div>
    </section>
    <aside className="plot-panel residue-panel hb-panel" aria-label="Selection">
-    <div className="panel-heading"><h3>Selected</h3><span className="badge">MEASURED</span></div>
+    <div className="panel-heading"><h3>선택한 부분</h3><span className="badge">좌표에서 측정</span></div>
     {pick?<div className="residue-info" data-testid="residue-info">
      <p className="residue-title">{residueLabel(pick)} <small>{byChain(pick.chain).label}</small></p>
      <p className="small">{RESIDUE_NAMES[pick.resName]} · {pick.resName} · residue {pick.resSeq}{pick.insertionCode} · PDB chain {pick.chain}</p>
      <dl>
       <dt>Subunit</dt><dd data-testid="residue-subunit">{chainName(pick.chain)} <small>{typeName(byChain(pick.chain))}</small></dd>
-      <dt>Interface</dt><dd data-testid="residue-interface">{interfaces.partners.has(pick.index)?<>다른 chain과 접촉: {interfaces.partners.get(pick.index)!.map(c=>chainName(c)).join(', ')}</>:<>다른 chain과 {interfaces.cutoff.toFixed(1)} Å 이내 접촉 없음</>}</dd>
+      <dt>접촉면</dt><dd data-testid="residue-interface">{interfaces.partners.has(pick.index)?<>다른 chain과 접촉: {interfaces.partners.get(pick.index)!.map(c=>chainName(c)).join(', ')}</>:<>다른 chain과 {interfaces.cutoff.toFixed(1)} Å 이내 접촉 없음</>}</dd>
      </dl>
      <p className="small">Residue identity = chain + number + insertion code + name (<code>{pick.chain}:{pick.resSeq}{pick.insertionCode}:{pick.resName}</code>)</p>
     </div>:null}
@@ -113,7 +113,7 @@ function HemoglobinExplorer({model}:{model:HemoglobinModel}){
      {hemes.map(h=><button key={h.group} aria-pressed={selected?.kind==='heme'&&selected.index===h.group} onClick={()=>focusHeme(h.association.chain)}>Heme {h.number} / {hemes.length} · {chainName(h.association.chain)}</button>)}
     </div>
     {showInterfaces&&<div className="interface-list" data-testid="interface-list"><p><strong>Subunit contacts</strong> <small>heavy atom ≤ {interfaces.cutoff.toFixed(1)} Å · residue 수</small></p>
-     <button aria-pressed={pair===null} onClick={()=>setPair(null)}>All contacts · {interfaces.partners.size} residues</button>
+     <button aria-pressed={pair===null} onClick={()=>setPair(null)}>모든 접촉 · {interfaces.partners.size} residues</button>
      {interfaces.pairs.map(p=>{const key=p.chains.join('-');return <button key={key} aria-pressed={pair===key} data-testid={`pair-${key}`} onClick={()=>setPair(key)}>{byChain(p.chains[0]).label}–{byChain(p.chains[1]).label} · Chain {p.chains[0]}–{p.chains[1]} · {p.residues[0].length} + {p.residues[1].length}</button>;})}
      <p className="small">접촉 목록은 좌표에서 계산했습니다. 표시되지 않은 chain 쌍은 이 기준에서 접촉이 없습니다.</p>
     </div>}
@@ -143,7 +143,7 @@ function HemoglobinExplorer({model}:{model:HemoglobinModel}){
     <p>α/β 구분: 각 chain의 DBREF UniProt accession(P69905 HBA_HUMAN, P68871 HBB_HUMAN)과 같은 type 안 SEQRES 동일성으로 확인했습니다. chain 문자로 추측하지 않았습니다. α1 = 파일에서 첫 α chain, β1 = α1과 접촉 residue가 더 많은 β chain(α1β1), 나머지가 α2/β2입니다.</p>
     <p>Heme 소속: 각 heme 원자에서 4.5 Å 이내 protein 원자가 어느 chain에 있는지 세어 정했습니다(record 순서 아님). Fe–proximal His 거리는 좌표에서 측정했고 파일의 LINK 기록과 일치합니다.</p>
     <p>화면과 계산에서 제외: 물 {structure.omitted.waters}개. 이 파일에는 heme 외 다른 ligand·ion이 없습니다. O₂는 이 deoxy 구조에 없으며 그려 넣지 않았습니다. Alternate location {structure.omitted.alternateLocations}개, 누락 residue/atom 없음.</p>
-    <p>Separate subunits는 각 chain(과 그 heme)을 tetramer 중심 → chain 중심 방향으로 {EXPLODED_DISTANCE} Å 평행이동만 한 설명용 화면입니다. 회전·변형은 없고, 끄면 원래 좌표로 정확히 돌아옵니다.</p>
+    <p>subunit 떼어 보기는 각 chain(과 그 heme)을 tetramer 중심 → chain 중심 방향으로 {EXPLODED_DISTANCE} Å 평행이동만 한 설명용 화면입니다. 회전·변형은 없고, 끄면 원래 좌표로 정확히 돌아옵니다.</p>
    </details>
   </section>
  </main>;

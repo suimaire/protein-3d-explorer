@@ -11,9 +11,9 @@ const browser=await chromium.launch({headless:true,args:['--enable-webgl','--use
 const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
 const errors=[],checks=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('request',r=>requests.push(r.url()));
 const check=n=>{checks.push(n);console.log('✓',n);},settle=()=>page.waitForTimeout(160);
-// Several controls share a label with a camera preset ("Mutation site") or with each other ("Both"), so every
+// Several controls share a label with a camera preset ("변이 자리") or with each other ("둘 다"), so every
 // segmented control is addressed through its own group.
-const group=(label,name)=>page.getByRole('group',{name:label}).getByRole('button',{name,exact:true});
+const group=(label,name)=>page.getByRole('group',{name:label,exact:true}).getByRole('button',{name,exact:true});
 const preset=name=>page.locator('.camera-presets').getByRole('button',{name,exact:true});
 const tid=id=>page.getByTestId(id),text=async id=>(await tid(id).innerText()).replace(/\s+/g,' ').trim(),main=()=>page.locator('main');
 const viewer=()=>tid('hbs-viewer'),vdata=k=>viewer().getAttribute(`data-${k}`);
@@ -27,7 +27,7 @@ try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
  assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  assert.doesNotMatch(await nav.innerText(),/Bohr|2,3-BPG|AlphaFold|vaso|anemia|빈혈/i);
  assert.equal(requests.some(u=>/HbsPolymerizationLab|2HBS/.test(u)),false,'the module chunk and 2HBS must not load at start');
  check('Ten completed modules; Chapter 3 ends with HbA → HbS → Polymerization; no Bohr / 2,3-BPG / clinical wording in the nav; module chunk and 2HBS not requested at start');
@@ -36,7 +36,7 @@ try{
  await viewer().locator('canvas').waitFor();await settle();
  assert.ok(requests.some(u=>/HbsPolymerizationLab/.test(u))&&requests.some(u=>/2HBS.*\.pdb/.test(u))&&requests.some(u=>/2DN2.*\.pdb/.test(u)));
  assert.equal(await page.locator('canvas').count(),1);assert.equal(await page.getByRole('alert').count(),0);
- assert.match(await page.locator('.module-heading').innerText(),/HbA → HbS → Polymerization[\s\S]*amino acid 하나가 바뀌면/);
+ assert.match(await page.locator('.module-heading').innerText(),/HbA → HbS → 중합[\s\S]*amino acid 하나가 바뀌면/);
  assert.match(await page.locator('.model-tag').innerText(),new RegExp(`PDB 2HBS \\(deoxy HbS, ${audit.sources.hbs.resolution} Å\\)`));
  assert.equal(await tid('hbs-observation').evaluate(e=>e.open),false);
  assert.equal(await tid('hbs-steps').getByRole('button').count(),4);
@@ -45,7 +45,7 @@ try{
  assert.deepEqual(await labels(),['HbA · β2 Glu6','HbS · βS Val6']);
  check(`Step 1 opens by default: both β chains as sticks, HbA Glu6 and HbS Val6 labelled, deposited HbS coordinates (${audit.samples.hbs.atom}) and the rigidly aligned HbA copy drawn; 2HBS and 2DN2 fetched only now`);
 
- assert.match(await text('hbs-tip'),/Step 1 · One residue changes.*HbA의 β6는 Glu, HbS의 β6는 Val/);
+ assert.match(await text('hbs-tip'),/1단계 · residue 하나가 바뀐다.*HbA의 β6는 Glu, HbS의 β6는 Val/);
  assert.match(await text('hbs-tip'),new RegExp(`matched Cα ${audit.mutation.alignment.matched}개.*Cα RMSD ${fx(audit.mutation.alignment.rmsd)} Å`));
  assert.match(await text('hbs-prediction'),/Glu를 Val로 바꾸면 이 자리의 단백질 표면에서 어떤 물리화학적 성질이 달라질까요\?/);
  assert.equal(await text('hba-residue'),'Glutamate (Glu)');assert.equal(await text('hbs-residue'),'Valine (Val)');
@@ -59,24 +59,24 @@ try{
  assert.match(await text('neighbourhood-count'),new RegExp(`HbA ${audit.mutation.neighbourhood.hba}개 · HbS ${audit.mutation.neighbourhood.hbs}개`));
  check(`Step 1 side panel: Glu (acidic, 음전하 우세) vs Val (nonpolar), protonation caveat, β-chain alignment ${fx(audit.mutation.alignment.rmsd)} Å over ${audit.mutation.alignment.matched} Cα with exactly ${audit.mutation.differences.length} differing residue (β6)`);
 
- await group('Structure','HbA').click();await settle();
+ await group('구조','HbA').click();await settle();
  assert.equal(await vdata('structure'),'hba');
  assert.deepEqual(await labels(),['HbA · β2 Glu6']);
  assert.match(await text('hbs-legend'),/HbA β chain · 2DN2 \(aligned\)/);
  assert.doesNotMatch(await text('hbs-legend'),/HbS βS chain/);
  await page.screenshot({path:'artifacts/phase4d-hba-glu6.png'});
- await group('Structure','HbS').click();await settle();
+ await group('구조','HbS').click();await settle();
  assert.equal(await vdata('structure'),'hbs');
  assert.deepEqual(await labels(),['HbS · βS Val6']);
  await page.screenshot({path:'artifacts/phase4d-hbs-val6.png'});
  const hbsOnly=await vdata('hbs-sample');
- await group('Structure','Both').click();await settle();
+ await group('구조','둘 다').click();await settle();
  assert.equal(await vdata('structure'),'both');assert.equal(await vdata('hbs-sample'),hbsOnly,'switching structures never moves coordinates');
  check('Structure switch HbA / HbS / Both changes only what is drawn (legend and labels follow); the displayed coordinates are unchanged');
 
  await step('surface');
  assert.equal(await vdata('step'),'surface');assert.equal(await vdata('representation'),'spacefill');
- assert.match(await text('hbs-tip'),new RegExp(`Step 2 · Surface chemistry.*β6 side chain에서 ${audit.mutation.neighbourhood.radius} Å 안의 residue를 space filling`));
+ assert.match(await text('hbs-tip'),new RegExp(`2단계 · 표면 화학.*β6 side chain에서 ${audit.mutation.neighbourhood.radius} Å 안의 residue를 space filling`));
  assert.match(await text('hbs-tip'),/계산된 molecular surface가 아니라 van der Waals 반지름의 원자 구체/);
  assert.equal(await vdata('hbs-sample'),hbsOnly);
  await page.screenshot({path:'artifacts/phase4d-surface.png'});
@@ -114,36 +114,36 @@ try{
  assert.match(cutoffNote,/분석을 위해 정한 operational cutoff/);
  assert.doesNotMatch(caveat+cutoffNote,/cherry|exactly|정확히/);
  assert.match(await text('distance-note'),/근접을 표시하는 보조선이며 화학 결합이 아닙니다/);
- await preset('Contact pocket').click();await settle();
+ await preset('접촉 pocket').click();await settle();
  await page.screenshot({path:'artifacts/phase4d-contact.png'});
  check(`Measured pocket distances shown exactly as the audit: Ala70 ${fx(pocket.ALA70.minDistance)} Å, Phe85 ${fx(pocket.PHE85.minDistance)} Å, Leu88 ${fx(pocket.LEU88.minDistance)} Å, plus the polar rim Thr84 ${fx(pocket.THR84.minDistance)} Å / Asp73 ${fx(pocket.ASP73.minDistance)} Å and the Thr4–Asp73 secondary interaction; wording is "hydrophobic contact", never a bond`);
 
- await group('Highlight','Acceptor pocket').click();await settle();
+ await group('강조','받는 쪽 pocket').click();await settle();
  assert.equal(await vdata('highlight'),'pocket');
- await group('Highlight','Mutation site').click();await settle();
+ await group('강조','변이 자리').click();await settle();
  assert.equal(await vdata('highlight'),'mutation');
- await group('Highlight','Both').click();await settle();
+ await group('강조','둘 다').click();await settle();
  assert.equal(await vdata('highlight'),'both');
- await page.getByRole('checkbox',{name:'Neighbour molecule'}).uncheck();await settle();
+ await page.getByRole('checkbox',{name:'이웃 분자'}).uncheck();await settle();
  assert.equal(await vdata('instance-count'),'1');assert.equal(await vdata('instances'),P.donor.molecule);
  assert.equal(await vdata('contacts'),'0','with one molecule on screen there is no intermolecular contact to draw');
- await page.getByRole('checkbox',{name:'Neighbour molecule'}).check();await settle();
+ await page.getByRole('checkbox',{name:'이웃 분자'}).check();await settle();
  assert.equal(await vdata('instance-count'),'2');
  await page.getByRole('checkbox',{name:'Heme'}).check();await settle();
  assert.equal(await vdata('heme'),'on');
  assert.match(await text('hbs-legend'),/Heme/);
  await page.screenshot({path:'artifacts/phase4d-pocket.png'});
  await page.getByRole('checkbox',{name:'Heme'}).uncheck();
- await page.getByRole('checkbox',{name:'Contact distances'}).uncheck();await settle();
+ await page.getByRole('checkbox',{name:'접촉 거리'}).uncheck();await settle();
  assert.equal(await vdata('guides'),'0');assert.equal((await labels()).filter(t=>t.includes('Å')).length,0);
- await page.getByRole('checkbox',{name:'Contact distances'}).check();await settle();
+ await page.getByRole('checkbox',{name:'접촉 거리'}).check();await settle();
  assert.equal(await vdata('guides'),String(audit.contacts.guides.length));
- check('Highlight (mutation / pocket / both), Neighbour molecule (removing it leaves one molecule and no contact), Heme and Contact distances toggles all work');
+ check('Highlight (mutation / pocket / both), 이웃 분자 (removing it leaves one molecule and no contact), Heme and 접촉 거리 toggles all work');
 
  await step('polymer');
  assert.equal(await vdata('step'),'polymer');assert.equal(await vdata('representation'),'ribbon');
  assert.equal(await vdata('instance-count'),'4');assert.equal(await vdata('contacts'),'3');
- assert.match(await text('hbs-tip'),new RegExp(`Step 4 · Repeating contact.*unit cell 병진\\(${audit.sources.hbs.spaceGroup}\\).*세포 안 fiber 전체의 원자 모델이 아닙니다`));
+ assert.match(await text('hbs-tip'),new RegExp(`4단계 · 반복되는 접촉.*unit cell 병진\\(${audit.sources.hbs.spaceGroup}\\).*세포 안 fiber 전체의 원자 모델이 아닙니다`));
  assert.equal(await tid('segment-count').locator('strong').innerText(),'4 tetramers');
  assert.equal(await tid('segment-operation').locator('strong').innerText(),'x ± a');
  assert.match(await text('segment-operation'),new RegExp(`unit cell a = ${audit.sources.hbs.cell.a.toFixed(3)} Å 병진 \\(회전 없음\\)`));
@@ -163,7 +163,7 @@ try{
 
  const schematic=tid('fiber-schematic');
  assert.equal(await schematic.count(),1);
- assert.match(await schematic.innerText(),/SCHEMATIC.*원자 좌표가 아닙니다/s);
+ assert.match(await schematic.innerText(),/모식도.*원자 좌표가 아닙니다/s);
  assert.match(await schematic.innerText(),/7 double strands = 14 strands/);
  assert.match(await schematic.innerText(),/전자현미경 3차원 재구성과 섬유 회절로 추론된 상위 구조를 개념적으로만 나타냅니다/);
  assert.match(await text('evidence-note'),/근거 수준이 다릅니다.*직접 관측된 원자 좌표와 그 격자 병진.*schematic.*원자 좌표가 아닙니다/);
@@ -185,7 +185,7 @@ try{
  assert.match(await text('rbc-note'),/적혈구 내부의 기계적 성질을 바꾸어.*구조 수준까지만 다루며 세포·임상 수준은 모델링하지 않습니다/);
  await tid('tr-link').click();await settle();
  await page.getByTestId('tr-viewer').locator('canvas').waitFor();
- assert.match(await page.locator('.module-heading').innerText(),/Hemoglobin T ↔ R Structural Transition/);
+ assert.match(await page.locator('.module-heading').innerText(),/헤모글로빈 T ↔ R 구조 전환/);
  await nav.getByRole('button',{name:/HbA → HbS → Polymerization/}).click();await viewer().locator('canvas').waitFor();await settle();
  assert.equal(await vdata('step'),'mutation','returning to the module starts again at step 1');
  check(`Science note: deoxy dependence without "deoxy = always polymer", explicit non-simulation list, established βVal6 pocket contact kept separate from the contact network measured in the displayed 6-tetramer segment (${net.lateral} lateral + ${net.axial} axial interfaces, only ${net.involvingMutation} involving βVal6), short RBC consequence with a scope limit; the T ↔ R link opens the existing Phase 4B module and coming back resets to step 1`);

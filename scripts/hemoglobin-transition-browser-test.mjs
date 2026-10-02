@@ -21,7 +21,7 @@ try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
  assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  assert.doesNotMatch(await nav.innerText(),/Bohr|Hill|2,3-BPG|AlphaFold/i);
  assert.equal(requests.some(u=>/HemoglobinTransitionLab|2DN1|2DN2/.test(u)),false,'T↔R chunk and structures must not load at start');
  check('Seven completed modules; Chapter 3 lists Quaternary Structure and T ↔ R; the T↔R chunk, 2DN2 and 2DN1 are not requested at start');
@@ -48,66 +48,66 @@ try{
 
  await tv().locator('canvas').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowUp');await settle();
  const cam=await camera(),images={};
- for(const [label,state,layers] of [['T state','T','T'],['R state','R','R'],['Overlay','overlay','T,R'],['Motion guide','motion','motion']]){
+ for(const [label,state,layers] of [['T 상태','T','T'],['R 상태','R','R'],['겹쳐 보기','overlay','T,R'],['움직임 안내','motion','motion']]){
   await button(label).click();await settle();
   assert.equal(await data('state'),state);assert.equal(await data('layers'),layers);assert.deepEqual(await camera(),cam,`camera kept for ${state}`);
   images[state]=await shot();
  }
  assert.notDeepEqual(images.T,images.R);assert.notDeepEqual(images.T,images.overlay);assert.notDeepEqual(images.R,images.overlay);
- check('T / R / Overlay / Motion guide switch the drawn layers while the camera direction, distance and target stay exactly the same');
+ check('T / R / Overlay / 움직임 안내 switch the drawn layers while the camera direction, distance and target stay exactly the same');
 
- await button('T state').click();await settle();
+ await button('T 상태').click();await settle();
  near(await data('sample-position'),audit.samples.T.position);assert.equal(await data('sample-atom'),audit.samples.T.atom);
  assert.equal(await data('visible-ligands'),'0');assert.match(await page.getByTestId('tr-tip').innerText(),/T-like state \(PDB 2DN2, deoxy\): subunits are arranged in one quaternary configuration[\s\S]*deposited O₂가 없으므로 ligand를 그리지 않습니다/);
  assert.match(await page.getByTestId('tr-legend').innerText(),/T-like · 2DN2 \(deoxy\)/);assert.doesNotMatch(await page.getByTestId('tr-legend').innerText(),/R-like|O₂/);
- await button('Tetramer view').click();await settle();await page.screenshot({path:'artifacts/phase4b-hb-t.png'});
- await button('R state').click();await settle();
+ await button('tetramer 전체 보기').click();await settle();await page.screenshot({path:'artifacts/phase4b-hb-t.png'});
+ await button('R 상태').click();await settle();
  near(await data('sample-position'),audit.samples.R.position);assert.equal(await data('sample-atom'),audit.samples.R.atom);
  assert.equal(await data('visible-ligands'),'4');assert.match(await page.getByTestId('tr-tip').innerText(),/R-like state \(PDB 2DN1, O₂ bound\): the relative arrangement of the αβ dimers is different/);
  assert.match(await page.getByTestId('tr-legend').innerText(),/R-like · 2DN1 \(O₂ bound, aligned on α1β1\)[\s\S]*O₂ \(deposited in 2DN1\)/);
  await page.screenshot({path:'artifacts/phase4b-hb-r.png'});
- const withLigand=await shot();await checkbox('Ligand (O₂)').uncheck();await settle();assert.equal(await data('visible-ligands'),'0');assert.notDeepEqual(await shot(),withLigand);
- await checkbox('Ligand (O₂)').check();await settle();assert.deepEqual(await shot(),withLigand);
+ const withLigand=await shot();await checkbox('리간드 (O₂)').uncheck();await settle();assert.equal(await data('visible-ligands'),'0');assert.notDeepEqual(await shot(),withLigand);
+ await checkbox('리간드 (O₂)').check();await settle();assert.deepEqual(await shot(),withLigand);
  check(`T endpoint draws deposited 2DN2 coordinates (${audit.samples.T.atom}) with no ligand; R endpoint draws 2DN1 aligned coordinates with 4 deposited O₂; ligand toggle removes and restores them exactly`);
 
- await button('Overlay').click();await settle();
+ await button('겹쳐 보기').click();await settle();
  const overlay=await shot();
- for(const [label,value] of [['Reference αβ dimer','reference'],['Moving αβ dimer','moving']]){
+ for(const [label,value] of [['기준 αβ dimer','reference'],['움직이는 αβ dimer','moving']]){
   await button(label).click();await settle();assert.equal(await data('highlight'),value);assert.notDeepEqual(await shot(),overlay);
   const faded=await tv().locator('.dimer-label.faded').allInnerTexts();assert.deepEqual(faded,[value==='reference'?'α2β2 · moving dimer':'α1β1 · reference dimer']);
  }
- await checkbox('Rearrangement guide').check();await settle();assert.equal(await data('guide'),'on');
+ await checkbox('재배열 안내선').check();await settle();assert.equal(await data('guide'),'on');
  assert.match(await page.getByTestId('guide-note').innerText(),/relative structural difference after alignment[\s\S]*원자 궤적이 아닙니다/);
  assert.match(await page.getByTestId('guide-note').innerText(),new RegExp(`${audit.moving.angle.toFixed(1)}°[\\s\\S]*${audit.moving.centroidDisplacement.toFixed(1)} Å`));
- await button('Dimer comparison view').click();await settle();
+ await button('dimer 비교 보기').click();await settle();
  assert.equal(await data('camera-preset'),'dimer');near(await data('camera-direction'),audit.camera.dimerDirection,2e-4);
  await page.screenshot({path:'artifacts/phase4b-hb-moving-dimer.png'});
- await button('Whole tetramer').click();await checkbox('Rearrangement guide').uncheck();await settle();
- check(`Reference / moving dimer highlight fade the other dimer (3D labels follow); guide shows the calculated ${audit.moving.angle.toFixed(1)}° and ${audit.moving.centroidDisplacement.toFixed(1)} Å with its "not a trajectory" note; Dimer comparison view looks down the calculated rotation axis`);
+ await button('tetramer 전체').click();await checkbox('재배열 안내선').uncheck();await settle();
+ check(`Reference / moving dimer highlight fade the other dimer (3D labels follow); guide shows the calculated ${audit.moving.angle.toFixed(1)}° and ${audit.moving.centroidDisplacement.toFixed(1)} Å with its "not a trajectory" note; dimer 비교 보기 looks down the calculated rotation axis`);
 
- await checkbox('Interface').check();await settle();assert.equal(await data('interface'),'on');assert.match(await page.getByTestId('tr-tip').innerText(),/heavy atom ≤ 4\.0 Å/);
- const ifImage=await shot();await checkbox('Interface').uncheck();await settle();assert.notDeepEqual(ifImage,await shot());
+ await checkbox('접촉면').check();await settle();assert.equal(await data('interface'),'on');assert.match(await page.getByTestId('tr-tip').innerText(),/heavy atom ≤ 4\.0 Å/);
+ const ifImage=await shot();await checkbox('접촉면').uncheck();await settle();assert.notDeepEqual(ifImage,await shot());
  await checkbox('Heme').uncheck();await settle();assert.equal(await data('heme'),'off');assert.doesNotMatch(await page.getByTestId('tr-legend').innerText(),/Heme/);
- await checkbox('Heme').check();await button('Tetramer view').click();await settle();
+ await checkbox('Heme').check();await button('tetramer 전체 보기').click();await settle();
  check('Interface emphasis and Heme toggle change the rendering and legend');
 
- await button('Motion guide').click();await motion(0);const m0=await shot();
+ await button('움직임 안내').click();await motion(0);const m0=await shot();
  assert.equal(await data('fraction'),'0.00');near(await data('moving-sample-position'),audit.samples.motion.g0);assert.equal(await data('moving-sample-atom'),audit.samples.motion.atom);
- await button('T state').click();await settle();const tDrawn=[await data('sample-position'),await data('moving-sample-position'),await camera()];near(tDrawn[1],audit.samples.motion.g0);
- await button('Motion guide').click();await settle();assert.deepEqual([await data('sample-position'),await data('moving-sample-position'),await camera()],tDrawn,'guide 0% draws the T coordinates from the same viewpoint');
+ await button('T 상태').click();await settle();const tDrawn=[await data('sample-position'),await data('moving-sample-position'),await camera()];near(tDrawn[1],audit.samples.motion.g0);
+ await button('움직임 안내').click();await settle();assert.deepEqual([await data('sample-position'),await data('moving-sample-position'),await camera()],tDrawn,'guide 0% draws the T coordinates from the same viewpoint');
  await motion(50);assert.equal(await data('state'),'motion');assert.equal(await data('fraction'),'0.50');assert.equal(await page.getByTestId('motion-value').innerText(),'50%');
  near(await data('moving-sample-position'),audit.samples.motion.mid);near(await data('sample-position'),audit.samples.motion.reference);assert.equal(await data('visible-ligands'),'0');
- assert.match(await page.getByTestId('state-badge').innerText(),/MOTION GUIDE 50%/);
+ assert.match(await page.getByTestId('state-badge').innerText(),/움직임 안내 50%/);
  assert.match(await page.getByTestId('tr-tip').innerText(),/하나의 rigid body로 옮긴 화면입니다[\s\S]*dimer 내부 모양은 변하지 않습니다/);
- await button('Moving αβ dimer').click();await settle();await page.screenshot({path:'artifacts/phase4b-hb-motion-guide.png'});await button('Whole tetramer').click();await settle();
+ await button('움직이는 αβ dimer').click();await settle();await page.screenshot({path:'artifacts/phase4b-hb-motion-guide.png'});await button('tetramer 전체').click();await settle();
  await motion(100);near(await data('moving-sample-position'),audit.samples.motion.g1);assert.equal(await data('visible-ligands'),'0');
- await button('R state').click();await settle();const rImage=await shot();near(await data('sample-position'),audit.samples.R.position);
+ await button('R 상태').click();await settle();const rImage=await shot();near(await data('sample-position'),audit.samples.R.position);
  assert.equal(await page.getByTestId('motion-value').innerText(),'100%','R state does not move the guide slider');
- await button('Motion guide').click();await settle();assert.ok(!(await shot()).equals(rImage),'guide 100% is not the experimental R structure');
+ await button('움직임 안내').click();await settle();assert.ok(!(await shot()).equals(rImage),'guide 100% is not the experimental R structure');
  await motion(37);await motion(0);assert.ok((await shot()).equals(m0),'back to 0% restores the image');near(await data('moving-sample-position'),audit.samples.motion.g0);
  assert.ok(await page.getByTestId('motion-warning').isVisible());
- await button('R state').click();await motion(20);assert.equal(await data('state'),'motion');
- check('Motion guide slider: 0% = T coordinates from the same viewpoint; 50%/100% = T α2β2 under the calculated rigid motion (α1β1 fixed, no O₂); 100% differs from the R view; back to 0% restores the identical image; disclaimer always visible');
+ await button('R 상태').click();await motion(20);assert.equal(await data('state'),'motion');
+ check('움직임 안내 slider: 0% = T coordinates from the same viewpoint; 50%/100% = T α2β2 under the calculated rigid motion (α1β1 fixed, no O₂); 100% differs from the R view; back to 0% restores the identical image; disclaimer always visible');
 
  for(const h of audit.hemes.t){
   const r=audit.hemes.r.find(x=>x.number===h.number);
@@ -122,7 +122,7 @@ try{
  check(`Heme 1–4: Fe–His NE2 (T ${audit.hemes.t.map(h=>h.feHis.toFixed(2)).join('/')}; R ${audit.hemes.r.map(h=>h.feHis.toFixed(2)).join('/')} Å), Fe–porphyrin plane and Fe–O₂ equal the audit`);
 
  const dirBefore=await data('camera-direction');await tv().locator('canvas').focus();await page.keyboard.press('ArrowLeft');await settle();const turned=await data('camera-direction');assert.notEqual(turned,dirBefore);
- await button('Fit').click();await settle();near(await data('camera-direction'),turned.split(',').map(Number),2e-5);
+ await button('화면에 맞추기').click();await settle();near(await data('camera-direction'),turned.split(',').map(Number),2e-5);
  check('Keyboard rotation; Fit refits while keeping the view direction');
 
  await button('전체 초기화').click();await settle();
@@ -141,11 +141,11 @@ try{
 
  for(const width of [768,390,320]){
   await page.setViewportSize({width,height:844});await page.waitForTimeout(300);
-  await button('Moving αβ dimer').click();await checkbox('Rearrangement guide').check();await motion(50);await settle();
+  await button('움직이는 αβ dimer').click();await checkbox('재배열 안내선').check();await motion(50);await settle();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`overflow at ${width}`);
   const v=await tv().boundingBox();assert.ok(v.width>=width-60&&v.height>=300,`viewer ${v.width}x${v.height} at ${width}`);
   for(const sel of ['.tr-controls','.tr-panel','[data-testid="motion-control"]','[data-testid="tr-legend"]','#motion-guide']){const c=await page.locator(sel).boundingBox();assert.ok(c.x>=0&&c.x+c.width<=width+0.5,`${sel} wider than ${width}`);}
-  for(const group of ['State','Highlight'])for(const b of await page.getByRole('group',{name:group}).getByRole('button').all()){const r=await b.boundingBox();assert.ok(r.x>=0&&r.x+r.width<=width,`${group} button outside at ${width}`);}
+  for(const group of ['상태','강조'])for(const b of await page.getByRole('group',{name:group}).getByRole('button').all()){const r=await b.boundingBox();assert.ok(r.x>=0&&r.x+r.width<=width,`${group} button outside at ${width}`);}
   const slider=await page.locator('#motion-guide').boundingBox();assert.ok(slider.width>=(width-48)*0.9,`slider width ${slider.width} at ${width}`);
   await page.locator('#motion-guide').fill('80');await settle();assert.equal(await data('fraction'),'0.80');
   if(width===390)await page.screenshot({path:'artifacts/phase4b-hb-mobile.png',fullPage:true});

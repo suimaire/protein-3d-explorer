@@ -35,7 +35,7 @@ export function SaturationPlot({model,u,uMax,mode,showStates}:{model:NormalizedM
    {showRef&&<path data-testid="reference-curve" d={path('reference')} fill="none" stroke={PLOT_COLORS.reference} strokeWidth={2.4} strokeDasharray="8 5"/>}
    {showHb&&<path data-testid="hb-curve" d={path('Y')} fill="none" stroke={PLOT_COLORS.hb} strokeWidth={3}/>}
    {!narrow&&showHb&&<text className="curve-label" x={X(2.4)+4} y={Yp(hbLabel.Y)+18} fill={PLOT_COLORS.hb}>Hemoglobin · MWC (sigmoid)</text>}
-   {!narrow&&showRef&&<text className="curve-label" x={X(3)} y={Yp(refLabel.reference)+22} fill={PLOT_COLORS.reference} textAnchor="middle">One-site reference (hyperbola)</text>}
+   {!narrow&&showRef&&<text className="curve-label" x={X(3)} y={Yp(refLabel.reference)+22} fill={PLOT_COLORS.reference} textAnchor="middle">결합 부위 1개 기준 (hyperbola)</text>}
    <line className="u-line" x1={X(u)} x2={X(u)} y1={m.t} y2={m.t+ph}/>
    {showRef&&<rect data-testid="reference-marker" x={X(u)-5} y={Yp(point.reference)-5} width={10} height={10} fill="white" stroke={PLOT_COLORS.reference} strokeWidth={2.2} transform={`rotate(45 ${X(u)} ${Yp(point.reference)})`}/>}
    {showHb&&<circle data-testid="coop-marker" data-u={u.toFixed(2)} data-y={point.Y.toFixed(4)} cx={X(u)} cy={Yp(point.Y)} r={6.5} fill={PLOT_COLORS.hb} stroke="white" strokeWidth={2}/>}

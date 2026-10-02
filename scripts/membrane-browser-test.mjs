@@ -18,12 +18,12 @@ const pct=r=>r.relative>=1?'≥100%':`${Math.round(r.relative*100)}%`;
 const depth=z=>`${z>=0?'+':'−'}${Math.abs(z).toFixed(1)} Å`;
 const numbers=list=>list.map(s=>Number(s.replace(/^[A-Za-z]+/,''))).sort((a,b)=>a-b).join(',');
 
-const select=page.getByRole('combobox',{name:'Select residue'});
+const select=page.getByRole('combobox',{name:'잔기 선택'});
 try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  assert.equal(requests.some(u=>/SolubleMembraneLab|ubiquitin/.test(u)),false,'membrane module must not load initially');
  const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['Chapter 1 · Amino Acid & Peptide\nPeptide Geometry','Chapter 2 · From Sequence to Structure\nα-Helix','Chapter 2 · From Sequence to Structure\nβ-Sheet','Chapter 2 · From Sequence to Structure\nHydrophobic Core','Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['펩타이드 결합과 φ·ψ 회전\nPeptide Geometry','α-나선\nα-Helix','β-병풍\nβ-Sheet','소수성 중심부\nHydrophobic Core','수용성 단백질과 막단백질\nSoluble vs Membrane Protein','헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  check('Initial Peptide Geometry load does not request the membrane module chunk (lazy); six completed modules');
  await nav.getByRole('button',{name:/Soluble vs Membrane/}).click();await mv().locator('canvas').waitFor();await sv().locator('canvas').waitFor();await settle();
  assert.ok(requests.some(u=>/SolubleMembraneLab/.test(u)),'chunk loaded on demand');assert.equal(await page.getByRole('alert').count(),0);assert.equal(await page.locator('canvas').count(),2);
@@ -37,41 +37,41 @@ try{
  const init={s:await shot(sv()),m:await shot(mv())};
 
  let before=init.m;
- for(const [label,value] of [['Atoms / sticks','atoms'],['Space filling','spacefill'],['Ribbon','ribbon']]){await button(label).click();await settle();for(const v of [sv(),mv()])assert.equal(await data(v,'representation'),value);const now=await shot(mv());assert.notDeepEqual(now,before);before=now;}
+ for(const [label,value] of [['원자 / 막대','atoms'],['공간 채움','spacefill'],['리본','ribbon']]){await button(label).click();await settle();for(const v of [sv(),mv()])assert.equal(await data(v,'representation'),value);const now=await shot(mv());assert.notDeepEqual(now,before);before=now;}
  check('Representation control switches both viewers together (ribbon / atoms / space filling)');
- await button('Chemistry').click();await settle();for(const v of [sv(),mv()])assert.equal(await data(v,'color'),'chemistry');
+ await button('화학적 성질').click();await settle();for(const v of [sv(),mv()])assert.equal(await data(v,'color'),'chemistry');
  const legend=await page.getByTestId('color-legend').innerText();for(const t of ['■ Nonpolar','● Polar, uncharged','▲ Acidic','◆ Basic','두 구조 같은 색 기준'])assert.ok(legend.includes(t),t);
  check('One Chemistry control colors both proteins with one shared legend');
 
- const noSlab=await shot(mv());const toggle=page.getByRole('checkbox',{name:'Show membrane'});
+ const noSlab=await shot(mv());const toggle=page.getByRole('checkbox',{name:'막 표시'});
  await toggle.check();await settle();assert.equal(await data(mv(),'membrane'),'on');const withSlab=await shot(mv());assert.notDeepEqual(withSlab,noSlab);
  assert.equal(await mv().locator('.slab-label:not([hidden])').count(),3);assert.match(await mv().locator('.slab-label').allInnerTexts().then(t=>t.join('|')),/Side A \(\+z\)[\s\S]*Hydrophobic region 23\.6 Å[\s\S]*Side B/);
  await toggle.uncheck();await settle();assert.equal(await data(mv(),'membrane'),'off');assert.deepEqual(await shot(mv()),noSlab);await toggle.check();await settle();
- check('Show membrane draws the OPM slab (labels Side A / 23.6 Å / Side B) and hiding restores the exact image');
- await button('Space filling').click();await settle();
+ check('막 표시 draws the OPM slab (labels Side A / 23.6 Å / Side B) and hiding restores the exact image');
+ await button('공간 채움').click();await settle();
  await page.screenshot({path:'artifacts/phase3b-soluble-vs-membrane.png',fullPage:true});
  await mv().screenshot({path:'artifacts/phase3b-membrane-chemistry.png'});
 
- const modes=[['Surface','surface',audit.groups.surface.residues,audit.ubiquitin.surfaceResidues],['Buried','buried',audit.groups.buried.residues,null],['Lipid-facing','lipid',audit.groups.lipidFacing.residues,[]],['Aqueous-facing','aqueous',audit.groups.aqueousFacing.residues,audit.ubiquitin.surfaceResidues]];
+ const modes=[['표면','surface',audit.groups.surface.residues,audit.ubiquitin.surfaceResidues],['내부','buried',audit.groups.buried.residues,null],['지질 쪽','lipid',audit.groups.lipidFacing.residues,[]],['물 쪽','aqueous',audit.groups.aqueousFacing.residues,audit.ubiquitin.surfaceResidues]];
  for(const [label,mode,membraneList,ubqList] of modes){
   await button(label).click();await settle();assert.equal(await page.locator('main').getAttribute('data-highlight'),mode);
   assert.equal(await data(mv(),'highlighted'),numbers(membraneList));
   if(ubqList)assert.equal(await data(sv(),'highlighted'),numbers(ubqList));
-  assert.equal(await page.getByTestId('membrane-count').innerText(),`${membraneList.length} / 148 RESIDUES`);
-  if(mode==='lipid'){assert.equal(await page.getByTestId('soluble-count').innerText(),'0 / 76 RESIDUES');await page.screenshot({path:'artifacts/phase3b-lipid-facing.png',fullPage:true});}
+  assert.equal(await page.getByTestId('membrane-count').innerText(),`residue ${membraneList.length} / 148`);
+  if(mode==='lipid'){assert.equal(await page.getByTestId('soluble-count').innerText(),'residue 0 / 76');await page.screenshot({path:'artifacts/phase3b-lipid-facing.png',fullPage:true});}
   if(mode==='aqueous')await page.screenshot({path:'artifacts/phase3b-aqueous-facing.png',fullPage:true});
  }
- check('Surface / Buried / Lipid-facing / Aqueous-facing highlight exactly the audit sets in both viewers (ubiquitin lipid-facing = 0)');
+ check('Surface / Buried / 지질 쪽 / 물 쪽 highlight exactly the audit sets in both viewers (ubiquitin lipid-facing = 0)');
 
- await button('Lipid-facing').click();await button('Side view').click();await settle();
+ await button('지질 쪽').click();await button('옆에서 보기').click();await settle();
  await mv().scrollIntoViewIfNeeded();const box=await mv().locator('canvas').boundingBox();
  let picked='';for(const [dx,dy] of [[0,0],[-30,0],[30,0],[0,-30],[0,30],[-60,10],[60,-10]]){await page.mouse.click(box.x+box.width/2+dx,box.y+box.height/2+dy);await settle();picked=await data(mv(),'selected-residue');if(picked)break;}
  assert.ok(picked,'3D click selects an OmpX residue');const pr=byNumber(Number(picked));
  assert.equal(await page.getByTestId('residue-depth').locator('strong').innerText(),depth(pr.depth));assert.equal(await select.inputValue(),`membrane:${pr.index}`);
  check(`3D click on OmpX selects ${pr.resName}${pr.resSeq}; panel depth ${depth(pr.depth)} and selector sync`);
 
- const colors={nonpolar:'#c98e1c',polar:'#23927f',acidic:'#c8382b',basic:'#2f64c0'},cats={'lipid-facing':'Lipid-facing candidate','aqueous-facing':'Aqueous-facing surface',buried:'Buried (surface accessibility < 25%)'};
- await button('All').click();
+ const colors={nonpolar:'#c98e1c',polar:'#23927f',acidic:'#c8382b',basic:'#2f64c0'},cats={'lipid-facing':'지질 쪽 candidate','aqueous-facing':'물 쪽 surface',buried:'Buried (surface accessibility < 25%)'};
+ await button('전체').click();
  for(const n of [125,75,146,27,100,28]){
   const r=byNumber(n);await select.selectOption(`membrane:${r.index}`);await settle();
   assert.equal(await data(mv(),'selected-residue'),String(n));assert.equal(await data(sv(),'selected-residue'),'');
@@ -91,12 +91,12 @@ try{
  check('Residue panel (class, surface accessibility, depth, region, lipid-facing criterion, caveats, altloc/mutation notes) matches audit for Phe125/Asp75/Tyr146/Lys27/Asn100/Tyr28; ubiquitin shows no membrane data');
 
  const dir=async v=>(await data(v,'camera-direction')).split(',').map(Number);
- await button('Top view').click();await settle();await mv().screenshot({path:'artifacts/phase3b-top-view.png'});let d=await dir(mv());assert.ok(d[1]>0.999,`top ${d}`);assert.equal(await mv().locator('.slab-label:not([hidden])').count(),0);assert.equal(await data(mv(),'camera-preset'),'top');
- await button('Side view').click();await settle();d=await dir(mv());assert.ok(Math.abs(d[1])<1e-6,`side ${d}`);
+ await button('위에서 보기').click();await settle();await mv().screenshot({path:'artifacts/phase3b-top-view.png'});let d=await dir(mv());assert.ok(d[1]>0.999,`top ${d}`);assert.equal(await mv().locator('.slab-label:not([hidden])').count(),0);assert.equal(await data(mv(),'camera-preset'),'top');
+ await button('옆에서 보기').click();await settle();d=await dir(mv());assert.ok(Math.abs(d[1])<1e-6,`side ${d}`);
  await mv().locator('canvas').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('+');await settle();const moved=await dir(mv()),dist=await data(mv(),'camera-distance');
- await page.getByRole('region',{name:'Membrane protein: OmpX'}).getByRole('button',{name:'Fit structure'}).click();await settle();const fitted=await dir(mv());assert.ok(moved.every((v,i)=>Math.abs(v-fitted[i])<1e-5));assert.notEqual(await data(mv(),'camera-distance'),dist);
+ await page.getByRole('region',{name:'Membrane protein: OmpX'}).getByRole('button',{name:'화면에 맞추기'}).click();await settle();const fitted=await dir(mv());assert.ok(moved.every((v,i)=>Math.abs(v-fitted[i])<1e-5));assert.notEqual(await data(mv(),'camera-distance'),dist);
 
- check('OmpX Side view (normal vertical), Top view (down the normal), Fit keeps direction; keyboard rotate/zoom');
+ check('OmpX 옆에서 보기 (normal vertical), 위에서 보기 (down the normal), Fit keeps direction; keyboard rotate/zoom');
 
  await page.getByText('관찰 후 확인하기 · 두 구조에서 관찰된 표면 chemistry').click();
  const rows={'ompx-lipid':audit.groups.lipidFacing.composition,'ompx-aqueous':audit.groups.aqueousFacing.composition,'ompx-buried':audit.groups.buried.composition,'ubq-surface':audit.ubiquitin.surface,'ubq-buried':audit.ubiquitin.buried};
@@ -111,12 +111,12 @@ try{
  await button('전체 초기화').click();await settle();
  assert.deepEqual(await shot(sv()),init.s);assert.deepEqual(await shot(mv()),init.m);assert.equal(await data(mv(),'membrane'),'off');assert.equal(await page.getByTestId('composition').evaluate(e=>e.open),true);
  await sv().locator('canvas').focus();await page.keyboard.press('ArrowLeft');await settle();assert.notDeepEqual(await shot(sv()),init.s);
- await page.getByRole('region',{name:'Soluble protein: ubiquitin'}).getByRole('button',{name:'Reset camera'}).click();await settle();assert.deepEqual(await shot(sv()),init.s);
- check('Full reset restores both exact initial renderings; ubiquitin keeps its Reset camera behaviour');
+ await page.getByRole('region',{name:'Soluble protein: ubiquitin'}).getByRole('button',{name:'시점 초기화'}).click();await settle();assert.deepEqual(await shot(sv()),init.s);
+ check('Full reset restores both exact initial renderings; ubiquitin keeps its 시점 초기화 behaviour');
 
  for(const width of [768,390,320]){
   await page.setViewportSize({width,height:844});await page.waitForTimeout(250);
-  await button('Space filling').click();await button('Chemistry').click();await page.getByRole('checkbox',{name:'Show membrane'}).check();await button('Lipid-facing').click();await settle();
+  await button('공간 채움').click();await button('화학적 성질').click();await page.getByRole('checkbox',{name:'막 표시'}).check();await button('지질 쪽').click();await settle();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`overflow at ${width}`);
   const a=await sv().boundingBox(),b=await mv().boundingBox();assert.ok(b.y>=a.y+a.height-1,'viewers stacked');assert.ok(a.width>=width-60&&b.width>=width-60&&b.height>=300);
   for(const sel of ['.compare-controls','.compare-legend','.residue-panel']){const c=await page.locator(sel).boundingBox();for(const v of [a,b])assert.ok(c.y>=v.y+v.height-1||c.y+c.height<=v.y+1,`${sel} overlaps viewer at ${width}`);assert.ok(c.x>=0&&c.x+c.width<=width,`${sel} wider than ${width}`);}

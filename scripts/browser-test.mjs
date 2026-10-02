@@ -25,9 +25,9 @@ try{
   await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
   await canvas().waitFor();assert.equal(await page.getByRole('alert').count(),0);check('Production base path loads; WebGL ready');
   assert.equal(await page.getByTestId('clash-count').innerText(),'0');assert.equal(await page.getByTestId('clash-focus').count(),0);check('0 clashes: no clickable clash focus control');
-  await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).check();
+  await page.getByRole('checkbox',{name:'steric clash 표시',exact:true}).check();
   await page.screenshot({path:'artifacts/phase1-1-alpha-like.png',fullPage:true});
-  await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).uncheck();check('Alpha-like preset has 0 severe nonbonded overlaps with clash display enabled');
+  await page.getByRole('checkbox',{name:'steric clash 표시',exact:true}).uncheck();check('Alpha-like preset has 0 severe nonbonded overlaps with clash display enabled');
   await page.screenshot({path:'artifacts/desktop.png',fullPage:true});
   const initial=await shot();
   await page.getByRole('slider',{name:'φ (phi)',exact:true}).focus();await page.keyboard.press('ArrowRight');
@@ -35,7 +35,7 @@ try{
   await page.getByRole('slider',{name:'ψ (psi)',exact:true}).focus();await page.keyboard.press('End');
   assert.equal(await page.locator('#psi').inputValue(),'180');assert.equal(Number(await marker().getAttribute('data-psi')),180);check('Psi slider, +180 seam synchronization');
   await page.getByRole('button',{name:'전체 초기화',exact:true}).click();assert.equal(await page.locator('#phi').inputValue(),'-60');assert.equal(await page.locator('#psi').inputValue(),'-45');
-  for(const label of ['Backbone','Side chains','Atoms','van der Waals spheres','Show peptide plane','Atom labels','φ / ψ axes']){
+  for(const label of ['Backbone','Side chains','원자','van der Waals 구','peptide 평면','원자 이름','φ / ψ 회전축']){
     const before=await shot(),box=page.getByRole('checkbox',{name:label,exact:true});const previous=await box.isChecked();await box.click();assert.equal(await box.isChecked(),!previous);changed(before,await shot());await box.click();check(`${label} toggles visible geometry`);
   }
   await page.getByRole('button',{name:'β-like',exact:true}).click();assert.equal(await page.locator('#phi').inputValue(),'-135');assert.equal(await page.locator('#psi').inputValue(),'135');assert.equal(await page.getByTestId('clash-count').innerText(),'0');
@@ -47,7 +47,7 @@ try{
   assert.equal(await page.locator('#phi').inputValue(),'0');assert.equal(await page.locator('#psi').inputValue(),'0');assert.equal(await page.getByTestId('clash-count').innerText(),'8');check('Deliberately unfavorable 0°/0° geometry has 8 audited severe overlaps');
   {
     const focusButton=page.getByRole('button',{name:/심한 비결합 겹침 8쌍/});assert.equal(await focusButton.count(),1);assert.equal(await focusButton.isEnabled(),true);
-    const clashBox=page.getByRole('checkbox',{name:'Show steric clashes',exact:true});assert.equal(await clashBox.isChecked(),false);
+    const clashBox=page.getByRole('checkbox',{name:'steric clash 표시',exact:true});assert.equal(await clashBox.isChecked(),false);
     await page.getByRole('button',{name:'시점 초기화',exact:true}).click();
     const beforeGeometry=await geometry(),beforeTarget=await nums('data-camera-target'),beforeFocusShot=await shot();
     await focusButton.focus();await page.keyboard.press('Enter');await page.waitForTimeout(700);
@@ -64,9 +64,9 @@ try{
     await page.getByRole('button',{name:'시점 초기화',exact:true}).click();assert.ok(near(await nums('data-camera-target'),beforeTarget,1e-6));check('After focus: rotate, pan, zoom and camera reset still work');
     await clashBox.uncheck();await focusButton.click();await page.waitForTimeout(700);assert.equal(await clashBox.isChecked(),true);assert.ok(near(await nums('data-camera-target'),mid,1e-6));await page.getByRole('button',{name:'시점 초기화',exact:true}).click();await clashBox.uncheck();check('Mouse click on clash result focuses again');
   }
-  const beforeClash=await shot();await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).check();changed(beforeClash,await shot());await page.screenshot({path:'artifacts/phase1-1-clash-validation.png',fullPage:true});check('Clashes displayed for unfavorable geometry');
-  await page.getByRole('checkbox',{name:'van der Waals spheres',exact:true}).check();await page.screenshot({path:'artifacts/phase1-1-vdw.png',fullPage:true});
-  await page.getByRole('button',{name:'전체 초기화',exact:true}).click();assert.equal(await page.getByRole('checkbox',{name:'Show steric clashes',exact:true}).isChecked(),false);check('Full reset restores geometry and options');
+  const beforeClash=await shot();await page.getByRole('checkbox',{name:'steric clash 표시',exact:true}).check();changed(beforeClash,await shot());await page.screenshot({path:'artifacts/phase1-1-clash-validation.png',fullPage:true});check('Clashes displayed for unfavorable geometry');
+  await page.getByRole('checkbox',{name:'van der Waals 구',exact:true}).check();await page.screenshot({path:'artifacts/phase1-1-vdw.png',fullPage:true});
+  await page.getByRole('button',{name:'전체 초기화',exact:true}).click();assert.equal(await page.getByRole('checkbox',{name:'steric clash 표시',exact:true}).isChecked(),false);check('Full reset restores geometry and options');
   const beforeCamera=await shot(),box=await canvas().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+90,box.y+box.height/2+45,{steps:10});await page.mouse.up();changed(beforeCamera,await shot());
   await page.getByRole('button',{name:'시점 초기화',exact:true}).click();assert.deepEqual(await shot(),beforeCamera);check('Mouse orbit and camera reset');
   await canvas().focus();await page.keyboard.press('+');changed(beforeCamera,await shot());await page.getByRole('button',{name:'시점 초기화',exact:true}).click();assert.deepEqual(await shot(),beforeCamera);check('Keyboard zoom and reset');

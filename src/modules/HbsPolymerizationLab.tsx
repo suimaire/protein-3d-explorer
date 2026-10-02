@@ -52,38 +52,38 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
  const chainRmsds=mutation.chainFits.map(f=>f.rmsd),maxChainRmsd=Math.max(...chainRmsds);
 
  const tip=step==='mutation'
-  ? `Step 1 · One residue changes — HbA의 β6는 Glu, HbS의 β6는 Val입니다. 두 β chain을 matched Cα ${mutation.alignment.matched}개로 rigid-body 정렬해 같은 방향에서 봅니다 (Cα RMSD ${fmt(mutation.alignment.rmsd)} Å). 나머지 구조는 거의 같습니다.`
+  ? `1단계 · residue 하나가 바뀐다 — HbA의 β6는 Glu, HbS의 β6는 Val입니다. 두 β chain을 matched Cα ${mutation.alignment.matched}개로 rigid-body 정렬해 같은 방향에서 봅니다 (Cα RMSD ${fmt(mutation.alignment.rmsd)} Å). 나머지 구조는 거의 같습니다.`
   : step==='surface'
-  ? `Step 2 · Surface chemistry — β6 side chain에서 ${NEIGHBOURHOOD_RADIUS} Å 안의 residue를 space filling으로 그리고 side-chain 화학 분류로 색칠했습니다. 계산된 molecular surface가 아니라 van der Waals 반지름의 원자 구체입니다. HbA와 HbS 버튼을 번갈아 눌러 같은 자리의 표면을 비교하세요.`
+  ? `2단계 · 표면 화학 — β6 side chain에서 ${NEIGHBOURHOOD_RADIUS} Å 안의 residue를 space filling으로 그리고 side-chain 화학 분류로 색칠했습니다. 계산된 molecular surface가 아니라 van der Waals 반지름의 원자 구체입니다. HbA와 HbS 버튼을 번갈아 눌러 같은 자리의 표면을 비교하세요.`
   : step==='contact'
-  ? `Step 3 · A new intermolecular contact — ${donorMolecule.label}의 βVal${MUTATION_POSITION}이 ${acceptorMolecule.label}의 β chain pocket에 들어가 있습니다. 두 tetramer는 서로 다른 분자입니다 (intramolecular 접촉이 아닙니다). 접촉 부위는 Contact pocket 버튼으로 확대할 수 있습니다.`
-  : `Step 4 · Repeating contact — 같은 접촉이 unit cell 병진(${hbs.crystal.spaceGroup})으로 반복됩니다. 화면의 ${segmentInstances}개 tetramer는 결정 안의 배열이며, 세포 안 fiber 전체의 원자 모델이 아닙니다.`;
+  ? `3단계 · 분자 사이의 새 접촉 — ${donorMolecule.label}의 βVal${MUTATION_POSITION}이 ${acceptorMolecule.label}의 β chain pocket에 들어가 있습니다. 두 tetramer는 서로 다른 분자입니다 (intramolecular 접촉이 아닙니다). 접촉 부위는 접촉 pocket 버튼으로 확대할 수 있습니다.`
+  : `4단계 · 반복되는 접촉 — 같은 접촉이 unit cell 병진(${hbs.crystal.spaceGroup})으로 반복됩니다. 화면의 ${segmentInstances}개 tetramer는 결정 안의 배열이며, 세포 안 fiber 전체의 원자 모델이 아닙니다.`;
 
  return <main className="helix-lab core-lab hb-lab tr-lab hbs-lab" data-step={step}>
-  <section className="module-heading"><div><p className="eyebrow">CHAPTER 3 · FROM STRUCTURE TO FUNCTION</p><h2>HbA → HbS → Polymerization</h2>
+  <section className="module-heading"><div><p className="eyebrow">3장 · 구조에서 기능으로</p><h2>HbA → HbS → 중합</h2>
    <p>β-globin의 amino acid 하나가 바뀌면, 그 단백질 표면은 어떻게 달라지고 다른 hemoglobin 분자와 어떤 새로운 접촉이 가능해질까?</p></div>
-   <span className="model-tag">PDB {HBS_SOURCE.pdbId} (deoxy HbS, {HBS_SOURCE.resolution} Å) · PDB {HBA_SOURCE.pdbId} (deoxy HbA, {HBA_SOURCE.resolution} Å)<strong>Two experimental X-ray structures</strong></span></section>
+   <span className="model-tag">PDB {HBS_SOURCE.pdbId} (deoxy HbS, {HBS_SOURCE.resolution} Å) · PDB {HBA_SOURCE.pdbId} (deoxy HbA, {HBA_SOURCE.resolution} Å)<strong>X선 결정 구조 2개 (실험)</strong></span></section>
 
   <ol className="hbs-steps" data-testid="hbs-steps" aria-label="학습 단계">
-   {([['mutation','1','Mutation','β6 Glu → Val'],['surface','2','Surface','국소 표면 화학'],
-      ['contact','3','Contact','분자 사이 새 접촉'],['polymer','4','Repeat','접촉의 반복']] as const).map(([id,n,title,sub])=>
+   {([['mutation','1','변이','β6 Glu → Val'],['surface','2','표면','국소 표면 화학'],
+      ['contact','3','접촉','분자 사이 새 접촉'],['polymer','4','반복','접촉의 반복']] as const).map(([id,n,title,sub])=>
     <li key={id}><button aria-pressed={step===id} onClick={()=>goTo(id)} data-testid={`step-${id}`}><b>{n}</b><span>{title}<small>{sub}</small></span></button></li>)}
   </ol>
 
   <section className="controls core-controls compare-controls hb-controls tr-controls hbs-controls" aria-label="HbS polymerization controls">
-   <Segmented label="Representation" value={representation} onChange={setRepresentation}
-    options={[['ribbon','Ribbon'],['sticks','Sticks'],['spacefill','Space filling']] as const}/>
-   <Segmented label="Highlight" value={highlight} onChange={setHighlight}
-    options={[['mutation','Mutation site'],['pocket','Acceptor pocket'],['both','Both']] as const}/>
+   <Segmented label="표현 방식" value={representation} onChange={setRepresentation}
+    options={[['ribbon','리본'],['sticks','막대'],['spacefill','공간 채움']] as const}/>
+   <Segmented label="강조" value={highlight} onChange={setHighlight}
+    options={[['mutation','변이 자리'],['pocket','받는 쪽 pocket'],['both','둘 다']] as const}/>
    {local
-    ? <Segmented label="Structure" value={structure} onChange={setStructure} options={[['hba','HbA'],['hbs','HbS'],['both','Both']] as const}/>
+    ? <Segmented label="구조" value={structure} onChange={setStructure} options={[['hba','HbA'],['hbs','HbS'],['both','둘 다']] as const}/>
     : <Segmented label="Segment" value={String(segment)} onChange={v=>{setSegment(Number(v));if(step==='polymer')bump('segment');else goTo('polymer');}}
        options={[['2','2 tetramers'],['4','4 tetramers'],['6','6 tetramers']] as const}/>}
-   <fieldset className="hb-toggles"><legend>Show</legend>
+   <fieldset className="hb-toggles"><legend>표시</legend>
     <div className="toggles">
      <label><input type="checkbox" checked={showHeme} onChange={e=>setShowHeme(e.target.checked)}/>Heme</label>
-     <label><input type="checkbox" checked={showDistances} onChange={e=>setShowDistances(e.target.checked)}/>Contact distances</label>
-     <label><input type="checkbox" checked={showNeighbour} disabled={local||step==='polymer'} onChange={e=>setShowNeighbour(e.target.checked)}/>Neighbour molecule</label>
+     <label><input type="checkbox" checked={showDistances} onChange={e=>setShowDistances(e.target.checked)}/>접촉 거리</label>
+     <label><input type="checkbox" checked={showNeighbour} disabled={local||step==='polymer'} onChange={e=>setShowNeighbour(e.target.checked)}/>이웃 분자</label>
     </div>
     <button onClick={reset}>전체 초기화</button>
    </fieldset>
@@ -97,11 +97,11 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
   <div className="lab-grid helix-grid hb-grid">
    <section className="viewer-panel" aria-label="3D HbS structure">
     <div className="panel-heading"><h3>{local?`β chain · β${MUTATION_POSITION} site`:step==='contact'?'Two HbS molecules · lateral contact':`HbS segment · ${segmentInstances} tetramers`}</h3>
-     <span className="badge" data-testid="hbs-badge">{local?`EXPERIMENTAL · ALIGNED β CHAINS`:step==='contact'?`EXPERIMENTAL · ${HBS_SOURCE.pdbId} ASYMMETRIC UNIT`:`EXPERIMENTAL + LATTICE TRANSLATION`}</span></div>
+     <span className="badge" data-testid="hbs-badge">{local?`실험 구조 · β chain 정렬`:step==='contact'?`실험 구조 · ${HBS_SOURCE.pdbId} 비대칭 단위`:`실험 구조 + 격자 평행이동`}</span></div>
     <div className="camera-presets">
-     <button onClick={()=>bump('mutation')}>Mutation site</button><button onClick={()=>bump('pocket')}>Contact pocket</button>
-     <button onClick={()=>bump('tetramer')}>Whole tetramer</button><button onClick={()=>bump('segment')}>Polymer segment</button>
-     <button onClick={()=>bump('fit')}>Fit</button><button onClick={reset}>Reset</button></div>
+     <button onClick={()=>bump('mutation')}>변이 자리</button><button onClick={()=>bump('pocket')}>접촉 pocket</button>
+     <button onClick={()=>bump('tetramer')}>tetramer 전체</button><button onClick={()=>bump('segment')}>중합체 일부</button>
+     <button onClick={()=>bump('fit')}>화면에 맞추기</button><button onClick={reset}>초기화</button></div>
     <SickleViewer testId="hbs-viewer" model={scene} view={view} camera={camera}
      ariaLabel={`HbA와 HbS 구조 비교 및 HbS 분자 사이 접촉 3D 화면 (PDB ${HBS_SOURCE.pdbId}, ${HBA_SOURCE.pdbId}). 드래그로 회전, 휠로 확대, 방향키로 회전, 더하기와 빼기로 확대 축소.`}/>
     <div className="viewer-footer"><span>drag 회전 · 휠 확대 · 방향키 / + − · step을 바꿔도 좌표는 그대로입니다</span></div>
@@ -125,7 +125,7 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
 
    <aside className="plot-panel residue-panel hb-panel tr-panel hbs-panel" aria-label="Measured values">
     {local?<>
-     <div className="panel-heading"><h3>β{MUTATION_POSITION} side chain</h3><span className="badge">CHEMISTRY</span></div>
+     <div className="panel-heading"><h3>β{MUTATION_POSITION} side chain</h3><span className="badge">화학적 성질</span></div>
      <p className="hbs-prediction" data-testid="hbs-prediction">Glu를 Val로 바꾸면 이 자리의 단백질 <strong>표면</strong>에서 어떤 물리화학적 성질이 달라질까요? 먼저 예상해 보고 3D에서 확인하세요.</p>
      <div className="table-wrap"><table className="hbs-chemistry" data-testid="chemistry-table"><thead><tr><th/><th>HbA · {HBA_SOURCE.pdbId}</th><th>HbS · {HBS_SOURCE.pdbId}</th></tr></thead><tbody>
       <tr><th>β{MUTATION_POSITION}</th><td data-testid="hba-residue">{RESIDUE_NAMES[mutation.hba.resName]} (Glu)</td><td data-testid="hbs-residue">{RESIDUE_NAMES[mutation.hbs.resName]} (Val)</td></tr>
@@ -141,7 +141,7 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
      </dl>
      <p className="small">두 구조는 서로 다른 결정에서 얻은 것이므로, 정렬 후 남는 작은 차이를 모두 mutation의 결과라고 해석할 수는 없습니다. 여기서 확인할 것은 <strong>β{MUTATION_POSITION} 자리의 국소적인 곁사슬 화학</strong>입니다.</p>
     </>:step==='contact'?<>
-     <div className="panel-heading"><h3>Intermolecular contact</h3><span className="badge">MEASURED</span></div>
+     <div className="panel-heading"><h3>분자 사이 접촉</h3><span className="badge">좌표에서 측정</span></div>
      <p className="hbs-prediction" data-testid="hbs-prediction">이 Val side chain과 잘 맞는 상대 표면은 어떤 성질을 가질까요? 먼저 예상해 보세요.</p>
      <div className="table-wrap"><table className="hbs-identity" data-testid="molecule-table"><tbody>
       <tr data-testid="donor-row"><th>Donor</th><td>{donorMolecule.label}</td><td>chain {primary.donor.sourceChain} (βS)</td><td><strong>{residueLabel({resName:primary.donor.resName,resSeq:primary.donor.resSeq})}</strong></td></tr>
@@ -159,7 +159,7 @@ function SickleExplorer({model,onTransition}:{model:SickleModel;onTransition:()=
      <p className="small" data-testid="contact-caveat">거리는 좌표에서 직접 잰 값입니다. 거리만으로 상호작용의 종류가 정해지지는 않습니다. βVal{MUTATION_POSITION}과 {core.map(q=>residueLabel(q)).join(' · ')}는 모두 비극성 곁사슬이고 서로 {fmt(worstCore)} Å 이내에 있어 <strong>hydrophobic contact</strong>로 설명됩니다. 공유결합이 아닙니다.</p>
      <p className="small" data-testid="cutoff-note">{fmt(CONTACT_CUTOFF,1)} Å 거리 기준을 적용하면 이 acceptor chain에서 βVal{MUTATION_POSITION} 주변에 검출되는 residue는 {primary.neighbours.map(q=>residueLabel(q)).join(' · ')}입니다. 이 기준은 분석을 위해 정한 operational cutoff이므로, 기준을 바꾸면 검출되는 residue도 달라질 수 있습니다.</p>
     </>:<>
-     <div className="panel-heading"><h3>Repeating contact</h3><span className="badge">CRYSTAL LATTICE</span></div>
+     <div className="panel-heading"><h3>반복되는 접촉</h3><span className="badge">결정 격자</span></div>
      <p className="hbs-prediction" data-testid="hbs-prediction">같은 접촉이 많은 HbS 분자에서 반복된다면 어떤 higher-order structure가 가능할까요?</p>
      <dl className="tr-values">
       <dt>화면의 분자</dt><dd data-testid="segment-count"><strong>{segmentInstances} tetramers</strong> <small>asymmetric unit 2개 + unit-cell 병진 복사본</small></dd>

@@ -32,21 +32,21 @@ export function HydrophobicCoreLab(){
  const contacts=selected===null?[]:polarContacts(ubiquitin,selected).slice(0,3);
  const location=r===null?'':groups.buried.has(r.index)?`이 단백질에서 가장 묻힌 ${groupSize}개(25%)에 속함`:groups.exposed.has(r.index)?`이 단백질에서 가장 노출된 ${groupSize}개(25%)에 속함`:'이 단백질에서 중간 범위';
  return <main className="helix-lab core-lab" data-group={group}>
-  <section className="module-heading"><div><p className="eyebrow">CHAPTER 2 · FROM SEQUENCE TO STRUCTURE</p><h2>Hydrophobic Core</h2><p>단백질 표면과 내부에는 어떤 종류의 side chain이 더 많이 존재할까?</p></div><span className="model-tag">PDB {UBIQUITIN_SOURCE.pdbId} · human ubiquitin<strong>Experimental X-ray structure · chain A · 76 residues</strong></span></section>
+  <section className="module-heading"><div><p className="eyebrow">2장 · 서열에서 구조로</p><h2>소수성 중심부 (hydrophobic core)</h2><p>단백질 표면과 내부에는 어떤 종류의 side chain이 더 많이 존재할까?</p></div><span className="model-tag">PDB {UBIQUITIN_SOURCE.pdbId} · human ubiquitin<strong>X선 결정 구조 (실험) · chain A · residue 76개</strong></span></section>
   <div className="lab-grid helix-grid">
    <section className="viewer-panel" aria-label="3D ubiquitin structure">
-    <div className="panel-heading"><h3>Ubiquitin ({UBIQUITIN_SOURCE.pdbId})</h3><span className="badge">{group==='all'?`ALL ${total} RESIDUES`:group==='buried'?`MORE BURIED ${groupSize}`:`MORE EXPOSED ${groupSize}`}</span></div>
-    <div className="camera-presets"><button onClick={()=>changeCamera('reset')}>Reset camera</button><button onClick={()=>changeCamera('fit')}>Fit structure</button></div>
+    <div className="panel-heading"><h3>Ubiquitin ({UBIQUITIN_SOURCE.pdbId})</h3><span className="badge">{group==='all'?`전체 residue ${total}개`:group==='buried'?`더 묻힌 residue ${groupSize}개`:`더 노출된 residue ${groupSize}개`}</span></div>
+    <div className="camera-presets"><button onClick={()=>changeCamera('reset')}>시점 초기화</button><button onClick={()=>changeCamera('fit')}>화면에 맞추기</button></div>
     <ProteinViewer structure={ubiquitin} bonds={ubiquitinBonds} exposure={residues} view={view} camera={camera} onPick={setSelected}/>
     <div className="viewer-footer"><span>드래그 회전 · 휠 확대 · 클릭으로 residue 선택 · 방향키 / + −</span><span className="select-key">자주색 halo = 선택 residue</span></div>
     <div className="legend" data-testid="color-legend">{color==='chemistry'?<>{CLASS_ORDER.map(c=><span key={c}><i style={{background:CLASS_INFO[c].css}}/>{CLASS_INFO[c].symbol} {CLASS_INFO[c].label}</span>)}<span>backbone = 회색</span></>
      :color==='exposure'?<span className="exposure-legend">more buried <b style={{background:`linear-gradient(90deg,${EXPOSURE_STOPS.map(hex).join(',')})`}}/> more exposed <small>(relative SASA 0 → ≥100%)</small></span>
-     :<><span><i className="carbon"/>C</span><span><i className="nitrogen"/>N</span><span><i className="oxygen"/>O</span><span><i style={{background:'#d8b21d'}}/>S</span><span>Ribbon = backbone fold</span></>}</div>
+     :<><span><i className="carbon"/>C</span><span><i className="nitrogen"/>N</span><span><i className="oxygen"/>O</span><span><i style={{background:'#d8b21d'}}/>S</span><span>리본 = backbone 접힘</span></>}</div>
     <div className="helix-tip">{group==='buried'?`solvent exposure가 가장 낮은 ${groupSize}개 residue만 강조했습니다. 어떤 chemistry가 많이 보이나요?`:group==='exposed'?`solvent exposure가 가장 높은 ${groupSize}개 residue만 강조했습니다. 표면에 어떤 chemistry가 섞여 있나요?`:'Ribbon에서 α-helix와 β-sheet를 찾은 뒤, Color by chemistry와 Exposure 필터로 내부와 표면을 비교해 보세요.'}</div>
    </section>
    <aside className="plot-panel residue-panel" aria-label="Selected residue">
-    <div className="panel-heading"><h3>Selected residue</h3><span className="badge">MEASURED</span></div>
-    <label className="residue-select">Residue <select aria-label="Select residue" value={selected??''} onChange={e=>setSelected(e.target.value===''?null:Number(e.target.value))}><option value="">선택 안 함</option>{residues.map(x=><option key={x.index} value={x.index}>{residueName(x.index)}</option>)}</select></label>
+    <div className="panel-heading"><h3>선택한 residue</h3><span className="badge">좌표에서 측정</span></div>
+    <label className="residue-select">잔기 <select aria-label="잔기 선택" value={selected??''} onChange={e=>setSelected(e.target.value===''?null:Number(e.target.value))}><option value="">선택 안 함</option>{residues.map(x=><option key={x.index} value={x.index}>{residueName(x.index)}</option>)}</select></label>
     {r&&pdbResidue?<div className="residue-info" data-testid="residue-info">
      <p className="residue-title">{residueName(r.index)}</p>
      <p className="small">{RESIDUE_NAMES[r.resName]} · {r.resName} · residue {r.resSeq} · chain {ubiquitin.chain}</p>
@@ -76,20 +76,20 @@ export function HydrophobicCoreLab(){
    </aside>
   </div>
   <section className="controls core-controls" aria-label="Hydrophobic core display controls">
-   <Segmented label="Representation" value={representation} onChange={setRepresentation} options={[['ribbon','Ribbon'],['atoms','Atoms / sticks'],['spacefill','Space filling']] as const}/>
-   <Segmented label="Color by" value={color} onChange={setColor} options={[['default','Default'],['chemistry','Chemistry'],['exposure','Exposure']] as const}/>
-   <Segmented label="Exposure (이 단백질 안에서 상대적으로)" value={group} onChange={setGroup} options={[['all','All'],['buried','More buried 25%'],['exposed','More exposed 25%']] as const}/>
+   <Segmented label="표현 방식" value={representation} onChange={setRepresentation} options={[['ribbon','리본'],['atoms','원자 / 막대'],['spacefill','공간 채움']] as const}/>
+   <Segmented label="색 기준" value={color} onChange={setColor} options={[['default','기본 색'],['chemistry','화학적 성질'],['exposure','노출 정도']] as const}/>
+   <Segmented label="Exposure (이 단백질 안에서 상대적으로)" value={group} onChange={setGroup} options={[['all','전체'],['buried','더 묻힌 25%'],['exposed','더 노출된 25%']] as const}/>
    <fieldset className="clip-control"><legend>Interior view · 단면 보기 (visual clipping)</legend>
     <label className="toggles"><input type="checkbox" checked={clip!==null} onChange={e=>setClip(e.target.checked?0.5:null)}/>단면 보기</label>
-    <label className="clip-slider">절단 깊이 <input type="range" aria-label="Clipping depth" min={0} max={100} step={1} disabled={clip===null} value={Math.round((clip??0.5)*100)} onChange={e=>setClip(Number(e.target.value)/100)}/><output>{clip===null?'off':`앞에서 ${Math.round(clip*100)}%`}</output></label>
+    <label className="clip-slider">절단 깊이 <input type="range" aria-label="절단 깊이" min={0} max={100} step={1} disabled={clip===null} value={Math.round((clip??0.5)*100)} onChange={e=>setClip(Number(e.target.value)/100)}/><output>{clip===null?'off':`앞에서 ${Math.round(clip*100)}%`}</output></label>
     <button onClick={()=>setClip(null)}>단면 초기화</button>
    </fieldset>
    <div className="presets"><button onClick={reset}>전체 초기화</button></div>
   </section>
   <section className="teaching">
-   <div><h3>01 · Core = 물이 닿지 않는 내부</h3><p>Hydrophobic core는 기하학적 중심점이 아니라 solvent가 접근하기 어려운 buried interior입니다. 여기서는 중심까지의 거리 대신 원자 좌표로 solvent-accessible surface area를 계산합니다.</p></div>
-   <div><h3>02 · Hydrophobic effect</h3><p>수용액에서 nonpolar surface가 물에 노출되는 면적을 줄이는 것은 protein folding의 중요한 열역학적 기여 중 하나입니다. 비극성 side chain끼리 강하게 끌어당긴다는 뜻이 아닙니다.</p></div>
-   <div><h3>03 · 경향이지 규칙이 아님</h3><p>표면에도 nonpolar residue가 있고, 내부에도 polar residue가 있을 수 있습니다. 이는 통계적 경향이며 예외가 존재합니다.</p></div>
+   <div><h3>1 · core = 물이 닿지 않는 내부</h3><p>Hydrophobic core는 기하학적 중심점이 아니라 solvent가 접근하기 어려운 buried interior입니다. 여기서는 중심까지의 거리 대신 원자 좌표로 solvent-accessible surface area를 계산합니다.</p></div>
+   <div><h3>2 · 소수성 효과</h3><p>수용액에서 nonpolar surface가 물에 노출되는 면적을 줄이는 것은 protein folding의 중요한 열역학적 기여 중 하나입니다. 비극성 side chain끼리 강하게 끌어당긴다는 뜻이 아닙니다.</p></div>
+   <div><h3>3 · 경향이지 규칙이 아님</h3><p>표면에도 nonpolar residue가 있고, 내부에도 polar residue가 있을 수 있습니다. 이는 통계적 경향이며 예외가 존재합니다.</p></div>
   </section>
   <section className="helix-notes">
    <p>이전에 본 α-helix와 β-sheet가 하나의 실제 globular protein 안에서 함께 존재합니다. Ribbon 보기에서 찾아보세요.</p>
@@ -98,7 +98,7 @@ export function HydrophobicCoreLab(){
    <details><summary>계산 방법과 단순화 보기</summary>
     <p>Solvent exposure: Shrake–Rupley 알고리즘, probe 반지름 {PROBE_RADIUS} Å, 원자당 {SASA_POINTS}개 점, Bondi vdW 반지름 C 1.70 / N 1.55 / O 1.52 / S 1.80 Å. X-ray 구조에 없는 수소는 추가하지 않고 heavy atom 좌표만 사용합니다.</p>
     <p>Relative exposure = residue SASA ÷ Tien et al. (2013) theoretical maximum ASA (Gly-X-Gly). 기준값은 다른 radii/프로그램으로 계산되었으므로 근사적 정규화입니다. 25% 그룹은 절대 기준값이 아니라 이 단백질 안에서의 순위입니다.</p>
-    <p>Space filling은 원자 vdW 구의 표현이며 molecular surface 계산이 아닙니다. 색 분류는 교육용 4분류이며 Tyr, Cys, His, Gly 등은 단순 분류로 성질이 완전히 설명되지 않습니다.</p>
+    <p>공간 채움은 원자 vdW 구의 표현이며 molecular surface 계산이 아닙니다. 색 분류는 교육용 4분류이며 Tyr, Cys, His, Gly 등은 단순 분류로 성질이 완전히 설명되지 않습니다.</p>
     <p data-testid="structure-source">Structure: RCSB PDB {UBIQUITIN_SOURCE.pdbId}, {UBIQUITIN_SOURCE.method}, {UBIQUITIN_SOURCE.resolution} Å, chain {UBIQUITIN_SOURCE.chain}, {ubiquitin.atoms.length} heavy atoms. Vijay-Kumar, Bugg &amp; Cook (1987) J. Mol. Biol. 194:531–544.</p>
    </details>
   </section>

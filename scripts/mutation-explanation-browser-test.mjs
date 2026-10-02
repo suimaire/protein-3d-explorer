@@ -136,7 +136,7 @@ try{
  assert.equal(await page.getByTestId('thermal-explanation').count(),0);
  await button('A36D 실험 결과 확인 →').click();
  assert.match(await page.getByTestId('mutation-results').innerText(),/0.14 ± 0.01/);
- await button('HbA → HbS → Polymerization 보기 →').click();
+ await button('HbS 중합 모듈에서 이어 보기 →').click();
  await page.getByTestId('hbs-viewer').locator('canvas').waitFor();
  assert.equal(await viewer().count(),0);assert.equal(await page.locator('.mutation-label').count(),0);assert.equal(await page.locator('.mutation-label-leader').count(),0);
  check('A36 transition clears explanations; original measurements and HbS navigation remain');

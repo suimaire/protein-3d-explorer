@@ -18,7 +18,7 @@ const numbers=g=>audit.groups[g].residues.map(s=>Number(s.replace(/^[A-Z]+/,''))
 try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['Chapter 1 · Amino Acid & Peptide\nPeptide Geometry','Chapter 2 · From Sequence to Structure\nα-Helix','Chapter 2 · From Sequence to Structure\nβ-Sheet','Chapter 2 · From Sequence to Structure\nHydrophobic Core','Chapter 2 · From Sequence to Structure\nSoluble vs Membrane Protein','Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.deepEqual(await nav.getByRole('button').allInnerTexts(),['펩타이드 결합과 φ·ψ 회전\nPeptide Geometry','α-나선\nα-Helix','β-병풍\nβ-Sheet','소수성 중심부\nHydrophobic Core','수용성 단백질과 막단백질\nSoluble vs Membrane Protein','헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  await nav.getByRole('button',{name:/Hydrophobic Core/}).click();await canvas().waitFor();await settle();assert.equal(await page.getByRole('alert').count(),0);
  assert.equal(await data('representation'),'ribbon');assert.equal(await data('color'),'default');assert.equal(await data('clip'),'off');assert.equal((await data('highlighted')).split(',').length,76);
  assert.match(await page.getByTestId('structure-source').textContent(),/1UBQ, X-ray diffraction, 1\.8 Å, chain A, 602 heavy atoms/);
@@ -27,30 +27,30 @@ try{
  await page.getByText('관찰 후 확인하기 · 이 구조에서 관찰된 분포').waitFor();assert.equal(await page.getByTestId('composition').evaluate(e=>e.open),false);check('Observed composition is collapsed until the student opens it');
 
  let before=initial;
- for(const [label,value] of [['Atoms / sticks','atoms'],['Space filling','spacefill'],['Ribbon','ribbon']]){await button(label).click();await settle();assert.equal(await data('representation'),value);const now=await shot();assert.notDeepEqual(now,before);before=now;}
- check('Ribbon, Atoms / sticks and Space filling each change rendering');
- await button('Chemistry').click();await settle();assert.equal(await data('color'),'chemistry');assert.notDeepEqual(await shot(),before);
+ for(const [label,value] of [['원자 / 막대','atoms'],['공간 채움','spacefill'],['리본','ribbon']]){await button(label).click();await settle();assert.equal(await data('representation'),value);const now=await shot();assert.notDeepEqual(now,before);before=now;}
+ check('Ribbon, 원자 / 막대 and 공간 채움 each change rendering');
+ await button('화학적 성질').click();await settle();assert.equal(await data('color'),'chemistry');assert.notDeepEqual(await shot(),before);
  const legend=await page.getByTestId('color-legend').innerText();for(const t of ['■ Nonpolar','● Polar, uncharged','▲ Acidic','◆ Basic'])assert.ok(legend.includes(t),t);
  await page.screenshot({path:'artifacts/phase3a-hydrophobic-core.png',fullPage:true});
- const chem=await shot();await button('Exposure').click();await settle();assert.notDeepEqual(await shot(),chem);assert.match(await page.getByTestId('color-legend').innerText(),/more buried[\s\S]*more exposed/);
- await button('Chemistry').click();check('Color by chemistry (label + color + symbol legend) and color by exposure');
+ const chem=await shot();await button('노출 정도').click();await settle();assert.notDeepEqual(await shot(),chem);assert.match(await page.getByTestId('color-legend').innerText(),/more buried[\s\S]*more exposed/);
+ await button('화학적 성질').click();check('Color by chemistry (label + color + symbol legend) and color by exposure');
 
- await button('Space filling').click();await button('More buried 25%').click();await settle();
+ await button('공간 채움').click();await button('더 묻힌 25%').click();await settle();
  assert.equal(await data('highlighted'),numbers('buried'));assert.equal(await page.locator('main').getAttribute('data-group'),'buried');
- await page.screenshot({path:'artifacts/phase3a-buried.png',fullPage:true});check('More buried 25% highlights exactly the audit rank group');
+ await page.screenshot({path:'artifacts/phase3a-buried.png',fullPage:true});check('더 묻힌 25% highlights exactly the audit rank group');
  await canvas().scrollIntoViewIfNeeded();const box=await canvas().boundingBox();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await settle();
  const picked=Number(await data('selected-residue'));assert.ok(numbers('buried').split(',').map(Number).includes(picked),`picked ${picked}`);
  const pr=byNumber(picked),title=pr.resName[0]+pr.resName.slice(1).toLowerCase()+' '+picked;
- assert.equal(await page.locator('.residue-title').innerText(),title);assert.equal(await page.getByRole('combobox',{name:'Select residue'}).inputValue(),String(pr.index));
+ assert.equal(await page.locator('.residue-title').innerText(),title);assert.equal(await page.getByRole('combobox',{name:'잔기 선택'}).inputValue(),String(pr.index));
  assert.match(await page.getByTestId('residue-location').innerText(),/가장 묻힌 19개/);check(`3D click picks a rendered buried residue (${title}) and syncs panel/selector`);
 
- await button('More exposed 25%').click();await settle();assert.equal(await data('highlighted'),numbers('exposed'));
- await page.getByRole('combobox',{name:'Select residue'}).selectOption('');await button('Ribbon').click();await settle();
- await page.screenshot({path:'artifacts/phase3a-exposed.png',fullPage:true});check('More exposed 25% highlights exactly the audit rank group');
- await button('All').click();
+ await button('더 노출된 25%').click();await settle();assert.equal(await data('highlighted'),numbers('exposed'));
+ await page.getByRole('combobox',{name:'잔기 선택'}).selectOption('');await button('리본').click();await settle();
+ await page.screenshot({path:'artifacts/phase3a-exposed.png',fullPage:true});check('더 노출된 25% highlights exactly the audit rank group');
+ await button('전체').click();
 
  for(const n of [8,41,43,16,68,76]){
-  const r=byNumber(n);await page.getByRole('combobox',{name:'Select residue'}).selectOption(String(r.index));await settle();
+  const r=byNumber(n);await page.getByRole('combobox',{name:'잔기 선택'}).selectOption(String(r.index));await settle();
   assert.equal(await data('selected-residue'),String(n));
   assert.equal(await page.getByTestId('residue-exposure').locator('strong').innerText(),pct(r));
   const cls={nonpolar:'Nonpolar',polar:'Polar, uncharged',acidic:'Acidic',basic:'Basic'}[r.chemical];assert.ok((await page.getByTestId('residue-class').innerText()).includes(cls));
@@ -58,11 +58,11 @@ try{
   const colors={nonpolar:'#c98e1c',polar:'#23927f',acidic:'#c8382b',basic:'#2f64c0'};assert.equal(await data('selected-color'),colors[r.chemical]);
  }
  assert.match(await page.getByTestId('residue-info').innerText(),/100%를 넘을 수 있습니다[\s\S]*Occupancy 0\.25/);
- await page.getByRole('combobox',{name:'Select residue'}).selectOption(String(byNumber(68).index));assert.match(await page.getByTestId('residue-info').innerText(),/항상 \+1은 아닙니다/);
+ await page.getByRole('combobox',{name:'잔기 선택'}).selectOption(String(byNumber(68).index));assert.match(await page.getByTestId('residue-info').innerText(),/항상 \+1은 아닙니다/);
  check('Residue info (name, class, exposure %, rank, caveats) and chemistry color mapping match audit for Leu8/Gln41/Leu43/Glu16/His68/Gly76');
 
- const toggle=page.getByRole('checkbox',{name:'단면 보기'}),slider=page.getByRole('slider',{name:'Clipping depth'});
- await button('Space filling').click();await settle();const unclipped=await shot();
+ const toggle=page.getByRole('checkbox',{name:'단면 보기'}),slider=page.getByRole('slider',{name:'절단 깊이'});
+ await button('공간 채움').click();await settle();const unclipped=await shot();
  assert.equal(await slider.isDisabled(),true);await toggle.check();await settle();assert.equal(await data('clip'),'0.50');const half=await shot();assert.notDeepEqual(half,unclipped);
  await page.screenshot({path:'artifacts/phase3a-cross-section.png',fullPage:true});
  await slider.fill('80');await settle();assert.equal(await data('clip'),'0.80');assert.notDeepEqual(await shot(),half);
@@ -80,18 +80,18 @@ try{
  await button('전체 초기화').click();await settle();assert.deepEqual(await shot(),initial);check('Full reset restores all state and exact initial rendering');
  await canvas().focus();await page.keyboard.press('ArrowRight');await settle();assert.notDeepEqual(await shot(),initial);
  await page.keyboard.press('+');const zoom=await data('camera-distance'),dir=await data('camera-direction');
- await button('Fit structure').click();await settle();assert.notEqual(await data('camera-distance'),zoom);const fitted=(await data('camera-direction')).split(',').map(Number);assert.ok(dir.split(',').every((v,i)=>Math.abs(Number(v)-fitted[i])<1e-5));
+ await button('화면에 맞추기').click();await settle();assert.notEqual(await data('camera-distance'),zoom);const fitted=(await data('camera-direction')).split(',').map(Number);assert.ok(dir.split(',').every((v,i)=>Math.abs(Number(v)-fitted[i])<1e-5));
  check('Keyboard rotation/zoom; Fit preserves viewing direction');
- await button('Reset camera').click();await settle();assert.deepEqual(await shot(),initial);
+ await button('시점 초기화').click();await settle();assert.deepEqual(await shot(),initial);
  await canvas().scrollIntoViewIfNeeded();const drag=await canvas().boundingBox();await page.mouse.move(drag.x+drag.width/2,drag.y+drag.height/2);await page.mouse.down();await page.mouse.move(drag.x+drag.width/2+80,drag.y+drag.height/2+40,{steps:8});await page.mouse.up();await settle();
  assert.notDeepEqual(await shot(),initial);assert.equal(await data('selected-residue'),'');
  const beforeWheel=await data('camera-distance');await canvas().hover();await page.mouse.wheel(0,-300);await page.waitForTimeout(150);assert.notEqual(await data('camera-distance'),beforeWheel);
- await button('Reset camera').click();await settle();assert.deepEqual(await shot(),initial);
- check('Mouse orbit (drag does not select), wheel zoom and Reset camera');
+ await button('시점 초기화').click();await settle();assert.deepEqual(await shot(),initial);
+ check('Mouse orbit (drag does not select), wheel zoom and 시점 초기화');
 
  for(const width of [768,390,320]){
   await page.setViewportSize({width,height:844});await page.waitForTimeout(200);
-  await button('Space filling').click();await button('Chemistry').click();await button('More buried 25%').click();await page.getByRole('combobox',{name:'Select residue'}).selectOption(String(byNumber(41).index));await settle();
+  await button('공간 채움').click();await button('화학적 성질').click();await button('더 묻힌 25%').click();await page.getByRole('combobox',{name:'잔기 선택'}).selectOption(String(byNumber(41).index));await settle();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   const v=await viewer().boundingBox();assert.ok(v.width>=width-60&&v.height>=300);
   for(const sel of ['.camera-presets','.viewer-footer','.core-controls']){const b=await page.locator(sel).boundingBox();assert.ok(b.y>=v.y+v.height||b.y+b.height<=v.y,`${sel} overlaps viewer at ${width}`);}

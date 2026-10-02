@@ -22,17 +22,17 @@ export function HemoglobinCooperativityLab(){
  const expectedMean=p.occupancy.reduce((s,v,k)=>s+k*v,0),sum=p.occupancy.reduce((s,v)=>s+v,0);
 
  return <main className="helix-lab core-lab hb-lab coop-lab">
-  <section className="module-heading"><div><p className="eyebrow">CHAPTER 3 · FROM STRUCTURE TO FUNCTION</p><h2>Hemoglobin Cooperativity & Allostery</h2>
+  <section className="module-heading"><div><p className="eyebrow">3장 · 구조에서 기능으로</p><h2>헤모글로빈의 협동성과 알로스테리</h2>
    <p>왜 hemoglobin의 O₂ 결합 곡선은 결합 부위가 하나인 단백질처럼 단순한 hyperbola가 아니라 sigmoid 모양일까?</p></div>
-   <span className="model-tag">MWC two-state model · n = {n}<strong>Normalized educational model · x-axis = pO₂ / model P50</strong></span></section>
+   <span className="model-tag">MWC 2상태 모형 · n = {n}<strong>정규화한 교육용 모형 · x축 = pO₂ / 모형 P50</strong></span></section>
   <div className="helix-tip compare-tip" data-testid="coop-prompt"><strong>먼저 예측해 보세요.</strong> 4개의 heme가 서로 독립적으로 O₂를 결합한다면 곡선은 어떤 모양일까요?
    두 곡선은 같은 50% saturation 지점(pO₂/P50 = 1)을 지나는데, 왜 모양이 다를까요? Slider를 움직이며 두 곡선과 T/R population을 비교해 보세요.</div>
   <div className="lab-grid helix-grid coop-grid">
    <section className="viewer-panel coop-graph-panel" aria-label="O₂ saturation graph">
-    <div className="panel-heading"><h3>O₂ saturation curve</h3><span className="badge">MWC MODEL · NORMALIZED</span></div>
+    <div className="panel-heading"><h3>O₂ 포화 곡선</h3><span className="badge">MWC 모형 · 정규화</span></div>
     <div className="coop-controls">
-     <Segmented label="Curves" value={mode} onChange={setMode} options={[['both','Both curves'],['hb','Hemoglobin (MWC)'],['reference','One-site reference']] as const}/>
-     <label className="coop-check"><input type="checkbox" checked={showStates} onChange={e=>setShowStates(e.target.checked)}/>Pure T-state / R-state curves</label>
+     <Segmented label="곡선" value={mode} onChange={setMode} options={[['both','두 곡선 모두'],['hb','Hemoglobin (MWC)'],['reference','결합 부위 1개 기준']] as const}/>
+     <label className="coop-check"><input type="checkbox" checked={showStates} onChange={e=>setShowStates(e.target.checked)}/>순수 T 상태 / R 상태 곡선</label>
     </div>
     <SaturationPlot model={model} u={u} uMax={U_MAX} mode={mode} showStates={showStates}/>
     <div className="legend coop-legend" data-testid="coop-legend">
@@ -48,12 +48,12 @@ export function HemoglobinCooperativityLab(){
      <div className="range-ends"><span>0 · no O₂</span><span>{U_MAX} · 4 × P50</span></div>
      <div className="presets coop-presets" role="group" aria-label="pO₂ presets">
       {([['Low O₂',0.3],['P50',1],['High O₂',3]] as const).map(([name,value])=><button key={name} aria-pressed={Math.abs(u-value)<1e-9} onClick={()=>setU(value)}>{name} · {value.toFixed(1)}</button>)}
-      <button onClick={reset}>Reset</button>
+      <button onClick={reset}>초기화</button>
      </div>
     </div>
    </section>
    <aside className="plot-panel residue-panel coop-panel" aria-label="Current model values">
-    <div className="panel-heading"><h3>Current model</h3><span className="badge">pO₂/P50 = {u.toFixed(2)}</span></div>
+    <div className="panel-heading"><h3>현재 모형 값</h3><span className="badge">pO₂/P50 = {u.toFixed(2)}</span></div>
     <dl className="tr-values coop-values">
      <dt>Saturation Y</dt><dd data-testid="y-value"><strong>{pct(p.Y)}</strong> <small>Hemoglobin · MWC model</small></dd>
      <dt>Reference</dt><dd data-testid="ref-y-value"><strong>{pct(p.reference)}</strong> <small>one-site noncooperative, same P50</small></dd>
@@ -69,15 +69,15 @@ export function HemoglobinCooperativityLab(){
     <div className="coop-structure" data-testid="coop-structure">
      <p><strong>Experimental structural representatives</strong> <small>T ↔ R module의 구조 재사용</small></p>
      <div className="coop-structure-buttons">
-      <button aria-pressed={endpoint==='T'} onClick={()=>setEndpoint('T')}>Inspect T-like structure <small>PDB 2DN2 · deoxy</small></button>
-      <button aria-pressed={endpoint==='R'} onClick={()=>setEndpoint('R')}>Inspect R-like structure <small>PDB 2DN1 · O₂ bound</small></button>
-      {endpoint&&<button onClick={()=>setEndpoint(null)}>Close structure</button>}
+      <button aria-pressed={endpoint==='T'} onClick={()=>setEndpoint('T')}>T형 구조 보기 <small>PDB 2DN2 · deoxy</small></button>
+      <button aria-pressed={endpoint==='R'} onClick={()=>setEndpoint('R')}>R형 구조 보기 <small>PDB 2DN1 · O₂ bound</small></button>
+      {endpoint&&<button onClick={()=>setEndpoint(null)}>구조 닫기</button>}
      </div>
      <p className="small">2DN2 / 2DN1은 모델의 T-like / R-like state를 이해하기 위한 실험 구조 대표입니다. MWC population이 이 두 결정 구조의 정확한 비율이라는 뜻은 아니며, slider는 구조 좌표를 바꾸지 않습니다.</p>
     </div>
    </aside>
   </div>
-  {endpoint&&<section className="coop-structure-panel" aria-label="Experimental endpoint structure"><div className="panel-heading"><h3>{endpoint==='T'?'T-like endpoint · PDB 2DN2':'R-like endpoint · PDB 2DN1'}</h3><span className="badge" data-testid="coop-structure-badge">EXPERIMENTAL · NOT pO₂-DEPENDENT</span></div>
+  {endpoint&&<section className="coop-structure-panel" aria-label="Experimental endpoint structure"><div className="panel-heading"><h3>{endpoint==='T'?'T-like endpoint · PDB 2DN2':'R-like endpoint · PDB 2DN1'}</h3><span className="badge" data-testid="coop-structure-badge">실험 구조 · pO₂와 무관</span></div>
    <Suspense fallback={<p className="small">Loading 3D viewer…</p>}><CooperativityStructurePanel endpoint={endpoint}/></Suspense></section>}
   <section className="helix-notes tr-science" data-testid="coop-science-note">
    <p><strong>Scientific note.</strong> MWC는 hemoglobin cooperativity를 설명하는 대표적인 two-state allosteric model입니다. 실제 hemoglobin은 추가적인 tertiary/intermediate states와 여러 조절 인자의 영향을 받습니다.</p>

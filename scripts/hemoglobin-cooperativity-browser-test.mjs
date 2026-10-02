@@ -33,7 +33,7 @@ try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
  assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  assert.doesNotMatch(await nav.innerText(),/Bohr|2,3-BPG|AlphaFold/i);
  assert.equal(requests.some(u=>/HemoglobinCooperativityLab|CooperativityStructurePanel|2DN1|2DN2/.test(u)),false,'module chunk and structures must not load at start');
  check('Eight completed modules; Chapter 3 = Quaternary, T ↔ R, Cooperativity & Allostery; no HbS/Bohr/BPG/AlphaFold; cooperativity chunk and structures not requested at start');
@@ -42,7 +42,7 @@ try{
  assert.ok(requests.some(u=>/HemoglobinCooperativityLab/.test(u)));
  assert.equal(requests.some(u=>/\.pdb|CooperativityStructurePanel|transitionAssets/.test(u)),false,'structures are loaded only on inspection');
  assert.equal(await page.locator('canvas').count(),0);assert.equal(await page.getByRole('alert').count(),0);
- assert.match(await page.locator('.module-heading').innerText(),/Hemoglobin Cooperativity & Allostery[\s\S]*sigmoid 모양일까/);
+ assert.match(await page.locator('.module-heading').innerText(),/헤모글로빈의 협동성과 알로스테리[\s\S]*sigmoid 모양일까/);
  assert.match(await text('coop-prompt'),/4개의 heme가 서로 독립적으로 O₂를 결합한다면 곡선은 어떤 모양일까요\?.*왜 모양이 다를까요\?/);
  assert.equal(await tid('coop-observation').evaluate(e=>e.open),false);assert.equal(await tid('occupancy-panel').evaluate(e=>e.open),false);assert.equal(await tid('advanced-panel').evaluate(e=>e.open),false);
  assert.equal(await tid('hb-curve').count(),1);assert.equal(await tid('reference-curve').count(),1);assert.equal(await tid('state-curves').count(),0);
@@ -70,14 +70,14 @@ try{
 
  for(const [name,value] of [['Low O₂ · 0.3','0.30'],['P50 · 1.0','1.00'],['High O₂ · 3.0','3.00']]){await button(name).click();await settle();assert.equal(await tid('u-value').innerText(),value);assert.equal(await button(name).getAttribute('aria-pressed'),'true');}
  await button('Hemoglobin (MWC)').click();await settle();assert.equal(await tid('reference-curve').count(),0);assert.equal(await tid('reference-marker').count(),0);assert.equal(await tid('hb-curve').count(),1);assert.doesNotMatch(await text('coop-legend'),/reference/);
- await button('One-site reference').click();await settle();assert.equal(await tid('hb-curve').count(),0);assert.equal(await tid('coop-marker').count(),0);assert.equal(await tid('reference-curve').count(),1);
+ await button('결합 부위 1개 기준').click();await settle();assert.equal(await tid('hb-curve').count(),0);assert.equal(await tid('coop-marker').count(),0);assert.equal(await tid('reference-curve').count(),1);
  assert.match(await text('y-value'),/^94\.1%/,'readout still shows both values');
- await button('Both curves').click();await page.getByRole('checkbox',{name:'Pure T-state / R-state curves'}).check();await settle();
+ await button('두 곡선 모두').click();await page.getByRole('checkbox',{name:'순수 T 상태 / R 상태 곡선'}).check();await settle();
  assert.equal(await tid('state-curves').locator('path').count(),2);assert.match(await text('coop-legend'),/If every molecule stayed R-like.*If every molecule stayed T-like/);
  assert.match(await text('state-curve-note'),/T-like도 O₂를 결합하지만 affinity가 낮습니다/);
  await setU(1);assert.match(await text('state-site-sat'),new RegExp(`T-like 안에서 ${pct(audit.points['1'].yT).replace('.','\\.')}, R-like 안에서 ${pct(audit.points['1'].yR).replace('.','\\.')}`));
  await page.screenshot({path:'artifacts/phase4c-cooperativity.png'});
- await button('Reset').click();await settle();assert.equal(await tid('u-value').innerText(),'0.50');assert.equal(await tid('state-curves').count(),0);assert.equal(await button('Both curves').getAttribute('aria-pressed'),'true');
+ await button('초기화').click();await settle();assert.equal(await tid('u-value').innerText(),'0.50');assert.equal(await tid('state-curves').count(),0);assert.equal(await button('두 곡선 모두').getAttribute('aria-pressed'),'true');
  check('Presets (0.3 / 1.0 / 3.0), curve selector (both / Hb only / reference only), pure T/R state curves with "T also binds" note and per-state site saturation; Reset restores defaults');
 
  await tid('occupancy-panel').locator('summary').click();await setU(1);
@@ -92,7 +92,7 @@ try{
  check(`Occupancy distribution (P50: ${audit.points['1'].occupancy.map(v=>pct(v)).join(' / ')} vs binomial ${audit.points['1'].referenceOccupancy.map(v=>pct(v)).join(' / ')}; ΣP = 1.000, ΣkP = 4Y); advanced panel L0 9054, c 0.014, P50 ${audit.x50.toFixed(2)} K_R, n_H(P50) ${audit.hillAtP50.toFixed(2)} with caveats`);
 
  await setU(0.4);
- await page.getByRole('button',{name:/^Inspect T-like structure/}).click();await viewer().locator('canvas').waitFor();await settle();
+ await page.getByRole('button',{name:/^T형 구조 보기/}).click();await viewer().locator('canvas').waitFor();await settle();
  assert.ok(requests.some(u=>/CooperativityStructurePanel/.test(u))&&requests.some(u=>/2DN2.*\.pdb/.test(u))&&requests.some(u=>/2DN1.*\.pdb/.test(u)));
  assert.equal(await page.locator('canvas').count(),1);
  const near=(txt,v,tol=6e-4)=>{const got=txt.split(',').map(Number);got.forEach((x,k)=>assert.ok(Math.abs(x-v[k])<tol,`${txt} vs ${v}`));};
@@ -103,15 +103,15 @@ try{
  await setU(0.4);assert.ok((await viewer().locator('canvas').screenshot()).equals(tShot),'T rendering identical after slider moves');
  assert.equal(await viewer().locator('.dimer-label:visible').count(),0);
  assert.match(await text('coop-structure-note'),/PDB 2DN2 · X-ray diffraction 1\.25 Å.*deposited O₂가 없습니다/);
- await page.getByRole('button',{name:/^Inspect R-like structure/}).click();await settle();
+ await page.getByRole('button',{name:/^R형 구조 보기/}).click();await settle();
  for(const [k,v] of [['state','R'],['layers','R'],['fraction','0.00'],['visible-ligands','4']])assert.equal(await vdata(k),v,k);
  near(await vdata('sample-position'),trAudit.samples.R.position);
  const rSample=await vdata('sample-position');
  for(const u of [0.1,1,3]){await setU(u);assert.equal(await vdata('sample-position'),rSample);assert.equal(await vdata('visible-ligands'),'4','deposited O₂ never removed to match Y');}
  assert.match(await text('coop-structure-legend'),/R-like · 2DN1 \(O₂ bound, aligned on α1β1\).*O₂ \(4, as deposited in 2DN1\)/);
- assert.equal(await tid('coop-structure-badge').innerText(),'EXPERIMENTAL · NOT pO₂-DEPENDENT');
+ assert.equal(await tid('coop-structure-badge').innerText(),'실험 구조 · pO₂와 무관');
  await page.screenshot({path:'artifacts/phase4c-structure-r.png'});
- await button('Close structure').click();await settle();assert.equal(await page.locator('canvas').count(),0);
+ await button('구조 닫기').click();await settle();assert.equal(await page.locator('canvas').count(),0);
  check(`Inspect T-like (2DN2 deposited coordinates, no O₂) / R-like (2DN1 aligned, 4 deposited O₂) reuse the Phase 4B scene; structures fetched only now; moving the slider leaves coordinates, ligands, state and the rendered image unchanged (fraction 0.00, no motion guide); Close disposes the viewer`);
 
  await tid('coop-observation').locator('summary').click();
@@ -137,7 +137,7 @@ try{
   for(const t of boxes.xt)assert.ok(t.b<=boxes.axes[0].t+0.5,`x axis label overlaps ticks at ${width}`);
   for(const b of [...boxes.axes,...boxes.yt,...boxes.xt])assert.ok(b.l>=boxes.svg.l-0.5&&b.r<=boxes.svg.r+0.5&&b.b<=boxes.svg.b+0.5,`label outside svg at ${width}`);
   const before=await marker();await page.locator('#po2').fill('2');await settle();assert.ok((await marker()).cx>before.cx);
-  if(width===390){await page.getByRole('button',{name:/^Inspect R-like structure/}).click();await viewer().locator('canvas').waitFor();const v=await viewer().boundingBox();assert.ok(v.height>=300&&v.x+v.width<=width);await button('Close structure').click();await page.screenshot({path:'artifacts/phase4c-mobile.png',fullPage:true});}
+  if(width===390){await page.getByRole('button',{name:/^R형 구조 보기/}).click();await viewer().locator('canvas').waitFor();const v=await viewer().boundingBox();assert.ok(v.height>=300&&v.x+v.width<=width);await button('구조 닫기').click();await page.screenshot({path:'artifacts/phase4c-mobile.png',fullPage:true});}
   assert.equal(await tid('advanced-panel').evaluate(e=>e.open),true);// opened earlier in this session; default is collapsed (checked above)
   check(`${width}px: no horizontal overflow; graph ${Math.round(g.width)}×${Math.round(g.height)} px, axis/tick labels not overlapping; slider, T/R bars, legend and structure buttons inside; slider moves marker`);
  }
@@ -152,7 +152,7 @@ try{
   await nav.getByRole('button',{name:/T ↔ R/}).click();await page.getByTestId('tr-viewer').locator('canvas').waitFor();
   assert.equal(await page.getByTestId('reference-rmsd').locator('strong').innerText(),`${trAudit.reference.rmsd.toFixed(2)} Å`);assert.equal(await page.getByTestId('moving-rotation').locator('strong').innerText(),`${trAudit.moving.angle.toFixed(1)}°`);
   await nav.getByRole('button',{name:/Cooperativity/}).click();await tid('coop-graph').waitFor();assert.equal(await page.locator('canvas').count(),0);assert.equal(await tid('u-value').innerText(),'0.50');
-  await page.getByRole('button',{name:/^Inspect T-like structure/}).click();await viewer().locator('canvas').waitFor();assert.equal(await page.locator('canvas').count(),1);
+  await page.getByRole('button',{name:/^T형 구조 보기/}).click();await viewer().locator('canvas').waitFor();assert.equal(await page.locator('canvas').count(),1);
  }
  check('Repeated navigation through all eight modules keeps each working (T ↔ R still 0.93 Å / 14.1°) and disposes viewers');
  assert.deepEqual(errors,[]);check('Zero console errors and uncaught exceptions');

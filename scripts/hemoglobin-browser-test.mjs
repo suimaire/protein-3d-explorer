@@ -20,7 +20,7 @@ try{
  await page.goto(((process.env.PROTEIN_PREVIEW_ORIGIN??'http://127.0.0.1:4173')+'/protein-3d-explorer/'),{waitUntil:'networkidle'});
  const nav=page.getByRole('navigation',{name:'학습 모듈'});
  assert.equal(await nav.getByRole('button').count(),10);
- assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['Chapter 3 · From Structure to Function\nHemoglobin Quaternary Structure','Chapter 3 · From Structure to Function\nHemoglobin T ↔ R Structural Transition','Chapter 3 · From Structure to Function\nHemoglobin Cooperativity & Allostery','Chapter 3 · From Structure to Function\nMutation Tolerance','Chapter 3 · From Structure to Function\nHbA → HbS → Polymerization']);
+ assert.deepEqual((await nav.getByRole('button').allInnerTexts()).slice(-5),['헤모글로빈의 4차 구조\nHemoglobin Quaternary Structure','T ↔ R 구조 전환\nHemoglobin T ↔ R Structural Transition','협동성과 알로스테리\nHemoglobin Cooperativity & Allostery','돌연변이 허용성\nMutation Tolerance','HbS의 중합\nHbA → HbS → Polymerization']);
  assert.equal(requests.some(u=>/HemoglobinQuaternaryLab|2DN2/.test(u)),false,'hemoglobin chunk and structure must not load initially');
  assert.doesNotMatch(await nav.innerText(),/Bohr|Hill|2,3-BPG|AlphaFold/i);
  check('Seven completed modules with Chapter 3 · Hemoglobin Quaternary Structure; its chunk and 2DN2 asset are not requested at start');
@@ -45,26 +45,26 @@ try{
  const init=await shot();
 
  let before=init;
- for(const [label,value] of [['Atoms / sticks','atoms'],['Space filling','spacefill'],['Ribbon','ribbon']]){await button(label).click();await settle();assert.equal(await data('representation'),value);const now=await shot();assert.notDeepEqual(now,before,label);before=now;}
- check('Ribbon / Atoms-sticks / Space filling each render differently');
+ for(const [label,value] of [['원자 / 막대','atoms'],['공간 채움','spacefill'],['리본','ribbon']]){await button(label).click();await settle();assert.equal(await data('representation'),value);const now=await shot();assert.notDeepEqual(now,before,label);before=now;}
+ check('Ribbon / Atoms-sticks / 공간 채움 each render differently');
 
- await button('By subunit').click();await settle();assert.equal(await data('color'),'subunit');
+ await button('subunit별').click();await settle();assert.equal(await data('color'),'subunit');
  for(const s of audit.subunits)assert.equal(await page.getByTestId(`legend-${s.chain}`).innerText(),`${s.label} — Chain ${s.chain}`);
  assert.match(await page.getByTestId('color-legend').innerText(),/Heme \(non-protein prosthetic group\)[\s\S]*Fe/);
  assert.match(await page.getByTestId('hb-tip').innerText(),/색 하나 = polypeptide chain 하나[\s\S]*subunit 수에 넣지 않습니다/);
  const bySubunit=await shot();assert.notDeepEqual(bySubunit,init);
  await hv().screenshot({path:'artifacts/phase4a-hb-subunits.png'});
  await page.screenshot({path:'artifacts/phase4a-hb-tetramer.png',fullPage:true});
- await button('By chain type').click();await settle();assert.equal(await data('color'),'type');
+ await button('chain 종류별').click();await settle();assert.equal(await data('color'),'type');
  const legend=await page.getByTestId('color-legend').innerText(),alphas=audit.subunits.filter(s=>s.type==='alpha'),betas=audit.subunits.filter(s=>s.type==='beta');
  assert.ok(legend.includes(`α chains — ${alphas.map(s=>`${s.label} (Chain ${s.chain})`).join(', ')}`),legend);assert.ok(legend.includes(`β chains — ${betas.map(s=>`${s.label} (Chain ${s.chain})`).join(', ')}`),legend);
  assert.notDeepEqual(await shot(),bySubunit);
  check(`Color by subunit legend = audit mapping (${audit.subunits.map(s=>`${s.label}–${s.chain}`).join(', ')}); by chain type groups ${alphas.length} α and ${betas.length} β chains`);
 
- await button('By subunit').click();
+ await button('subunit별').click();
  for(const s of audit.subunits){
   await button(s.label).click();await settle();
-  assert.equal(await data('focus'),s.label);assert.equal(await page.getByTestId('view-badge').innerText(),`${s.label} · CHAIN ${s.chain}`);
+  assert.equal(await data('focus'),s.label);assert.equal(await page.getByTestId('view-badge').innerText(),`${s.label} · chain ${s.chain}`);
   assert.equal(await page.getByTestId('subunit-type').innerText(),`${s.type==='alpha'?'α-type · α-globin':'β-type · β-globin'} UniProt ${s.uniprot} (${s.entry})`);
   assert.equal(await page.getByTestId('subunit-residues').innerText(),`sequence ${s.sequenceLength} · modeled ${s.modeledResidues} (residue ${s.range[0]}–${s.range[1]})`);
   assert.equal(await page.getByTestId('subunit-heme').innerText(),`present — Heme ${s.heme.number} / 4 (HEM ${s.heme.record.split(' ')[2]})`);
@@ -87,7 +87,7 @@ try{
  }
  check(`Heme 1–4 buttons focus each subunit's own heme: camera target = Fe coordinates, Fe–proximal His ${audit.subunits.map(s=>s.heme.feLigandDistance.toFixed(2)).join(' / ')} Å as measured`);
 
- await button('Whole tetramer').click();await button('Reset camera').click();await settle();
+ await button('tetramer 전체').click();await button('시점 초기화').click();await settle();
  const withHeme=await shot();
  await checkbox('Heme').uncheck();await settle();
  assert.equal(await data('heme'),'off');assert.equal(await data('visible-hemes'),'0');assert.equal(await hv().locator('.heme-label:not([hidden])').count(),0);
@@ -95,7 +95,7 @@ try{
  await checkbox('Heme').check();await settle();assert.equal(await data('visible-hemes'),'4');assert.deepEqual(await shot(),withHeme);
  check('Heme toggle hides all four hemes (and labels/legend) and restores the identical image');
 
- await checkbox('Interfaces').check();await settle();
+ await checkbox('접촉면').check();await settle();
  assert.equal(await data('interfaces'),String(audit.interfaces.interfaceResidues));
  assert.match(await page.getByTestId('hb-tip').innerText(),/4\.0 Å[\s\S]*기하학적 접촉[\s\S]*수소결합 하나로 연결되었다는 뜻이 아니며/);
  const ifaceImage=await shot();assert.notDeepEqual(ifaceImage,withHeme);
@@ -105,20 +105,20 @@ try{
   await page.getByTestId(`pair-${p.chains}`).click();await settle();assert.equal(await data('interfaces'),String(p.residues[0]+p.residues[1]));
  }
  assert.equal(await page.getByTestId('interface-list').getByRole('button').count(),audit.interfaces.pairs.length+1);
- await page.getByRole('button',{name:/^All contacts/}).click();await settle();assert.deepEqual(await shot(),ifaceImage);
- await checkbox('Interfaces').uncheck();await settle();assert.deepEqual(await shot(),withHeme);
+ await page.getByRole('button',{name:/^모든 접촉/}).click();await settle();assert.deepEqual(await shot(),ifaceImage);
+ await checkbox('접촉면').uncheck();await settle();assert.deepEqual(await shot(),withHeme);
  check(`Interfaces: ${audit.interfaces.interfaceResidues} residues at ≤4.0 Å; pair buttons and counts equal audit (${audit.interfaces.pairs.map(p=>`${p.labels} ${p.residues.join('+')}`).join(', ')}); off restores image`);
 
- await checkbox('Separate subunits').check();await settle();
+ await checkbox('subunit 떼어 보기').check();await settle();
  assert.equal(await data('exploded'),'on');
  const offsets=Object.fromEntries((await data('chain-offsets')).split(';').map(s=>{const [c,v]=s.split(':');return [c,v.split(',').map(Number)];}));
  for(const [c,v] of Object.entries(audit.exploded.offsets)){offsets[c].forEach((x,k)=>assert.ok(Math.abs(x-v[k])<0.001,`${c} offset`));assert.ok(Math.abs(Math.hypot(...offsets[c])-audit.exploded.distance)<0.002);}
  assert.match(await page.getByTestId('hb-tip').innerText(),/Subunits are visually separated for explanation\. This is not an experimentally observed conformation\./);
- await button('Fit structure').click();await settle();await hv().screenshot({path:'artifacts/phase4a-hb-exploded.png'});
- await checkbox('Separate subunits').uncheck();await settle();
+ await button('화면에 맞추기').click();await settle();await hv().screenshot({path:'artifacts/phase4a-hb-exploded.png'});
+ await checkbox('subunit 떼어 보기').uncheck();await settle();
  assert.equal(await data('chain-offsets'),audit.chains.map(c=>`${c}:0.000,0.000,0.000`).join(';'));
- await button('Reset camera').click();await settle();assert.deepEqual(await shot(),withHeme);
- check(`Separate subunits: each chain translated ${audit.exploded.distance} Å outward exactly as audited, disclaimer shown; off + reset restores the deposited image`);
+ await button('시점 초기화').click();await settle();assert.deepEqual(await shot(),withHeme);
+ check(`subunit 떼어 보기: each chain translated ${audit.exploded.distance} Å outward exactly as audited, disclaimer shown; off + reset restores the deposited image`);
 
  await hv().scrollIntoViewIfNeeded();const box=await hv().locator('canvas').boundingBox();
  let picked='';for(const [dx,dy] of [[0,0],[-40,0],[40,0],[0,-40],[0,40],[-80,20],[80,-20]]){await page.mouse.click(box.x+box.width/2+dx,box.y+box.height/2+dy);await settle();picked=await data('selected');if(picked)break;}
@@ -132,10 +132,10 @@ try{
 
  const dir=async()=>(await data('camera-direction')).split(',').map(Number);
  await hv().locator('canvas').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('+');await settle();const moved=await dir(),dist=await data('camera-distance');
- await button('Fit structure').click();await settle();const fitted=await dir();assert.ok(moved.every((v,i)=>Math.abs(v-fitted[i])<1e-5));assert.notEqual(await data('camera-distance'),dist);
+ await button('화면에 맞추기').click();await settle();const fitted=await dir();assert.ok(moved.every((v,i)=>Math.abs(v-fitted[i])<1e-5));assert.notEqual(await data('camera-distance'),dist);
  check('Keyboard rotate/zoom; Fit keeps the view direction and refits');
 
- await button('Space filling').click();await button('β2').click();await checkbox('Interfaces').check();await checkbox('Separate subunits').check();await settle();
+ await button('공간 채움').click();await button('β2').click();await checkbox('접촉면').check();await checkbox('subunit 떼어 보기').check();await settle();
  await button('전체 초기화').click();await settle();
  assert.deepEqual(await shot(),init);for(const [k,v] of [['representation','ribbon'],['color','default'],['focus','all'],['heme','on'],['interfaces','off'],['exploded','off']])assert.equal(await data(k),v);
  await page.getByText('관찰 후 확인하기').click();
@@ -148,11 +148,11 @@ try{
 
  for(const width of [768,390,320]){
   await page.setViewportSize({width,height:844});await page.waitForTimeout(300);
-  await button('By subunit').click();await button('α2').click();await checkbox('Interfaces').check();await settle();
+  await button('subunit별').click();await button('α2').click();await checkbox('접촉면').check();await settle();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`overflow at ${width}`);
   const v=await hv().boundingBox();assert.ok(v.width>=width-60&&v.height>=300,`viewer ${v.width}x${v.height} at ${width}`);
   for(const sel of ['.hb-controls','.hb-panel','.levels']){const c=await page.locator(sel).boundingBox();assert.ok(c.y>=v.y+v.height-1||c.y+c.height<=v.y+1,`${sel} overlaps viewer at ${width}`);assert.ok(c.x>=0&&c.x+c.width<=width+0.5,`${sel} wider than ${width}`);}
-  for(const b of await page.getByRole('group',{name:'View'}).getByRole('button').all()){const r=await b.boundingBox();assert.ok(r.x>=0&&r.x+r.width<=width,`View button outside at ${width}`);}
+  for(const b of await page.getByRole('group',{name:'보기 범위'}).getByRole('button').all()){const r=await b.boundingBox();assert.ok(r.x>=0&&r.x+r.width<=width,`View button outside at ${width}`);}
   await hv().scrollIntoViewIfNeeded();const mb=await hv().boundingBox();
   let tapped='';for(const dx of [0,-25,25,-50,50]){await page.mouse.click(mb.x+mb.width/2+dx,mb.y+mb.height/2);await settle();tapped=await data('selected');if(tapped)break;}
   assert.ok(tapped,`tap at ${width}`);

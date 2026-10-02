@@ -19,7 +19,7 @@ export default function CooperativityStructurePanel({endpoint}:{endpoint:Inspect
  if(!scene)return <p className="small" data-testid="coop-structure-loading">Loading PDB {T_SOURCE.pdbId} and {R_SOURCE.pdbId}…</p>;
  const source=endpoint==='T'?T_SOURCE:R_SOURCE;
  return <div className="coop-structure-view">
-  <div className="camera-presets"><button onClick={()=>setCamera(c=>({view:'tetramer',token:c.token+1}))}>Tetramer view</button><button onClick={()=>setCamera(c=>({view:'fit',token:c.token+1}))}>Fit</button></div>
+  <div className="camera-presets"><button onClick={()=>setCamera(c=>({view:'tetramer',token:c.token+1}))}>tetramer 전체 보기</button><button onClick={()=>setCamera(c=>({view:'fit',token:c.token+1}))}>화면에 맞추기</button></div>
   <TransitionViewer testId="coop-viewer" model={scene} view={view} camera={camera}
    ariaLabel="Hemoglobin experimental endpoint 3D structure (PDB 2DN2 T-like, 2DN1 R-like). 드래그로 회전, 휠로 확대, 방향키로 회전."/>
   <div className="legend" data-testid="coop-structure-legend">

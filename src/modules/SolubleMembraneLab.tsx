@@ -27,7 +27,7 @@ function analyze(){
 }
 const titleCase=(name:string)=>name[0]+name.slice(1).toLowerCase();
 const SECONDARY={helix:'α-helix',helix310:'3₁₀-helix',strand:'β-strand',other:'loop / 기타'} as const;
-const CATEGORY={'lipid-facing':'Lipid-facing candidate','aqueous-facing':'Aqueous-facing surface',buried:'Buried (surface accessibility < 25%)'} as const;
+const CATEGORY={'lipid-facing':'지질 쪽 candidate','aqueous-facing':'물 쪽 surface',buried:'Buried (surface accessibility < 25%)'} as const;
 const ZONE={membrane:'막 hydrophobic region 안','sideA':'막 hydrophobic region 밖 · Side A (+z)','sideB':'막 hydrophobic region 밖 · Side B (−z)'} as const;
 const defaults={representation:'ribbon' as Representation,color:'default' as ColorScheme,highlight:'all' as Highlight,membrane:false,selected:null as {protein:Protein;index:number}|null};
 const pct=Math.round(SURFACE_THRESHOLD*100);
@@ -52,38 +52,38 @@ export function SolubleMembraneLab(){
   [examples.lipidNonpolar,'lipid','막을 향한 nonpolar'],[examples.aqueousCharged,'aqueous','물 쪽 표면의 charged'],[examples.lipidPolar,'lipid','막을 향한 polar (예외)'],[examples.buriedCharged,'buried','막 높이지만 barrel 안쪽을 향한 charged'],
  ] as const;
  return <main className="helix-lab core-lab membrane-lab" data-highlight={highlight}>
-  <section className="module-heading"><div><p className="eyebrow">CHAPTER 2 · FROM SEQUENCE TO STRUCTURE</p><h2>Soluble vs Membrane Protein</h2><p>왜 두 단백질의 표면 chemistry가 다를까? 같은 색 기준으로 두 실험 구조를 비교해 보세요.</p></div>
-   <span className="model-tag">PDB {UBIQUITIN_SOURCE.pdbId} · PDB {OMPX_SOURCE.pdbId}<strong>Experimental X-ray structures · same chemistry colors</strong></span></section>
+  <section className="module-heading"><div><p className="eyebrow">2장 · 서열에서 구조로</p><h2>수용성 단백질과 막단백질</h2><p>왜 두 단백질의 표면 chemistry가 다를까? 같은 색 기준으로 두 실험 구조를 비교해 보세요.</p></div>
+   <span className="model-tag">PDB {UBIQUITIN_SOURCE.pdbId} · PDB {OMPX_SOURCE.pdbId}<strong>X선 결정 구조 (실험) · 같은 색 기준</strong></span></section>
   <section className="controls core-controls compare-controls" aria-label="Comparison display controls">
-   <Segmented label="Representation (두 구조 공통)" value={representation} onChange={setRepresentation} options={[['ribbon','Ribbon'],['atoms','Atoms / sticks'],['spacefill','Space filling']] as const}/>
-   <Segmented label="Color (두 구조 공통)" value={color} onChange={setColor} options={[['default','Default'],['chemistry','Chemistry']] as const}/>
-   <Segmented label="Highlight" value={highlight} onChange={setHighlight} options={[['all','All'],['surface','Surface'],['buried','Buried'],['lipid','Lipid-facing'],['aqueous','Aqueous-facing']] as const}/>
-   <fieldset className="membrane-toggle"><legend>Membrane (OmpX)</legend>
-    <label className="toggles"><input type="checkbox" checked={showMembrane} onChange={e=>setShowMembrane(e.target.checked)}/>Show membrane</label>
+   <Segmented label="표현 방식 (두 구조 공통)" value={representation} onChange={setRepresentation} options={[['ribbon','리본'],['atoms','원자 / 막대'],['spacefill','공간 채움']] as const}/>
+   <Segmented label="색 (두 구조 공통)" value={color} onChange={setColor} options={[['default','기본 색'],['chemistry','화학적 성질']] as const}/>
+   <Segmented label="강조" value={highlight} onChange={setHighlight} options={[['all','전체'],['surface','표면'],['buried','내부'],['lipid','지질 쪽'],['aqueous','물 쪽']] as const}/>
+   <fieldset className="membrane-toggle"><legend>막 (OmpX)</legend>
+    <label className="toggles"><input type="checkbox" checked={showMembrane} onChange={e=>setShowMembrane(e.target.checked)}/>막 표시</label>
     <button onClick={reset}>전체 초기화</button></fieldset>
   </section>
   <div className="helix-tip compare-tip">{tip}</div>
   <div className="compare-grid">
    <section className="viewer-panel" aria-label="Soluble protein: ubiquitin">
-    <div className="panel-heading"><h3><small>Soluble protein</small>Ubiquitin ({UBIQUITIN_SOURCE.pdbId})</h3><span className="badge" data-testid="soluble-count">{highlights.soluble.size} / {soluble.length} RESIDUES</span></div>
-    <div className="camera-presets"><button onClick={()=>bump(setSolubleCamera,'reset')}>Reset camera</button><button onClick={()=>bump(setSolubleCamera,'fit')}>Fit structure</button></div>
+    <div className="panel-heading"><h3><small>수용성 단백질</small>Ubiquitin ({UBIQUITIN_SOURCE.pdbId})</h3><span className="badge" data-testid="soluble-count">residue {highlights.soluble.size} / {soluble.length}</span></div>
+    <div className="camera-presets"><button onClick={()=>bump(setSolubleCamera,'reset')}>시점 초기화</button><button onClick={()=>bump(setSolubleCamera,'fit')}>화면에 맞추기</button></div>
     <ProteinViewer testId="soluble-viewer" structure={ubiquitin} bonds={ubiquitinBonds} exposure={soluble} view={solubleView} camera={solubleCamera} onPick={i=>setSelected({protein:'soluble',index:i})}/>
     <div className="viewer-footer"><span>수용액 환경 · 막 없음</span><span>drag 회전 · 휠 확대 · 클릭 선택</span></div>
    </section>
    <section className="viewer-panel" aria-label="Membrane protein: OmpX">
-    <div className="panel-heading"><h3><small>Membrane protein</small>OmpX ({OMPX_SOURCE.pdbId})</h3><span className="badge" data-testid="membrane-count">{highlights.membrane.size} / {residues.length} RESIDUES</span></div>
-    <div className="camera-presets"><button onClick={()=>bump(setMembraneCamera,'side')}>Side view</button><button onClick={()=>bump(setMembraneCamera,'top')}>Top view</button><button onClick={()=>bump(setMembraneCamera,'fit')}>Fit structure</button></div>
+    <div className="panel-heading"><h3><small>막단백질</small>OmpX ({OMPX_SOURCE.pdbId})</h3><span className="badge" data-testid="membrane-count">residue {highlights.membrane.size} / {residues.length}</span></div>
+    <div className="camera-presets"><button onClick={()=>bump(setMembraneCamera,'side')}>옆에서 보기</button><button onClick={()=>bump(setMembraneCamera,'top')}>위에서 보기</button><button onClick={()=>bump(setMembraneCamera,'fit')}>화면에 맞추기</button></div>
     <ProteinViewer testId="membrane-viewer" structure={ompx} bonds={ompxBonds} exposure={residues} view={membraneView} camera={membraneCamera} onPick={i=>setSelected({protein:'membrane',index:i})}
      options={{membrane:OMPX_SLAB,ariaLabel:'OmpX 막단백질 3D 구조. 막 법선이 화면 위아래 방향. 드래그로 회전, 휠로 확대, 클릭으로 residue 선택. 방향키로 회전, 더하기와 빼기로 확대 축소.'}}/>
-    <div className="viewer-footer"><span>{showMembrane?`반투명 slab = 막 hydrophobic region (OPM, ${OMPX_OPM.thickness} Å) · 지질 원자가 아닌 위치 안내`:'Show membrane으로 막 hydrophobic region 표시'}</span><span className="select-key">자주색 halo = 선택 residue</span></div>
+    <div className="viewer-footer"><span>{showMembrane?`반투명 slab = 막 hydrophobic region (OPM, ${OMPX_OPM.thickness} Å) · 지질 원자가 아닌 위치 안내`:'막 표시으로 막 hydrophobic region 표시'}</span><span className="select-key">자주색 halo = 선택 residue</span></div>
    </section>
   </div>
   <div className="legend compare-legend" data-testid="color-legend">{color==='chemistry'?<>{CLASS_ORDER.map(c=><span key={c}><i style={{background:CLASS_INFO[c].css}}/>{CLASS_INFO[c].symbol} {CLASS_INFO[c].label}</span>)}<span>backbone = 회색 · 두 구조 같은 색 기준</span></>
-   :<><span><i className="carbon"/>C</span><span><i className="nitrogen"/>N</span><span><i className="oxygen"/>O</span><span><i style={{background:'#d8b21d'}}/>S</span><span>Ribbon = backbone fold</span></>}</div>
+   :<><span><i className="carbon"/>C</span><span><i className="nitrogen"/>N</span><span><i className="oxygen"/>O</span><span><i style={{background:'#d8b21d'}}/>S</span><span>리본 = backbone 접힘</span></>}</div>
   <div className="lab-grid compare-details">
    <aside className="plot-panel residue-panel" aria-label="Selected residue">
-    <div className="panel-heading"><h3>Selected residue</h3><span className="badge">{sel?(sel.protein==='soluble'?'UBIQUITIN':'OMPX'):'MEASURED'}</span></div>
-    <label className="residue-select">Residue <select aria-label="Select residue" value={sel?`${sel.protein}:${sel.index}`:''} onChange={e=>{const [p,i]=e.target.value.split(':');setSelected(e.target.value===''?null:{protein:p as Protein,index:Number(i)});}}>
+    <div className="panel-heading"><h3>선택한 residue</h3><span className="badge">{sel?(sel.protein==='soluble'?'ubiquitin':'OmpX'):'좌표에서 측정'}</span></div>
+    <label className="residue-select">잔기 <select aria-label="잔기 선택" value={sel?`${sel.protein}:${sel.index}`:''} onChange={e=>{const [p,i]=e.target.value.split(':');setSelected(e.target.value===''?null:{protein:p as Protein,index:Number(i)});}}>
      <option value="">선택 안 함</option>
      <optgroup label="Ubiquitin (1UBQ)">{soluble.map(x=><option key={x.index} value={`soluble:${x.index}`}>{name('soluble',x.index)}</option>)}</optgroup>
      <optgroup label="OmpX (1QJ8)">{residues.map(x=><option key={x.index} value={`membrane:${x.index}`}>{name('membrane',x.index)}</option>)}</optgroup>
@@ -116,7 +116,7 @@ export function SolubleMembraneLab(){
      <summary>관찰 후 확인하기 · 두 구조에서 관찰된 표면 chemistry</summary>
      <div className="table-wrap"><table><thead><tr><th>Group</th>{CLASS_ORDER.map(c=><th key={c}><i className="class-swatch" style={{background:CLASS_INFO[c].css}}/>{CLASS_INFO[c].symbol} {c==='polar'?'Polar':CLASS_INFO[c].label}</th>)}<th>Total</th></tr></thead>
       <tbody>{compositions.map(([key,label,c])=><tr key={key} data-testid={`composition-${key}`}><th>{label}</th>{CLASS_ORDER.map(k=><td key={k}>{c[k]}{k==='nonpolar'&&c.glycine>0&&<small> (Gly {c.glycine})</small>}</td>)}<td>{c.total}</td></tr>)}</tbody></table></div>
-     <p className="small">Surface = 단백질만 놓고 계산한 relative SASA ≥ {pct}%. OmpX lipid-facing = side chain 중심이 OPM 막 hydrophobic region(±{OMPX_SLAB.halfThickness} Å) 안 + surface. Aqueous-facing = region 밖 + surface. 두 단백질 각 1개 구조의 값이며 보편적 비율이 아닙니다.</p>
+     <p className="small">Surface = 단백질만 놓고 계산한 relative SASA ≥ {pct}%. OmpX lipid-facing = side chain 중심이 OPM 막 hydrophobic region(±{OMPX_SLAB.halfThickness} Å) 안 + surface. 물 쪽 = region 밖 + surface. 두 단백질 각 1개 구조의 값이며 보편적 비율이 아닙니다.</p>
      <div className="compare-statements">
       <p><strong>Soluble protein</strong> Hydrophobic residues often buried from water.</p>
       <p><strong>Membrane protein</strong> Hydrophobic residues can face the lipid bilayer.</p>
@@ -129,9 +129,9 @@ export function SolubleMembraneLab(){
    </section>
   </div>
   <section className="teaching">
-   <div><h3>01 · 같은 기준, 다른 환경</h3><p>두 구조 모두 Phase 3A와 같은 Shrake–Rupley SASA와 같은 4분류 색을 사용합니다. 달라진 것은 단백질이 놓이는 환경입니다.</p></div>
-   <div><h3>02 · Membrane slab</h3><p>반투명 slab는 OPM이 계산한 막 hydrophobic region의 위치(두께 {OMPX_OPM.thickness} Å)를 보여주는 기하학적 안내입니다. 실제 지질 분자를 그린 것이 아닙니다.</p></div>
-   <div><h3>03 · Lipid bilayer 복습</h3><p>인지질 이중층의 가운데는 acyl chain의 탄화수소 영역이고, 양쪽 가장자리는 극성 head group 영역입니다. slab 경계 근처는 이 계면(interface)에 해당합니다.</p></div>
+   <div><h3>1 · 같은 기준, 다른 환경</h3><p>두 구조 모두 Phase 3A와 같은 Shrake–Rupley SASA와 같은 4분류 색을 사용합니다. 달라진 것은 단백질이 놓이는 환경입니다.</p></div>
+   <div><h3>2 · 막 slab 모형</h3><p>반투명 slab는 OPM이 계산한 막 hydrophobic region의 위치(두께 {OMPX_OPM.thickness} Å)를 보여주는 기하학적 안내입니다. 실제 지질 분자를 그린 것이 아닙니다.</p></div>
+   <div><h3>3 · lipid bilayer 복습</h3><p>인지질 이중층의 가운데는 acyl chain의 탄화수소 영역이고, 양쪽 가장자리는 극성 head group 영역입니다. slab 경계 근처는 이 계면(interface)에 해당합니다.</p></div>
   </section>
   <section className="helix-notes">
    <p>Surface accessibility는 단백질만 놓고 계산한 값입니다. 막단백질에서는 표면이 물이 아니라 지질과 접할 수 있으므로 “물 노출”이라고 부르지 않습니다.</p>
